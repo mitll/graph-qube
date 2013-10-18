@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sankey Diagram</title>
+    <style>
+        @import url(style.css);
+
+        #queryChart {
+            height: 250px;
+        }
+
+        .node rect {
+            cursor: move;
+            fill-opacity: .9;
+            shape-rendering: crispEdges;
+        }
+
+        .node text {
+            pointer-events: none;
+            text-shadow: 0 1px 0 #fff;
+        }
+
+        .link {
+            fill: none;
+            stroke: #000;
+            stroke-opacity: .2;
+        }
+
+        .link:hover {
+            stroke-opacity: .5;
+        }
+
+        .linkHighlight {
+            stroke: #832e8e;
+        }
+    </style>
+</head>
+<body>
+    <p><span>Query</span></p>
+    <p id="queryChart">
+    <p><span id="resultTitle">Result</span></p>
+    <button id="nextResult">Next Result</button>
+
+    <p id="resultChart">
+    <p class="attribution"><span id="queryTitle">Overall</span></p>
+    <button id="nextPhase">Next Phase</button>
+    <script src="d3.v3.js"></script>
+    <script src="sankey.js"></script>
+    <script src="readAndRender.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{"nodes":[
+    {"name":"f"},
+    {"name":"e"},
+    {"name":"g"},
+    {"name":"h"}
+],
+    "links":[    [
+        {"id":0,"source":0,"target":3,"value":1100.0},
+        {"id":1,"source":2,"target":3,"value":1250.0},
+        {"id":2,"source":1,"target":0,"value":1200.0},
+        {"id":3,"source":1,"target":2,"value":1300.0}
+    ]
+]}

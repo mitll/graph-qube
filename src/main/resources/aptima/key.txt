@@ -1,0 +1,3 @@
+query_0	bitcoinresults.txt
+query_1	lenderDonorResults.txt
+query_2	thiefVictimFinderResults.txt
