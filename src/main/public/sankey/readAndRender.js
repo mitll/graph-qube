@@ -1,4 +1,4 @@
-const SVG_HEIGHT = 250;
+const SVG_HEIGHT = 200;
 /**
  * Created by GO22670 on 10/15/13.
  */
@@ -48,6 +48,21 @@ d3.select('#nextResult').on('click', function() {
     renderCurrentResultGraph();
 });
 
+d3.select('#qbe').on('click', function() {
+    var id1 = d3.select("#id1")[0][0].value;
+    var id2 = d3.select("#id2")[0][0].value;
+    var id3 = d3.select("#id3")[0][0].value;
+    var id4 = d3.select("#id4")[0][0].value;
+    var start = d3.select("#start")[0][0].value;
+    var end = d3.select("#end")[0][0].value;
+    console.log("value "+ id1 + " " + id2 + " " + id3 + " " + id4);
+
+    d3.select("#resultTitle").html("Please wait...");
+
+    d3.json("http://localhost:8085/sankey?ids="+id1+","+id2+","+id3+","+id4+"&start="+start+"&end="+end, renderQueryAndResultGraphs);
+});
+
+
 var currentPhase = 1;
 var outerGraph, outerGraph2;
 var outerLink, outerLink2;
@@ -63,6 +78,8 @@ function showNextPhase() {
         var title = "Phase " + currentPhase;
         d3.select("#queryTitle").html(title);
     }
+    // update link heights on query graph
+
     var phase = outerGraph.links[currentPhase];
 
     outerLink.data(phase,function (d) {
@@ -71,7 +88,9 @@ function showNextPhase() {
         .style("stroke-width", function (d) {
             return Math.max(0, linkHeightScalar * d.value);
         });
+    setLinkTitles(outerLink);
 
+    // update link heights on result graph
     var linkHeightScalar2 = sankey2.getLinkHeight();
 
     var phase2 = outerGraph2.links[currentPhase];
@@ -89,6 +108,10 @@ function showNextPhase() {
 var resultList;
 var resultIndex = 0;
 function renderQueryAndResultGraphs(queryAndResults) {
+    if (!queryAndResults || !queryAndResults.query) {
+        d3.select("#resultTitle").html("No connected components for query.");
+                                        return;
+    }
     graph = queryAndResults.query;
     outerGraph = graph;
     var overallLinks = graph.links[0];
@@ -158,13 +181,14 @@ function getLinkComponent(svg, overallLinks, path) {
         });
 }
 
-function addNodesAndLinks(svg, graph, link, sankey, path) {
+function setLinkTitles(link) {
     link.append("title")
         .text(function (d) {
             return d.source.name + " to " + d.target.name + " " + format(d.value);
         });
-
-
+}
+function addNodesAndLinks(svg, graph, link, sankey, path) {
+    setLinkTitles(link);
     var node = svg.append("g").selectAll(".node")
         .data(graph.nodes)
         .enter().append("g")
@@ -223,6 +247,6 @@ function addNodesAndLinks(svg, graph, link, sankey, path) {
     }
 }
 
-d3.json("complete.json", renderQueryAndResultGraphs);
+//d3.json("complete.json", renderQueryAndResultGraphs);
 //d3.json("http://localhost:8805/sankey", renderQueryAndResultGraphs);
 //d3.json("resultSmurfSequence.json", renderResultGraph);

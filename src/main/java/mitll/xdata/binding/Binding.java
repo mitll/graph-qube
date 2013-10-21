@@ -64,7 +64,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
   private static final boolean REVERSE_DIRECTION = false;
   private static Logger logger = Logger.getLogger(Binding.class);
-	private static final int MAX_TRIES = 10000;
+	private static final int MAX_TRIES = 1000000;
 	private static final double HMM_KDE_BANDWIDTH = 0.25;
 	/**
 	 * Scales distance between result probability and query probability when converting to score. Lower makes scores
@@ -147,6 +147,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return row;
 	}
 
+  /**
+   * @see #getEntities(String, java.util.List)
+   * @param table
+   * @param constraint
+   * @param limit
+   * @return
+   * @throws Exception
+   */
 	private ResultInfo getEntitiesWhere(String table, String constraint, long limit) throws Exception {
 		String sql = "SELECT * FROM " + table + " where " +
 
@@ -160,8 +168,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
 	private ResultInfo getMatchingRows(String sql) throws Exception {
-		if (showSQL)
+		if (showSQL) {
 			logger.debug("getMatchingRows : doing " + sql);
+    }
 		PreparedStatement statement = connection.prepareStatement(sql);
 		ResultSet rs = null;
 		try {
@@ -182,7 +191,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			for (Map<String, String> row : rows)
 				logger.debug(row);
 		}
-		rs.close();
+    //logger.debug("getMatchingRows : Got " + rows.size() + " ");
+
+    rs.close();
 		statement.close();
 		return new ResultInfo(nameToType, rows);
 	}
@@ -205,7 +216,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			String column = tableToPrimaryKey.get(table);
 			String constraint = column + " in (" + list.substring(0, list.length() - 2) + ") ";
 
-			return getEntitiesWhere(table, constraint, ids.size());
+      ResultInfo entitiesWhere = getEntitiesWhere(table, constraint, ids.size());
+      if (entitiesWhere.rows.isEmpty()) {
+        logger.error("huh? can't find " + ids + " entities in " +table + " under col " + column);
+      }
+      return entitiesWhere;
 		} catch (Exception ee) {
 			logger.error("looking for " + ids + " got error " + ee, ee);
 		}
@@ -1143,7 +1158,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 				logger.warn("using unknown aptima query index = " + aptimaPrecomputed);
 			}
 		} else {
-			results = getShortlist(example, max);
+			results = getShortlist(example, 1000);
 		}
 		logger.debug("shortlist size = " + results.size());
 
@@ -1357,6 +1372,13 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     return getShortlist(entities1, exemplarIDs, max);
   }
 
+  /**
+   * @see #getShortlist(influent.idl.FL_PatternDescriptor, long)
+   * @param entities1
+   * @param exemplarIDs
+   * @param max
+   * @return
+   */
   private List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entities1, List<String> exemplarIDs,
                                                     long max) {
     long then = System.currentTimeMillis();
@@ -1364,10 +1386,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     boolean skipSelf = SKIP_SELF_AS_NEIGHBOR;
     Map<String, List<String>> idToNeighbors = new HashMap<String, List<String>>();
 
+    int k = (int) (100 * max);
     for (String id : exemplarIDs) {
-      List<String> neighbors = getNearestNeighbors(id, (int) (100 * max), skipSelf);
+      List<String> neighbors = getNearestNeighbors(id, k, skipSelf);
       if (neighbors.size() == 0) {
-        logger.warn("no neighbors for " + id + "???\n\n");
+        logger.warn("no neighbors for " + id + " among nearest " +k+ "???\n\n");
         return Collections.emptyList();
       }
       idToNeighbors.put(id, neighbors);
@@ -1391,7 +1414,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     while (product.next()) {
       numTries++;
 
-      if (numTries % 1000 == 0) {
+      if (numTries % 100000 == 0) {
         logger.debug("numTries = " + numTries + " / maxTries = " + maxTries);
       }
 
@@ -1428,7 +1451,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         String similarID = idToNeighbors.get(exemplarID).get(indices[i]);
         double similarity = getSimilarity(exemplarID, similarID);
         FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(exemplarQueryID, similarID, similarity);
-        entities.add(entityMatchResult);
+        if (entityMatchResult != null) {
+          entities.add(entityMatchResult);
+        }
       }
 
       // arithmetic mean
@@ -1442,7 +1467,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       }
     }
 
-    logger.debug("numTries = " + numTries + " results " + results.size());
+    //logger.debug("numTries = " + numTries + " results " + results.size());
 
     return results;
   }
@@ -1454,6 +1479,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		descriptor.setEntities(Arrays.asList(resultID));
 		ResultInfo resultInfo = getEntitiesByID(descriptor);
 
+    if (resultInfo.rows.isEmpty()) return null;
 		// should only get 1!
 		Map<String, String> entityMap = resultInfo.rows.get(0);
 
@@ -1688,7 +1714,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		List<VectorObservation> queryObservations = createObservationVectors(queryEdges, exemplarIDs);
 		List<List<VectorObservation>> resultObservations = new ArrayList<List<VectorObservation>>();
 		for (int i = 0; i < resultEdges.size(); i++) {
-			resultObservations.add(createObservationVectors(resultEdges.get(i), resultIDs.get(i)));
+      if (!resultEdges.get(i).isEmpty()) {
+        List<VectorObservation> observationVectors = createObservationVectors(resultEdges.get(i), resultIDs.get(i));
+        resultObservations.add(observationVectors);
+      }
+      else {
+        List<VectorObservation> objects = Collections.emptyList();
+        resultObservations.add(objects);
+      }
 		}
 
 		//
@@ -1808,6 +1841,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		List<List<VectorObservation>> relevantObservations = new ArrayList<List<VectorObservation>>();
 
 		for (int i = 0; i < results.size(); i++) {
+      if (resultObservations.get(i).isEmpty()) {
+        logger.debug("not enough data for result i = " + i + ": num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
+        results.get(i).setScore(Double.NEGATIVE_INFINITY);
+        relevantObservations.add(new ArrayList<VectorObservation>());
+        continue;
+      }
 			sequences = hmm.decodeTopKLog(resultObservations.get(i), 3);
 			if (sequences.isEmpty()) {
 				logger.debug("not enough data for result i = " + i + ": num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());

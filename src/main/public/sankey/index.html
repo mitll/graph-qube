@@ -7,7 +7,7 @@
         @import url(style.css);
 
         #queryChart {
-            height: 250px;
+            height: 200px;
         }
 
         .node rect {
@@ -37,6 +37,22 @@
     </style>
 </head>
 <body>
+
+<p>
+<form>
+    <span>ID #1&nbsp;</span><input id="id1" type="text" name="id1"/>
+    <span>&nbsp;ID #2&nbsp;</span><input id="id2"  type="text" name="id2/">
+    <span>&nbsp;ID #3&nbsp;</span><input  id="id3" type="text" name="id3"/>
+    <span>&nbsp;ID #4&nbsp;</span><input  id="id4" type="text" name="id4"/>
+</form>
+</p> <p>
+<form>
+    <span>start&nbsp;</span><input id="start" type="text" name="start"/>
+    <span>&nbsp;end&nbsp;</span><input id="end"  type="text" name="end"/>
+</form>
+</p>
+<button id="qbe">Find Matches</button>
+
     <p><span>Query</span></p>
     <p id="queryChart">
     <p><span id="resultTitle">Result</span></p>
