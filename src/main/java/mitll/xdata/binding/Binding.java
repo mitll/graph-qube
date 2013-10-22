@@ -28,17 +28,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 import mitll.xdata.AvroUtils;
 import mitll.xdata.PrioritizedCartesianProduct;
@@ -54,16 +44,19 @@ import mitll.xdata.scoring.Transaction;
 import mitll.xdata.sql.SqlUtilities;
 
 import org.apache.log4j.Logger;
-import org.gephi.graph.api.Node;
 
 /**
  * Created with IntelliJ IDEA. User: go22670 Date: 6/25/13 Time: 7:28 PM To change this template use File | Settings |
  * File Templates.
  */
 public abstract class Binding extends SqlUtilities implements AVDLQuery {
-
-  private static final boolean REVERSE_DIRECTION = false;
   private static Logger logger = Logger.getLogger(Binding.class);
+
+ // private static final boolean REVERSE_DIRECTION = false;
+  private static final int DEFAULT_SHORT_LIST_SIZE = 100;
+  public static final int MAX_CANDIDATES = 100;
+  private static final long MB = 1024*1024;
+  public static final int FULL_SEARCH_LIST_SIZE = 200;
 	private static final int MAX_TRIES = 1000000;
 	private static final double HMM_KDE_BANDWIDTH = 0.25;
 	/**
@@ -86,8 +79,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	Map<String, String> tableToDisplay = new HashMap<String, String>();
 	private boolean showSQL = false;
 	private boolean showResults = false;
+  protected final Map<String, Set<String>> stot = new HashMap<String, Set<String>>();
+  protected Set<String> validTargets = new HashSet<String>();
 
-	public Binding(DBConnection connection) {
+  public Binding(DBConnection connection) {
 		try {
 			this.connection = connection.getConnection();
 		} catch (Exception e) {
@@ -201,12 +196,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	/**
 	 * Get entities by id
 	 *
-	 * @seex mitll.xdata.GraphQuBEServer#getRoute(mitll.xdata.SimplePatternSearch)
+	 * @see #getEntitiesByID(influent.idl.FL_EntityMatchDescriptor)
 	 * @param table
 	 * @param ids
 	 * @return
 	 */
-	public ResultInfo getEntities(String table, List<String> ids) {
+	protected ResultInfo getEntities(String table, List<String> ids) {
 		try {
 			StringBuilder builder = new StringBuilder();
 			for (String id : ids)
@@ -866,6 +861,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * @return k nearest neighbors to node
+   * @see #getShortlist(java.util.List, java.util.List, long)
 	 */
 	protected abstract List<String> getNearestNeighbors(String id, int k, boolean skipSelf);
 
@@ -925,8 +921,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @return
    */
   public String searchByExampleJson(List<String> ids,long start, long max, long startTime, long endTime) {
-    FL_PatternSearchResults fl_patternSearchResults = searchByExample(ids, start, 20, startTime, endTime);
-
+    FL_PatternSearchResults fl_patternSearchResults = searchByExample(ids, start, FULL_SEARCH_LIST_SIZE, startTime, endTime);
+     logger.debug("searchByExampleJson : got " + fl_patternSearchResults.getResults().size() + " results");
      Set<String> querySet = new HashSet<String>(ids);
 
     FL_PatternSearchResult queryResult = null;
@@ -955,8 +951,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         queryResult = result;
       }
       else {
-        logger.debug("looking for " + querySet + " but not this one "+ resultSet);
+        //logger.debug("looking for " + querySet + " but not this one "+ resultSet);
       }
+    }
+
+    if (queryResult == null) {
+      logger.error("\n\n\ncouldn't find the query result!\n\n\n");
     }
 
     String json = "{\"query\" :\n"+getJsonForResult(queryResult);
@@ -980,44 +980,50 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
     builder.append("{\"nodes\":[\n");
     List<String> names = new ArrayList<String>();
-    List<FL_EntityMatchResult> entities = result.getEntities();
-    for (FL_EntityMatchResult entity : entities) {
-      FL_Entity entity1 = entity.getEntity();
-     // String uidValue = entity1.getUid();
-         boolean found = false;
-      for (FL_Property prop : entity1.getProperties()) {
-        // logger.debug("got " + prop.getKey() + " : " + prop.getValue());
-        if (prop.getKey().equalsIgnoreCase("name") || prop.getKey().equalsIgnoreCase("node_id")) {
-          // keyValue.put(prop.getKey(),prop.getFriendlyText());
-          String friendlyText = prop.getFriendlyText();
-          if (friendlyText.length() > MAX_TEXT_LENGTH) friendlyText = friendlyText.substring(0, MAX_TEXT_LENGTH) + "...";
-          builder.append("    {\"name\":\"" + friendlyText + "\"},\n");
-          names.add(friendlyText);
-          found =true;
+    if (result != null) {
+      List<FL_EntityMatchResult> entities = result.getEntities();
+      for (FL_EntityMatchResult entity : entities) {
+        FL_Entity entity1 = entity.getEntity();
+        // String uidValue = entity1.getUid();
+        boolean found = false;
+        for (FL_Property prop : entity1.getProperties()) {
+          // logger.debug("got " + prop.getKey() + " : " + prop.getValue());
+          if (prop.getKey().equalsIgnoreCase("name") || prop.getKey().equalsIgnoreCase("node_id")) {
+            // keyValue.put(prop.getKey(),prop.getFriendlyText());
+            String friendlyText = prop.getFriendlyText();
+            if (friendlyText.length() > MAX_TEXT_LENGTH)
+              friendlyText = friendlyText.substring(0, MAX_TEXT_LENGTH) + "...";
+            builder.append("    {\"name\":\"" + friendlyText + "\"},\n");
+            names.add(friendlyText);
+            found = true;
+          }
+          //if (prop.getKey().equals("uid")) uidValue = ((FL_SingletonRange) prop.getRange()).getValue().toString();
         }
-        //if (prop.getKey().equals("uid")) uidValue = ((FL_SingletonRange) prop.getRange()).getValue().toString();
-      }
-      if (!found) {
-        builder.append("    {\"name\":\"" + entity1.getUid() + "\"},\n");
-        names.add(entity1.getUid());
-      }
+        if (!found) {
+          builder.append("    {\"name\":\"" + entity1.getUid() + "\"},\n");
+          names.add(entity1.getUid());
+        }
 
+      }
+      trimLast(builder);
     }
 
-    trimLast(builder);
 
     builder.append("],\n\"links\":[\n");
 
     // dump overall links
     PatternSearchResultWithState searchResultWithState = (PatternSearchResultWithState) result;
-    List<FL_LinkMatchResult> links = searchResultWithState.getLinks();
+    List<FL_LinkMatchResult> objects = Collections.emptyList();
+    List<FL_LinkMatchResult> links = searchResultWithState == null ? objects : searchResultWithState.getLinks();
     Map<String, Integer> objectObjectMap = Collections.emptyMap();
-    Map<String,Integer> pairToID = dumpLinks(builder, names, links, objectObjectMap);
+    Map<String, Integer> pairToID = dumpLinks(builder, names, links, objectObjectMap);
 
-    for (List<FL_LinkMatchResult> linksForPhase : searchResultWithState.getPhaseLinks()) {
-      dumpLinks(builder, names, linksForPhase,pairToID);
+    if (searchResultWithState != null) {
+      for (List<FL_LinkMatchResult> linksForPhase : searchResultWithState.getPhaseLinks()) {
+        dumpLinks(builder, names, linksForPhase, pairToID);
+      }
+      builder.replace(builder.length() - 1, builder.length(), "\n");
     }
-    builder.replace(builder.length()-1,builder.length(),"\n");
 
     builder.append("]}\n");
 
@@ -1104,25 +1110,22 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 */
 	public FL_PatternSearchResults searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max,
 			int aptimaPrecomputed, boolean rescoreWithHMM, long startTime, long endTime) {
-		logger.debug("ENTER searchByExample()");
 		long then = System.currentTimeMillis();
-		logger.debug("got " + example + " aptima " + aptimaPrecomputed + " rescore " + rescoreWithHMM);
+		logger.debug("ENTER searchByExample() got " + example + " aptima " + aptimaPrecomputed + " rescore " + rescoreWithHMM);
 
 		if (max == 0) {
 			logger.warn("max given as 0, using 10 instead...");
 			max = 10;
 		}
 
-		if (start > max) {
-			start = max - 1;
-		}
+		if (start > max) { start = max - 1; }
 
 		if (example != null && example.getEntities() != null && example.getEntities().size() < 1
 				&& aptimaPrecomputed == -1) {
 			return null;
 		}
 
-		logger.debug("got " + example + " aptima " + aptimaPrecomputed + " rescore " + rescoreWithHMM);
+		//logger.debug("got " + example + " aptima " + aptimaPrecomputed + " rescore " + rescoreWithHMM);
 
 		// (1) extract node ids from descriptors
 		// (2) shortlist (find promising connected subgraphs)
@@ -1131,49 +1134,16 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		List<FL_PatternSearchResult> results;
 		if (aptimaPrecomputed >= 0) {
 			results = getShortlistAptima(aptimaPrecomputed);
-
-			// use first aptima result as exemplar
-			// query_0
-			if (aptimaPrecomputed == 0) {
-				example = AvroUtils.createExemplarQuery(Arrays.asList("505134", "137750", "146073", "28946", "11"));
-
-				try {
-					logger.warn("example : " + AvroUtils.encodeJSON(example));
-				} catch (Exception e) {
-					e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
-				}
-			} else if (aptimaPrecomputed == 1) {
-				// query_1
-				example = AvroUtils.createExemplarQuery(Arrays.asList("97409", "11"));
-			} else if (aptimaPrecomputed == 2) {
-				// query_2
-				example = AvroUtils.createExemplarQuery(Arrays.asList("11", "1598539", "988143"));
-
-				try {
-					logger.warn("example : " + AvroUtils.encodeJSON(example));
-				} catch (Exception e) {
-					e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
-				}
-			} else {
-				logger.warn("using unknown aptima query index = " + aptimaPrecomputed);
-			}
-		} else {
-			results = getShortlist(example, 1000);
+      example = getAptimaHardCoded(example, aptimaPrecomputed);
+    } else {
+			results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
 		}
 		logger.debug("shortlist size = " + results.size());
 
 		// get edges (to use in a couple places)
-		List<Edge> queryEdges = null;
 		List<String> exemplarIDs = null;
 		try {
 			exemplarIDs = getExemplarIDs(example);
-			queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
-			if (logger.isDebugEnabled()) {
-				logger.debug("queryEdges = ");
-				for (Edge edge : queryEdges) {
-					logger.debug(edge);
-				}
-			}
 		} catch (Exception e) {
 			e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
 		}
@@ -1185,76 +1155,33 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			logger.error("huh? couldn't get results for " + example);
 			return null;
 		}
-		logger.debug("exemplarIDs = " + exemplarIDs);
+		logger.debug("searchByExample : exemplarIDs = " + exemplarIDs);
 		for (FL_PatternSearchResult result : results) {
 			try {
 				List<Edge> allLinks = getEdgesForResult(result);
 				resultEdges.add(allLinks);
 				List<String> ids = getOrderedIDsForResult(result, example, exemplarIDs);
-				// logger.debug("result ids = " + ids);
+			//  logger.debug("result ids = " + ids + " for " + result);
 				resultIDs.add(ids);
 			} catch (Exception e) {
 				e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
 			}
 		}
 
+    logMemory();
+
 		// re-score results
 		if (rescoreWithHMM) {
-			List<List<VectorObservation>> relevantObservations = rescoreWithHMM(example, results, exemplarIDs, queryEdges, resultEdges, resultIDs);
-			// add only relevant edges and remove results that don't have any...
-			List<FL_PatternSearchResult> tempResults = new ArrayList<FL_PatternSearchResult>();
-			for (int i = 0; i < results.size(); i++) {
-				List<VectorObservation> observations = relevantObservations.get(i);
-				if (observations.isEmpty()) {
-					continue;
-				} else {
-					// replace links in each subgraph (subsequence) with aggregate links (but only ones in relevant observations)
-					List<Edge> relevantEdges = new ArrayList<Edge>();
-					
-					for (VectorObservation observation : observations) {
-						relevantEdges.addAll(observation.getEdges());
-					}
-					FL_PatternSearchResult result = results.get(i);
-					
-					// aggregate links across all states
-					List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, result, relevantEdges);
-					result.setLinks(linkMatchResults);
-					
-					// aggregate links in individual states, e.g., [1], [2, 2], [3]
-					// group all edges from observations in current state (and next state(s) if same state)
-					int index = 0;
-					String currentState = observations.get(0).getState();
-					List<Edge> edges = new ArrayList<Edge>();
-					while (index < observations.size()) {
-						VectorObservation observation = observations.get(index);
-						if (observation.getState().equalsIgnoreCase(currentState)) {
-							// add more edges for current state
-							edges.addAll(observation.getEdges());
-						} else {
-							// save edges for last state
-							linkMatchResults = createAggregateLinks(example, result, edges);
-							((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
-							((PatternSearchResultWithState) result).getStates().add(currentState);
-							
-							// update to new state
-							currentState = observation.getState();
-							edges.clear();
-							edges.addAll(observation.getEdges());
-						}
-						index++;
-					}
-					
-					if (!edges.isEmpty()) {
-						// save last state
-						linkMatchResults = createAggregateLinks(example, result, edges);
-						((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
-						((PatternSearchResultWithState) result).getStates().add(currentState);
-					}
-					
-					tempResults.add(result);
-				}
-			}
-			results = tempResults;
+      List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
+
+      if (!queryEdges.isEmpty()) {
+        List<FL_PatternSearchResult> tempResults = rescoreWithHMM1(example, results, exemplarIDs, resultEdges, resultIDs, startTime, endTime);
+        logger.debug("Got " + tempResults.size() + " rescored results.");
+		   	results = tempResults;
+      }
+      else {
+        logger.warn("exemplars are not connected for time period " + exemplarIDs + " start " + new Date(startTime) + " end " + new Date(endTime));
+      }
 		} else {
 			// add all edges
 			// replace links in each subgraph with aggregate links
@@ -1279,11 +1206,121 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// }
 
 		logger.debug(results.size() + " results, took " + (System.currentTimeMillis() - then) + " millis");
+    logMemory();
 
-		return patternSearchResults;
+    return patternSearchResults;
 	}
 
-	public void addRelevantEdges(FL_PatternSearchResult result, List<VectorObservation> observations) {
+  /**
+   * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, int, boolean, long, long)
+   * @param example
+   * @param results
+   * @param exemplarIDs
+   * @param resultEdges
+   * @param resultIDs
+   * @param startTime
+   * @param endTime
+   * @return
+   */
+  private List<FL_PatternSearchResult> rescoreWithHMM1(FL_PatternDescriptor example,
+                                                       List<FL_PatternSearchResult> results,
+                                                       List<String> exemplarIDs, List<List<Edge>> resultEdges,
+                                                       List<List<String>> resultIDs, long startTime, long endTime) {
+    List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
+    if (logger.isDebugEnabled()) {
+      logger.debug("queryEdges = ");
+      for (Edge edge : queryEdges) {
+        logger.debug(edge);
+      }
+    }
+
+    List<List<VectorObservation>> relevantObservations = rescoreWithHMM(results, exemplarIDs, queryEdges, resultEdges, resultIDs);
+    // add only relevant edges and remove results that don't have any...
+    List<FL_PatternSearchResult> tempResults = new ArrayList<FL_PatternSearchResult>();
+    for (int i = 0; i < results.size(); i++) {
+      List<VectorObservation> observations = relevantObservations.get(i);
+      if (observations.isEmpty()) {
+        continue;
+      } else {
+        // replace links in each subgraph (subsequence) with aggregate links (but only ones in relevant observations)
+        List<Edge> relevantEdges = new ArrayList<Edge>();
+
+        for (VectorObservation observation : observations) {
+          relevantEdges.addAll(observation.getEdges());
+        }
+        FL_PatternSearchResult result = results.get(i);
+
+        // aggregate links across all states
+        List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, result, relevantEdges);
+        result.setLinks(linkMatchResults);
+
+        // aggregate links in individual states, e.g., [1], [2, 2], [3]
+        // group all edges from observations in current state (and next state(s) if same state)
+        int index = 0;
+        String currentState = observations.get(0).getState();
+        List<Edge> edges = new ArrayList<Edge>();
+        while (index < observations.size()) {
+          VectorObservation observation = observations.get(index);
+          if (observation.getState().equalsIgnoreCase(currentState)) {
+            // add more edges for current state
+            edges.addAll(observation.getEdges());
+          } else {
+            // save edges for last state
+            linkMatchResults = createAggregateLinks(example, result, edges);
+            ((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
+            ((PatternSearchResultWithState) result).getStates().add(currentState);
+
+            // update to new state
+            currentState = observation.getState();
+            edges.clear();
+            edges.addAll(observation.getEdges());
+          }
+          index++;
+        }
+
+        if (!edges.isEmpty()) {
+          // save last state
+          linkMatchResults = createAggregateLinks(example, result, edges);
+          ((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
+          ((PatternSearchResultWithState) result).getStates().add(currentState);
+        }
+
+        tempResults.add(result);
+      }
+    }
+    return tempResults;
+  }
+
+  private FL_PatternDescriptor getAptimaHardCoded(FL_PatternDescriptor example, int aptimaPrecomputed) {
+    // use first aptima result as exemplar
+    // query_0
+    if (aptimaPrecomputed == 0) {
+      example = AvroUtils.createExemplarQuery(Arrays.asList("505134", "137750", "146073", "28946", "11"));
+
+      try {
+        logger.warn("example : " + AvroUtils.encodeJSON(example));
+      } catch (Exception e) {
+        e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
+      }
+    } else if (aptimaPrecomputed == 1) {
+      // query_1
+      example = AvroUtils.createExemplarQuery(Arrays.asList("97409", "11"));
+    } else if (aptimaPrecomputed == 2) {
+      // query_2
+      example = AvroUtils.createExemplarQuery(Arrays.asList("11", "1598539", "988143"));
+
+      try {
+        logger.warn("example : " + AvroUtils.encodeJSON(example));
+      } catch (Exception e) {
+        e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
+      }
+    } else {
+      logger.warn("using unknown aptima query index = " + aptimaPrecomputed);
+    }
+    return example;
+  }
+
+  public void addRelevantEdges(FL_PatternSearchResult result, List<VectorObservation> observations) {
 //		FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
 //        FL_Link link = new FL_Link();
 //        link.setSource(source);
@@ -1369,7 +1406,222 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		List<String> exemplarIDs = getExemplarIDs(example);
     List<FL_EntityMatchDescriptor> entities1 = example.getEntities();
 
-    return getShortlist(entities1, exemplarIDs, max);
+   // return getShortlist(entities1, exemplarIDs, max);
+    return getShortlistFast(entities1,exemplarIDs,max);
+  }
+
+
+  private List<FL_PatternSearchResult> getShortlistFast(List<FL_EntityMatchDescriptor> entities1, List<String> exemplarIDs,
+                                                        long max) {
+    int k = (int) (max/1);
+    boolean skipSelf = SKIP_SELF_AS_NEIGHBOR;
+
+    long then = System.currentTimeMillis();
+    SortedSet<CandidateGraph> candidates = new TreeSet<CandidateGraph>();
+
+    String firstExemplar = exemplarIDs.iterator().next();
+    List<String> neighbors = getNearestNeighbors(firstExemplar, k, skipSelf);
+
+  //  candidates.add(new CandidateGraph(exemplarIDs, firstExemplar, k));
+
+    for (String node : neighbors) {
+      if (stot.containsKey(node)) {
+        candidates.add(new CandidateGraph(exemplarIDs, node, k));
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+     // logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+    }
+
+    for (int i = 1; i < exemplarIDs.size(); i++) {
+      SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
+      for (CandidateGraph candidateGraph : candidates) {
+        candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
+
+       /* if (!nextCandidates.isEmpty()) {
+          logger.debug("depth " + i +
+              " : " + nextCandidates.size() + " best " + nextCandidates.first() + " worst " + nextCandidates.last());
+        }*/
+      }
+
+      candidates = nextCandidates;
+ /* if (!candidates.isEmpty()) {
+        logger.debug("depth " + i +
+            " : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+      }*/
+    }
+
+    logger.debug("getShortlistFast : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+
+    List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
+    int count = 0;
+    CandidateGraph queryGraph = new CandidateGraph(exemplarIDs, firstExemplar, 10).makeDefault();
+    boolean found = false;
+    for (CandidateGraph graph : candidates) {
+      if (graph.equals(queryGraph)) { found = true; break; }
+    }
+    if (!found) candidates.add(queryGraph);
+
+    for (CandidateGraph graph : candidates) {
+      List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
+
+      List<String> nodes = graph.getNodes();
+      for (int i = 0; i < exemplarIDs.size(); i++) {
+        String similarID = nodes.get(i);
+        double similarity = getSimilarity(exemplarIDs.get(i), similarID);
+        String exemplarQueryID = entities1.get(i).getUid();
+        if (queryGraph.getScore() > ((float)exemplarIDs.size())-0.1) {
+          logger.debug("\t graph " + graph + " got " + similarID + " and " + exemplarIDs.get(i));
+        }
+        FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(exemplarQueryID, similarID, similarity);
+        if (entityMatchResult != null) {
+          entities.add(entityMatchResult);
+        }
+      }
+
+      // arithmetic mean
+      double score = getSimpleScore(entities);
+      boolean query = graph == queryGraph;
+      FL_PatternSearchResult result = makeResult(entities, score, query);
+      if (query) logger.debug("\n\n\n\n found query!!! " + result);
+      results.add(result);
+
+     /* count++;
+      if (count >= max+1) {
+        break;
+      }*/
+    }
+
+    long now = System.currentTimeMillis();
+    logger.debug("getShortlistFast took " + (now-then) + " millis to get " + results.size() + " candidates");
+
+    return results;
+  }
+
+  protected void logMemory() {
+    Runtime rt = Runtime.getRuntime();
+    long free = rt.freeMemory();
+    long used = rt.totalMemory() - free;
+    long max = rt.maxMemory();
+    logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
+  }
+
+
+  private class CandidateGraph implements Comparable<CandidateGraph> {
+    private static final int MAX_NEIGHBORS = 1000;
+    private final List<String> exemplars;
+    private List<String> nodes = new ArrayList<String>();
+    private float score;
+    int k;
+    CandidateGraph(CandidateGraph toCopy) {
+      exemplars = toCopy.exemplars;
+      nodes = new ArrayList<String>(toCopy.getNodes());
+      this.k = toCopy.k;
+      this.score = toCopy.score;
+    }
+
+    CandidateGraph(List<String> exemplars, String initial, int k) {
+      this.exemplars = exemplars;
+      addNode(initial);
+      this.k = k;
+    }
+    public CandidateGraph makeDefault() {
+      for (String exemplar : exemplars){
+        if (!nodes.contains(exemplar)) nodes.add(exemplar);
+      }
+      return this;
+    }
+    public boolean wouldBeConnected(String nodeid) {
+      boolean connected = false;
+      try {
+        for (String currentNode : nodes) {
+          connected = isPairConnected(currentNode, nodeid);
+          if (connected) break;
+        }
+      } catch (Exception e) {
+      }
+      return connected;
+    }
+/*    private List<CandidateGraph> makeNextGraphs() {
+      List<String> neighbors = getNearestNeighbors(nodes.get(nodes.size() - 1), k, SKIP_SELF_AS_NEIGHBOR);
+
+      List<CandidateGraph> nextHopGraphs = new ArrayList<CandidateGraph>();
+      for (String nextHopNode : neighbors) {
+        if (!nodes.contains(nextHopNode) && wouldBeConnected(nextHopNode) && validTargets.contains(nextHopNode)) {
+          CandidateGraph candidateGraph = new CandidateGraph(this);
+          candidateGraph.addNode(nextHopNode);
+          nextHopGraphs.add(candidateGraph);
+        }
+      }
+      return nextHopGraphs;
+    }*/
+
+    public void makeNextGraphs2(SortedSet<CandidateGraph> candidates, int maxSize) {
+      final String lastNodeInGraph = nodes.get(nodes.size() - 1);
+      Set<String> oneHopNeighbors = stot.get(lastNodeInGraph);
+      if (oneHopNeighbors == null) {
+        logger.error("huh? '" + lastNodeInGraph +
+            "' has no transactions?");
+        return;
+      }
+      List<String> sortedNeighbors = new ArrayList<String>(oneHopNeighbors);
+      Collections.sort(sortedNeighbors, new Comparator<String>() {
+        @Override
+        public int compare(String o1, String o2) {
+          double toFirst = getSimilarity(lastNodeInGraph, o1);
+          double toSecond = getSimilarity(lastNodeInGraph, o2);
+          return toFirst < toSecond ? +1 : toFirst > toSecond ? -1 : 0;
+        }
+      });
+
+      sortedNeighbors = sortedNeighbors.subList(0,Math.min(sortedNeighbors.size(),MAX_NEIGHBORS));
+
+      //logger.debug("this " + this + " found " + sortedNeighbors.size() + " neighbors of " + lastNodeInGraph);
+      for (String nextHopNode : sortedNeighbors) {
+        if (!nodes.contains(nextHopNode) && validTargets.contains(nextHopNode)) {    // no cycles!
+          CandidateGraph candidateGraph = new CandidateGraph(this);
+          candidateGraph.addNode(nextHopNode);
+          if (candidates.size() < maxSize || candidateGraph.getScore() > candidates.last().getScore()) {
+            candidates.add(candidateGraph);
+          }
+        }
+      }
+    }
+
+    private void addNode(String nodeid) {
+      String compareAgainst = exemplars.get(getNodes().size());
+      double similarity = getSimilarity(compareAgainst, nodeid);
+      score += similarity;
+      nodes.add(nodeid);
+    }
+
+    @Override
+    public int compareTo(CandidateGraph o) {
+      return o.getScore() < getScore() ? -1 : o.getScore() > getScore() ? +1 : 0;
+    }
+
+    public List<String> getNodes() {
+      return nodes;
+    }
+
+    public float getScore() {
+      return score;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof CandidateGraph) {
+        CandidateGraph o = (CandidateGraph) obj;
+        return nodes.equals(o.getNodes());
+      }
+      else return false;
+    }
+
+    public String toString() {
+      boolean isQuery = getNodes().equals(exemplars);
+       return (isQuery ? " QUERY " : "")+" nodes " + getNodes() + " score " + getScore();
+    }
   }
 
   /**
@@ -1443,22 +1695,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         continue;
       }
 
-      List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
-      for (int i = 0; i < indices.length; i++) {
-        String exemplarQueryID = entities1.get(i).getUid();
-
-        String exemplarID = exemplarIDs.get(i);
-        String similarID = idToNeighbors.get(exemplarID).get(indices[i]);
-        double similarity = getSimilarity(exemplarID, similarID);
-        FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(exemplarQueryID, similarID, similarity);
-        if (entityMatchResult != null) {
-          entities.add(entityMatchResult);
-        }
-      }
+      List<FL_EntityMatchResult> entities = getEntitiesFromIds(entities1, exemplarIDs, idToNeighbors, indices);
 
       // arithmetic mean
       double score = getSimpleScore(entities);
-      FL_PatternSearchResult result = makeResult(entities, score);
+      FL_PatternSearchResult result = makeResult(entities, score, false);
       results.add(result);
 
       count++;
@@ -1470,6 +1711,24 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     //logger.debug("numTries = " + numTries + " results " + results.size());
 
     return results;
+  }
+
+  private List<FL_EntityMatchResult> getEntitiesFromIds(List<FL_EntityMatchDescriptor> entities1,
+                                                        List<String> exemplarIDs,
+                                                        Map<String, List<String>> idToNeighbors, int[] indices) {
+    List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
+    for (int i = 0; i < indices.length; i++) {
+      String exemplarQueryID = entities1.get(i).getUid();
+
+      String exemplarID = exemplarIDs.get(i);
+      String similarID = idToNeighbors.get(exemplarID).get(indices[i]);
+      double similarity = getSimilarity(exemplarID, similarID);
+      FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(exemplarQueryID, similarID, similarity);
+      if (entityMatchResult != null) {
+        entities.add(entityMatchResult);
+      }
+    }
+    return entities;
   }
 
   public FL_EntityMatchResult makeEntityMatchResult(String queryID, String resultID, double score) {
@@ -1588,7 +1847,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 						// just finished reading nodes
 						// use score from first entity as group score (since all scores the same)
 						double score = entities.get(0).getScore();
-						FL_PatternSearchResult result = makeResult(entities, score);
+						FL_PatternSearchResult result = makeResult(entities, score, false);
 						results.add(result);
 					}
 					inNodeSection = false;
@@ -1705,45 +1964,30 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	/**
 	 * Rescores results by comparing result subgraph's transactions to query graph's transactions.
 	 */
-	private List<List<VectorObservation>> rescoreWithHMM(FL_PatternDescriptor query, List<FL_PatternSearchResult> results,
+	private List<List<VectorObservation>> rescoreWithHMM(List<FL_PatternSearchResult> results,
 			List<String> exemplarIDs, List<Edge> queryEdges, List<List<Edge>> resultEdges, List<List<String>> resultIDs) {
 		//
 		// get edges and features for query subgraph and result subgraphs
 		//
 
-		List<VectorObservation> queryObservations = createObservationVectors(queryEdges, exemplarIDs);
-		List<List<VectorObservation>> resultObservations = new ArrayList<List<VectorObservation>>();
-		for (int i = 0; i < resultEdges.size(); i++) {
-      if (!resultEdges.get(i).isEmpty()) {
-        List<VectorObservation> observationVectors = createObservationVectors(resultEdges.get(i), resultIDs.get(i));
-        resultObservations.add(observationVectors);
-      }
-      else {
-        List<VectorObservation> objects = Collections.emptyList();
-        resultObservations.add(objects);
-      }
-		}
+    logger.debug("rescoreWithHMM got " + results.size() + " initial results to rescore");
+
 
 		//
 		// normalize features
 		//
 
 		// pack features from query and results
-		int numDimensions = queryObservations.get(0).getValues().length;
+    List<VectorObservation> queryObservations = createObservationVectors(queryEdges, exemplarIDs);
 		int numSamples = queryObservations.size();
+    List<List<VectorObservation>> resultObservations = getResultObservations(resultEdges, resultIDs, exemplarIDs);
 		for (List<VectorObservation> observations : resultObservations) {
 			numSamples += observations.size();
 		}
-		double[][] rawFeatures = new double[numSamples][numDimensions];
-		int index = 0;
-		for (VectorObservation observation : queryObservations) {
-			rawFeatures[index++] = observation.getValues();
-		}
-		for (List<VectorObservation> observations : resultObservations) {
-			for (VectorObservation observation : observations) {
-				rawFeatures[index++] = observation.getValues();
-			}
-		}
+    int numDimensions = queryObservations.get(0).getValues().length;
+    logger.debug("query observations " + queryObservations.size() + " samples " + numSamples + " num dim " + numDimensions);
+    double[][] rawFeatures = getRawFeatures(resultObservations, queryObservations, numSamples, numDimensions);
+    int index;
 
 		// logger.debug("pre-normalized features");
 		// for (List<VectorObservation> observations : resultObservations) {
@@ -1753,20 +1997,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// }
 		// }
 
-		double lowerPercentile = 0.025;
-		double upperPercentile = 0.975;
-		FeatureNormalizer normalizer = new FeatureNormalizer(rawFeatures, lowerPercentile, upperPercentile);
-		double[][] stdFeatures = normalizer.normalizeFeatures(rawFeatures);
-
-		// replace NaN's with zeros?
-		double replacement = 0.0;
-		for (int i = 0; i < numSamples; i++) {
-			for (int j = 0; j < numDimensions; j++) {
-				if (Double.isNaN(stdFeatures[i][j])) {
-					stdFeatures[i][j] = replacement;
-				}
-			}
-		}
+    double[][] stdFeatures = getStandardFeatures(numSamples, numDimensions, rawFeatures);
 
 		// unpack features
 		index = 0;
@@ -1804,67 +2035,63 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 		// TODO: assign buckets to phases/states through query parameters or infer them?
 		// assumption: 1 phase per bucket?
-		int numPhases = queryObservations.size();
-		double selfLoop = 0.5;
-		double[][] A = new double[numPhases + 2][];
-		A[0] = new double[numPhases + 2];
-		A[0][1] = 1.0; // always go from q_0 to state 1
-		for (int i = 1; i <= numPhases; i++) {
-			A[i] = new double[numPhases + 2];
-			A[i][i] = selfLoop;
-			A[i][i + 1] = 1.0 - selfLoop;
-		}
-		A[numPhases + 1] = new double[numPhases + 2];
-		logger.debug("numPhases = " + numPhases);
-		logger.debug("A = " + Arrays.deepToString(A));
-
-		List<ObservationLikelihood<VectorObservation>> b = new ArrayList<ObservationLikelihood<VectorObservation>>();
-		for (int i = 0; i < numPhases; i++) {
-			// b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), HMM_KDE_BANDWIDTH));
-			b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), 0.75));
-		}
-
-		Hmm<VectorObservation> hmm = new Hmm<VectorObservation>(A, b);
+    Hmm<VectorObservation> hmm = makeHMM(queryObservations);
 
 		//
 		// score result subgraphs
 		//
 
-		logger.debug("scoring query");
+		//logger.debug("scoring query");
 		List<StateSequence> sequences = hmm.decodeTopKLog(queryObservations, 3);
 		StateSequence sequence = sequences.get(0);
 		double queryScore = sequence.getScore();
 		logger.debug("query: raw score = " + queryScore + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
 
-		logger.debug("scoring subgraphs");
+		//logger.debug("scoring subgraphs");
 		// return the relevant observations given optimal subsequences
 		List<List<VectorObservation>> relevantObservations = new ArrayList<List<VectorObservation>>();
 
-		for (int i = 0; i < results.size(); i++) {
+    double bestSoFar = 0;
+    int skipped = 0;
+    for (int i = 0; i < results.size(); i++) {
       if (resultObservations.get(i).isEmpty()) {
-        logger.debug("not enough data for result i = " + i + ": num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
+        if (exemplarIDs.equals(resultIDs.get(i)))
+
+          logger.debug("NO OBSERVATIONS for result i = " + i + "(" + resultIDs.get(i) +
+              "): num edges = " + resultEdges.get(i).size());
+
+        results.get(i).setScore(Double.NEGATIVE_INFINITY);
+        relevantObservations.add(new ArrayList<VectorObservation>());
+        skipped++;
+        continue;
+      }
+      sequences = hmm.decodeTopKLog(resultObservations.get(i), 3);
+      if (sequences.isEmpty()) {
+        if (exemplarIDs.equals(resultIDs.get(i)))
+          logger.warn("----> not enough data for result i = " + i + " (" + resultIDs.get(i) +
+              "): num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
+      /*  else {
+          logger.debug("not enough data for result i = " + i + " (" + resultIDs.get(i) +
+              "): num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
+        }*/
         results.get(i).setScore(Double.NEGATIVE_INFINITY);
         relevantObservations.add(new ArrayList<VectorObservation>());
         continue;
       }
-			sequences = hmm.decodeTopKLog(resultObservations.get(i), 3);
-			if (sequences.isEmpty()) {
-				logger.debug("not enough data for result i = " + i + ": num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
-				results.get(i).setScore(Double.NEGATIVE_INFINITY);
-				relevantObservations.add(new ArrayList<VectorObservation>());
-				continue;
-			}
-			sequence = sequences.get(0);
-			double score = sequence.getScore();
-			logger.debug("ids = " + resultIDs.get(i) + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
-			logger.debug("other scores:");
-			for (StateSequence other : sequences.subList(1, sequences.size())) {
-				logger.debug("   raw score = " + other.getScore() + "; start index = " + other.getStartIndex() + "; states = " + other.getStates());
-			}
-			// NOTE: this also penalizes scores that are "better" than the queryScore
-			double distance = Math.abs(score - queryScore);
-			double similarity = 1.0 / (1.0 + HMM_SCALE_DISTANCE * distance);
-			logger.debug("similarity = " + similarity);
+      sequence = sequences.get(0);
+      double score = sequence.getScore();
+      logger.debug("ids = " + resultIDs.get(i) + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
+      //logger.debug("other scores:");
+      for (StateSequence other : sequences.subList(1, sequences.size())) {
+        logger.debug("   raw score = " + other.getScore() + "; start index = " + other.getStartIndex() + "; states = " + other.getStates());
+      }
+      // NOTE: this also penalizes scores that are "better" than the queryScore
+      double distance = Math.abs(score - queryScore);
+      double similarity = 1.0 / (1.0 + HMM_SCALE_DISTANCE * distance);
+      if (similarity > bestSoFar) {
+        bestSoFar = similarity;
+			  logger.debug("similarity = " + similarity);
+      }
 			results.get(i).setScore(similarity);
 			// TODO: pack states into VectorObservation objects (so caller has access to associations)
 			int start = sequence.getStartIndex();
@@ -1877,11 +2104,93 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			relevantObservations.add(temp);
 		}
 
+    if (skipped > 0)logger.debug("rescoreWithHMM skipped " + skipped + " num observations " + relevantObservations.size());
+
 		return relevantObservations;
 	}
 
-	/**
-	 * Sorts scores and packages into FL_PatternSearchResults.
+  private double[][] getStandardFeatures(int numSamples, int numDimensions, double[][] rawFeatures) {
+    double lowerPercentile = 0.025;
+    double upperPercentile = 0.975;
+    FeatureNormalizer normalizer = new FeatureNormalizer(rawFeatures, lowerPercentile, upperPercentile);
+    double[][] stdFeatures = normalizer.normalizeFeatures(rawFeatures);
+
+    // replace NaN's with zeros?
+    double replacement = 0.0;
+    for (int i = 0; i < numSamples; i++) {
+      for (int j = 0; j < numDimensions; j++) {
+        if (Double.isNaN(stdFeatures[i][j])) {
+          stdFeatures[i][j] = replacement;
+        }
+      }
+    }
+    return stdFeatures;
+  }
+
+  private double[][] getRawFeatures(List<List<VectorObservation>> resultObservations, List<VectorObservation> queryObservations, int numSamples, int numDimensions) {
+    double[][] rawFeatures = new double[numSamples][numDimensions];
+    int index = 0;
+    for (VectorObservation observation : queryObservations) {
+      rawFeatures[index++] = observation.getValues();
+    }
+    for (List<VectorObservation> observations : resultObservations) {
+      for (VectorObservation observation : observations) {
+        rawFeatures[index++] = observation.getValues();
+      }
+    }
+    return rawFeatures;
+  }
+
+  private Hmm<VectorObservation> makeHMM(List<VectorObservation> queryObservations) {
+    int numPhases = queryObservations.size();
+    double selfLoop = 0.5;
+    double[][] A = new double[numPhases + 2][];
+    A[0] = new double[numPhases + 2];
+    A[0][1] = 1.0; // always go from q_0 to state 1
+    for (int i = 1; i <= numPhases; i++) {
+      A[i] = new double[numPhases + 2];
+      A[i][i] = selfLoop;
+      A[i][i + 1] = 1.0 - selfLoop;
+    }
+    A[numPhases + 1] = new double[numPhases + 2];
+    logger.debug("numPhases = " + numPhases);
+    logger.debug("A = " + Arrays.deepToString(A));
+
+    List<ObservationLikelihood<VectorObservation>> b = new ArrayList<ObservationLikelihood<VectorObservation>>();
+    for (int i = 0; i < numPhases; i++) {
+      // b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), HMM_KDE_BANDWIDTH));
+      b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), 0.75));
+    }
+
+    return new Hmm<VectorObservation>(A, b);
+  }
+
+  /**
+   * @see #rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
+   * @param resultEdges
+   * @param resultIDs
+   * @param exemplarIDs
+   * @return
+   */
+  private List<List<VectorObservation>> getResultObservations(List<List<Edge>> resultEdges, List<List<String>> resultIDs, List<String> exemplarIDs) {
+    List<List<VectorObservation>> resultObservations = new ArrayList<List<VectorObservation>>();
+    for (int i = 0; i < resultEdges.size(); i++) {
+      if (!resultEdges.get(i).isEmpty()) {
+        List<VectorObservation> observationVectors = createObservationVectors(resultEdges.get(i), resultIDs.get(i));
+        resultObservations.add(observationVectors);
+         if (resultIDs.get(i).equals(exemplarIDs)) {
+           logger.debug("\n\n result observations for exemplar " + observationVectors.size() + " at " + i);
+         }
+      } else {
+        List<VectorObservation> objects = Collections.emptyList();
+        resultObservations.add(objects);
+      }
+    }
+    return resultObservations;
+  }
+
+  /**
+   * Sorts scores and packages into FL_PatternSearchResults.
 	 */
 	private FL_PatternSearchResults makePatternSearchResults(List<FL_PatternSearchResult> results, long max) {
 		//logger.debug("ENTER makePatternSearchResults()");
@@ -1914,9 +2223,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return sum / entities.size();
 	}
 
-	private FL_PatternSearchResult makeResult(List<FL_EntityMatchResult> entities, double score) {
+	private FL_PatternSearchResult makeResult(List<FL_EntityMatchResult> entities, double score, boolean isQuery) {
 		// FL_PatternSearchResult result = new FL_PatternSearchResult();
-		FL_PatternSearchResult result = new PatternSearchResultWithState();
+		FL_PatternSearchResult result = new PatternSearchResultWithState(isQuery);
 		result.setEntities(entities);
 		List<FL_LinkMatchResult> links = getLinks(entities);
 		result.setLinks(links);

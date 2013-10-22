@@ -37,7 +37,7 @@ public class H2Connection implements DBConnection {
     this(".", dbName, 50000, 8,50000,createDB);
   }
   public H2Connection(String configDir, String dbName) {
-    this(configDir, dbName, 50000, 8,50000,false);
+    this(configDir, dbName, 50000, 8,5000000,false);
   }
     /**
      * @param configDir
