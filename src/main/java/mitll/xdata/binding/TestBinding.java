@@ -460,7 +460,7 @@ public class TestBinding extends Binding {
 		endTime = Long.MAX_VALUE;
 		hmmScoring = false;
 		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "a" }));
-		result = binding.searchByExample(descriptor, null, 0, 100, -1, hmmScoring, startTime, endTime);
+		result = binding.searchByExample(descriptor, null, 0, 100, hmmScoring, startTime, endTime);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 
@@ -471,7 +471,7 @@ public class TestBinding extends Binding {
 		endTime = Long.MAX_VALUE;
 		hmmScoring = false;
 		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "a", "b" }));
-		result = binding.searchByExample(descriptor, null, 0, 100, -1, hmmScoring, startTime, endTime);
+		result = binding.searchByExample(descriptor, null, 0, 100, hmmScoring, startTime, endTime);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 
@@ -484,7 +484,7 @@ public class TestBinding extends Binding {
 		endTime = sdf.parse("2013-11-01 00:00").getTime();
 		hmmScoring = false;
 		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "b", "a" }));
-		result = binding.searchByExample(descriptor, null, 0, 100, -1, hmmScoring, startTime, endTime);
+		result = binding.searchByExample(descriptor, null, 0, 100, hmmScoring, startTime, endTime);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 
@@ -497,7 +497,7 @@ public class TestBinding extends Binding {
 		endTime = sdf.parse("2013-11-01 00:00").getTime();
 		hmmScoring = true;
 		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "b", "a", "c", "d" }));
-		result = binding.searchByExample(descriptor, null, 0, 100, -1, hmmScoring, startTime, endTime);
+		result = binding.searchByExample(descriptor, null, 0, 100, hmmScoring, startTime, endTime);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 		

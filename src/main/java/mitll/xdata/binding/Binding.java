@@ -905,7 +905,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 */
 	public Object searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max) {
 		// original service
-		return searchByExample(example, ignoredService, start, max, -1, false, Long.MIN_VALUE, Long.MAX_VALUE);
+		return searchByExample(example, ignoredService, start, max, false, Long.MIN_VALUE, Long.MAX_VALUE);
 	}
 
   public static final int MAX_TEXT_LENGTH = 15;
@@ -1094,24 +1094,22 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
   public FL_PatternSearchResults searchByExample(List<String> ids,long start, long max, long startTime, long endTime) {
     FL_PatternDescriptor descriptor = AvroUtils.createExemplarQuery(ids);
-    return searchByExample(descriptor,"",start,max,-1,true,startTime,endTime);
+    return searchByExample(descriptor,"",start,max, true,startTime,endTime);
   }
 
 	/**
-	 * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long,
-	 *      int,boolean)
+	 * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean)
 	 * @param example
 	 * @param ignoredService
 	 * @param start
 	 * @param max
-	 * @param aptimaPrecomputed
 	 * @param rescoreWithHMM
 	 * @return
 	 */
 	public FL_PatternSearchResults searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max,
-			int aptimaPrecomputed, boolean rescoreWithHMM, long startTime, long endTime) {
+                                                 boolean rescoreWithHMM, long startTime, long endTime) {
 		long then = System.currentTimeMillis();
-		logger.debug("ENTER searchByExample() got " + example + " aptima " + aptimaPrecomputed + " rescore " + rescoreWithHMM);
+		logger.debug("ENTER searchByExample() got " + example + " rescore " + rescoreWithHMM);
 
 		if (max == 0) {
 			logger.warn("max given as 0, using 10 instead...");
@@ -1120,24 +1118,17 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 		if (start > max) { start = max - 1; }
 
-		if (example != null && example.getEntities() != null && example.getEntities().size() < 1
-				&& aptimaPrecomputed == -1) {
+		if (example != null && example.getEntities() != null && example.getEntities().size() < 1) {
 			return null;
 		}
-
-		//logger.debug("got " + example + " aptima " + aptimaPrecomputed + " rescore " + rescoreWithHMM);
 
 		// (1) extract node ids from descriptors
 		// (2) shortlist (find promising connected subgraphs)
 		// (3) score based on transactions
 
 		List<FL_PatternSearchResult> results;
-		if (aptimaPrecomputed >= 0) {
-			results = getShortlistAptima(aptimaPrecomputed);
-      example = getAptimaHardCoded(example, aptimaPrecomputed);
-    } else {
 			results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
-		}
+
 		logger.debug("shortlist size = " + results.size());
 
 		// get edges (to use in a couple places)
@@ -1212,7 +1203,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
   /**
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, int, boolean, long, long)
+   * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
    * @param example
    * @param results
    * @param exemplarIDs
@@ -1291,35 +1282,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     return tempResults;
   }
 
-  private FL_PatternDescriptor getAptimaHardCoded(FL_PatternDescriptor example, int aptimaPrecomputed) {
-    // use first aptima result as exemplar
-    // query_0
-    if (aptimaPrecomputed == 0) {
-      example = AvroUtils.createExemplarQuery(Arrays.asList("505134", "137750", "146073", "28946", "11"));
-
-      try {
-        logger.warn("example : " + AvroUtils.encodeJSON(example));
-      } catch (Exception e) {
-        e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
-      }
-    } else if (aptimaPrecomputed == 1) {
-      // query_1
-      example = AvroUtils.createExemplarQuery(Arrays.asList("97409", "11"));
-    } else if (aptimaPrecomputed == 2) {
-      // query_2
-      example = AvroUtils.createExemplarQuery(Arrays.asList("11", "1598539", "988143"));
-
-      try {
-        logger.warn("example : " + AvroUtils.encodeJSON(example));
-      } catch (Exception e) {
-        e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
-      }
-    } else {
-      logger.warn("using unknown aptima query index = " + aptimaPrecomputed);
-    }
-    return example;
-  }
-
   public void addRelevantEdges(FL_PatternSearchResult result, List<VectorObservation> observations) {
 //		FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
 //        FL_Link link = new FL_Link();
@@ -1396,7 +1358,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * Retrieves promising (somewhat) connected subgraphs based on node similarity.
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, int, boolean, long, long)
+   * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
 	 */
 	private List<FL_PatternSearchResult> getShortlist(FL_PatternDescriptor example, long max) {
 		// (2a) retrieve list of nodes for each query node ranked by similarity
@@ -1765,102 +1727,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// add field after last separator
 		fields.add(s.substring(i, s.length()));
 		return fields;
-	}
-
-	/**
-	 * Returns short list of search results precomputed with Aptima's graph search.
-	 */
-	protected List<FL_PatternSearchResult> getShortlistAptima(int queryIndex) {
-		List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
-
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 0 505134 4.182397844047462E-4
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 1 137750 4.182397844047462E-4
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 2 146073 4.182397844047462E-4
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 3 28946 4.182397844047462E-4
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 4 11 4.182397844047462E-4
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 3 3 1.0 IN
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 2 2 14.13451742 IN
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 1 1 10.02517994 IN
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 4 4 1.0 IN
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 4 4 10.02 IN
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 4 4 14.13 IN
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 3 3 1.0 OUT
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 2 2 14.13 OUT
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 1 1 10.02 OUT
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 0 0 10.02517994 OUT
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 0 0 14.13451742 OUT
-		// 88440850-2cfa-4278-b6a1-b82bffce779e 0 0 1.0 OUT
-		// d11d6233-f878-4707-a281-78f632aecf13 0 11 0.15625374803467035
-		// d11d6233-f878-4707-a281-78f632aecf13 1 131633 0.15625374803467035
-		// d11d6233-f878-4707-a281-78f632aecf13 2 10903 0.15625374803467035
-		// d11d6233-f878-4707-a281-78f632aecf13 3 115356 0.15625374803467035
-		// d11d6233-f878-4707-a281-78f632aecf13 4 12564 0.15625374803467035
-		// d11d6233-f878-4707-a281-78f632aecf13 3 3 27.335 IN
-		// d11d6233-f878-4707-a281-78f632aecf13 2 2 125.6267 IN
-		// d11d6233-f878-4707-a281-78f632aecf13 1 1 25.34 IN
-		// d11d6233-f878-4707-a281-78f632aecf13 4 4 20.0 IN
-		// d11d6233-f878-4707-a281-78f632aecf13 4 4 25.3 IN
-		// d11d6233-f878-4707-a281-78f632aecf13 4 4 125.5 IN
-		// d11d6233-f878-4707-a281-78f632aecf13 3 3 20.0 OUT
-		// d11d6233-f878-4707-a281-78f632aecf13 2 2 125.5 OUT
-		// d11d6233-f878-4707-a281-78f632aecf13 1 1 25.3 OUT
-		// d11d6233-f878-4707-a281-78f632aecf13 0 0 25.34 OUT
-		// d11d6233-f878-4707-a281-78f632aecf13 0 0 125.6267 OUT
-		// d11d6233-f878-4707-a281-78f632aecf13 0 0 27.335 OUT
-
-		InputStream inputStream = this.getClass().getResourceAsStream("/aptima/query_" + queryIndex + ".txt");
-		if (inputStream == null) {
-			logger.warn("File doesn't exist in classpath: /aptima/query_" + queryIndex + ".txt");
-			return results;
-		}
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
-			String line = null;
-			boolean inNodeSection = false;
-			List<FL_EntityMatchResult> entities = null;
-			while ((line = br.readLine()) != null) {
-				line = line.trim();
-				if (line.length() == 0) {
-					continue;
-				}
-				List<String> fields = Binding.split(line, "\t");
-				if (fields.size() == 4) {
-					// node assignments
-					if (!inNodeSection) {
-						// start new search result
-						entities = new ArrayList<FL_EntityMatchResult>();
-					}
-					inNodeSection = true;
-					// add node to search result
-					// 88440850-2cfa-4278-b6a1-b82bffce779e 0 505134 4.182397844047462E-4
-					String queryID = fields.get(1);
-					String resultID = fields.get(2);
-					double score = Double.parseDouble(fields.get(3));
-					// flip score so 1 is better?
-					score = 1.0 - score;
-					// NOTE: adding "E" to match how AvroUtils.createExemplarQuery makes query default UIDs
-					FL_EntityMatchResult entityMatchResult = makeEntityMatchResult("E" + queryID, resultID, score);
-					entities.add(entityMatchResult);
-				} else if (fields.size() == 5) {
-					// edges
-					if (inNodeSection) {
-						// just finished reading nodes
-						// use score from first entity as group score (since all scores the same)
-						double score = entities.get(0).getScore();
-						FL_PatternSearchResult result = makeResult(entities, score, false);
-						results.add(result);
-					}
-					inNodeSection = false;
-				}
-			}
-			br.close();
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return results;
 	}
 
 	/**

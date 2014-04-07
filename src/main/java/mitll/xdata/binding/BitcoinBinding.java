@@ -34,7 +34,6 @@ import java.util.Set;
 
 import mitll.xdata.AvroUtils;
 import mitll.xdata.NodeSimilaritySearch;
-import mitll.xdata.binding.Binding.Edge;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.hmm.VectorObservation;
@@ -643,7 +642,7 @@ public class BitcoinBinding extends Binding {
 	}
 
     /**
-     * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, int, boolean)
+     * @see #searchByExample
      * @param example
      * @param result
      * @param edges
@@ -909,7 +908,6 @@ public class BitcoinBinding extends Binding {
         // query_2
         descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "11", "1598539", "988143" }));
 
-        int aptimaQueryIndex = 0;
         // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "505134", "137750", "146073",
         // "28946",
         // "11" }));
@@ -917,7 +915,7 @@ public class BitcoinBinding extends Binding {
         boolean hmmScoring = true;
         // use aptima precomputed results
         logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-        result = binding.searchByExample(descriptor, null, 0, 100, aptimaQueryIndex, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE);
+        result = binding.searchByExample(descriptor, null, 0, 100, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE);
         // use LL shortlisting
         // result = binding.searchByExample(descriptor, null, 0, 10, -1, hmmScoring);
         AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);

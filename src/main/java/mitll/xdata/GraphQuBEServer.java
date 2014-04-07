@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import mitll.xdata.binding.Binding;
-import mitll.xdata.binding.KivaBinding;
 import mitll.xdata.viz.SVGGraph;
 
 import org.apache.avro.AvroRemoteException;
@@ -202,25 +201,10 @@ public class GraphQuBEServer {
                 String maxParameter = request.queryParams("max");
                 String svg = request.queryParams("svg");
                 String hmm = request.queryParams("hmm");
-                String aptimaQueryIndexParam = request.queryParams("aptimaQueryIndex");
                 String startTimeParameter = request.queryParams("startTime");
                 String endTimeParameter = request.queryParams("endTime");
 
                 FL_PatternDescriptor example = null;
-                if (aptimaQueryIndexParam == null) {
-                    if (exampleParameter != null && exampleParameter.trim().length() > 0) {
-                        try {
-                            example = (FL_PatternDescriptor) AvroUtils.decodeJSON(
-                                    FL_PatternDescriptor.getClassSchema(), exampleParameter);
-                        } catch (Exception e) {
-                            response.status(400);
-                            return getBadParamResponse(exampleParameter, e);
-                        }
-                    } else {
-                        response.status(400);
-                        return "Bad parameter: example = [" + exampleParameter + "]";
-                    }
-                }
 
                 long start = 0;
                 if (startParameter != null && startParameter.trim().length() > 0) {
@@ -242,14 +226,7 @@ public class GraphQuBEServer {
                     }
                 }
 
-                int aptimaQueryIndex = -1;
-                if (aptimaQueryIndexParam != null) {
-                    try {
-                        aptimaQueryIndex = Integer.parseInt(aptimaQueryIndexParam);
-                    } catch (NumberFormatException e) {
-                        logger.error("couldn't parse " + aptimaQueryIndexParam, e);
-                    }
-                }
+
 
                 long startTime = Long.MIN_VALUE;
                 if (startTimeParameter != null && startTimeParameter.trim().length() > 0) {
@@ -272,8 +249,8 @@ public class GraphQuBEServer {
                 }
 
                 try {
-                    Object result = patternSearch.searchByExample(example, service, start, max, aptimaQueryIndex,
-                            hmm != null, startTime, endTime);
+                    Object result = patternSearch.searchByExample(example, service, start, max,
+                        hmm != null, startTime, endTime);
                     String json = null;
                     if (result instanceof FL_PatternSearchResults) {
                         try {

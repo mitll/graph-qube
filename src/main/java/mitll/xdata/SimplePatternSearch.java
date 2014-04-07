@@ -24,14 +24,8 @@ import influent.idl.FL_PatternSearch;
 import influent.idl.FL_PatternSearchResult;
 import influent.idl.FL_PatternSearchResults;
 import influent.idl.FL_Property;
-import influent.idl.FL_PropertyTag;
-import influent.idl.FL_PropertyType;
 import influent.idl.FL_Service;
-import influent.idl.FL_SingletonRange;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +44,7 @@ public class SimplePatternSearch implements FL_PatternSearch {
   private static Logger logger = Logger.getLogger(SimplePatternSearch.class);
   private static final boolean USE_H2_KIVA = false;
 
-    private Connection connection;
+  //  private Connection connection;
     private KivaBinding kivaBinding = null;
   private BitcoinBinding bitcoinBinding = null;
   private TestBinding testBinding = null;
@@ -60,27 +54,27 @@ public class SimplePatternSearch implements FL_PatternSearch {
      * @throws Exception
      * @deprecated unused currently
      */
-    private SimplePatternSearch(String database, boolean useMysql) throws Exception {
+/*    private SimplePatternSearch(String database, boolean useMysql) throws Exception {
         DBConnection mysqlConnection = useMysql ? new MysqlConnection(database) : new H2Connection("kiva");
         connection = mysqlConnection.getConnection();
         kivaBinding = new KivaBinding(mysqlConnection);
-    }
+    }*/
 
   /**
    *
-   * @param database
-   * @param username
-   * @param password
+   * @paramx database
+   * @paramx username
+   * @paramx password
    * @throws Exception
    * @deprecated unused currently
    */
-  private SimplePatternSearch(String database, String username, String password) throws Exception {
+/*  private SimplePatternSearch(String database, String username, String password) throws Exception {
         MysqlConnection mysqlConnection = new MysqlConnection(database, username, password);
         if (mysqlConnection.isValid()) {
             connection = mysqlConnection.getConnection();
         }
         kivaBinding = new KivaBinding(mysqlConnection);
-    }
+    }*/
 
   public SimplePatternSearch() {}
 
@@ -176,16 +170,16 @@ public class SimplePatternSearch implements FL_PatternSearch {
     public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
             FL_BoundedRange dateRange) throws AvroRemoteException {
         // TODO : support dateRange
-        return searchByExample(example, service, start, max, -1, false);
+        return searchByExample(example, service, start, max, false);
     }
 
     public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-            int aptimaQueryIndex, boolean hmm) throws AvroRemoteException {
-    	return searchByExample(example, service, start, max, aptimaQueryIndex, hmm, Long.MIN_VALUE, Long.MAX_VALUE);
+                                  boolean hmm) throws AvroRemoteException {
+    	return searchByExample(example, service, start, max, hmm, Long.MIN_VALUE, Long.MAX_VALUE);
     }
 
     public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-            int aptimaQueryIndex, boolean hmm, long startTime, long endTime) throws AvroRemoteException {
+                                  boolean hmm, long startTime, long endTime) throws AvroRemoteException {
         // TODO : support dateRange
 
         // returns FL_Future or FL_PatternSearchResults
@@ -194,8 +188,8 @@ public class SimplePatternSearch implements FL_PatternSearch {
         Binding binding = getBinding(example);
 
         if (binding != null) {
-            logger.debug("search : " + example + " : " + aptimaQueryIndex + " hmm " + hmm + " binding " + binding);
-            return binding.searchByExample(example, service, start, max, aptimaQueryIndex, hmm, startTime, endTime);
+            logger.debug("search : " + example + " hmm " + hmm + " binding " + binding);
+            return binding.searchByExample(example, service, start, max, hmm, startTime, endTime);
         } else {
             logger.warn("no binding");
         }
@@ -268,83 +262,6 @@ public class SimplePatternSearch implements FL_PatternSearch {
     public List<FL_Service> getServices() throws AvroRemoteException {
         // TODO Auto-generated method stub
         return null;
-    }
-
-    /**
-     * @param entityID
-     *            internal database id
-     * @return
-     * @throws Exception
-     */
-    public FL_Entity retrieveEntity_UNUSED(int entityID) throws Exception {
-        // retrieve guid, name, and type
-        String sql = "";
-        sql += "select guid, name, type from entity where id = ?";
-
-        PreparedStatement statement = connection.prepareStatement(sql);
-        statement.setInt(1, entityID);
-        ResultSet rs = statement.executeQuery();
-
-        FL_Entity entity = new FL_Entity();
-        entity.setProperties(new ArrayList<FL_Property>());
-        entity.setTags(new ArrayList<FL_EntityTag>());
-
-        if (rs.next()) {
-            entity.setUid(rs.getString(1));
-
-            // default entity attributes that are currently in the entity table (vs auxiliary attribute tables)
-            entity.getProperties().add(createProperty("name", rs.getString(2), FL_PropertyType.STRING));
-            entity.getProperties().add(createProperty("type", rs.getString(3), FL_PropertyType.STRING));
-        }
-        rs.close();
-
-        // add auxiliary attributes
-        entity.getProperties().addAll(retrieveEntityAttributes(entityID, "string", FL_PropertyType.STRING));
-        entity.getProperties().addAll(retrieveEntityAttributes(entityID, "int", FL_PropertyType.LONG));
-        entity.getProperties().addAll(retrieveEntityAttributes(entityID, "double", FL_PropertyType.DOUBLE));
-        entity.getProperties().addAll(retrieveEntityAttributes(entityID, "boolean", FL_PropertyType.BOOLEAN));
-        entity.getProperties().addAll(retrieveEntityAttributes(entityID, "timestamp", FL_PropertyType.DATE));
-
-        return entity;
-    }
-
-    /**
-     * @param entityID
-     *            internal database id
-     * @param attributeType
-     *            this corresponds to entity_attribute_? tables in database schema
-     * @param propertyType
-     * @return
-     * @throws Exception
-     */
-    public List<FL_Property> retrieveEntityAttributes(int entityID, String attributeType, FL_PropertyType propertyType)
-            throws Exception {
-        List<FL_Property> properties = new ArrayList<FL_Property>();
-        String sql = "select key, value from entity_attribute_" + attributeType + " where entity_id = ?";
-        PreparedStatement statement = connection.prepareStatement(sql);
-        statement.setInt(1, entityID);
-        ResultSet rs = statement.executeQuery();
-        while (rs.next()) {
-            String key = rs.getString(1);
-            Object value = rs.getObject(2);
-            properties.add(createProperty(key, value, propertyType));
-        }
-        rs.close();
-        return properties;
-    }
-
-    public FL_Property createProperty(String key, Object value, FL_PropertyType type) {
-        // TODO: add support for FL_PropertyTag
-        FL_Property property = new FL_Property();
-        property.setKey(key);
-        property.setFriendlyText(key);
-        if (type == null) {
-            logger.warn("type is null");
-        }
-        logger.debug("value = " + value + ", type = " + type);
-        property.setRange(new FL_SingletonRange(value, type));
-        property.setTags(new ArrayList<FL_PropertyTag>());
-        return property;
     }
 
     @Override
