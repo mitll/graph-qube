@@ -9,7 +9,7 @@ import java.util.*;
 
 import org.apache.log4j.Logger;
 
-import mitll.xdata.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import net.sf.javaml.core.kdtree.KDTree;
 
 public class NodeSimilaritySearch {

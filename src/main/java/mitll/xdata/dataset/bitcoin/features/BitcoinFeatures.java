@@ -1,4 +1,4 @@
-package mitll.xdata.features;
+package mitll.xdata.dataset.bitcoin.features;
 
 import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D;
 import mitll.xdata.db.DBConnection;
@@ -56,10 +56,12 @@ public class BitcoinFeatures {
   private final PERIOD period = PERIOD.DAY; // bin by day for now
   private static final Logger logger = Logger.getLogger(BitcoinFeatures.class);
 
+/*
   private long getTimeForDay(Calendar calendar, String yyyyMMdd) {
     getDay(calendar, yyyyMMdd);
     return calendar.getTimeInMillis();
   }
+*/
 
   /**
    *   # normalize features

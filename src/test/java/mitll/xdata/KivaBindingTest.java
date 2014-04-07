@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import mitll.xdata.binding.KivaBinding;
+import mitll.xdata.dataset.kiva.binding.KivaBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.MysqlConnection;
 

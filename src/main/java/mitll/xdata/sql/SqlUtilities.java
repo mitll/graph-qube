@@ -28,7 +28,7 @@ public class SqlUtilities {
   }
 
   /**
-   * @see mitll.xdata.binding.Binding#populateTableToColumns(mitll.xdata.db.DBConnection, java.util.Collection)
+   * @see mitll.xdata.binding.Binding#populateTableToColumns
    * @param table
    * @param connection
    * @param dbType

@@ -19,11 +19,6 @@ import influent.idl.FL_SearchResult;
 import influent.idl.FL_SearchResults;
 import influent.idl.FL_SingletonRange;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,6 +27,7 @@ import java.util.*;
 
 import mitll.xdata.AvroUtils;
 import mitll.xdata.PrioritizedCartesianProduct;
+import mitll.xdata.dataset.kiva.binding.KivaBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.hmm.Hmm;
 import mitll.xdata.hmm.KernelDensityLikelihood;
@@ -73,10 +69,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	private static final boolean LIMIT = false;
 	protected Map<FL_PropertyTag, List<String>> tagToColumn = new HashMap<FL_PropertyTag, List<String>>();
-	Map<String, String> prefixToTable = new HashMap<String, String>();
-	Map<String, Map<String, KivaBinding.ForeignLink>> sourceToTargetToLinkTable = new HashMap<String, Map<String, KivaBinding.ForeignLink>>();
+  protected Map<String, String> prefixToTable = new HashMap<String, String>();
+  protected Map<String, Map<String, KivaBinding.ForeignLink>> sourceToTargetToLinkTable = new HashMap<String, Map<String, KivaBinding.ForeignLink>>();
 	// Map<String, ForeignLink> tableToLinkTable = new HashMap<String, ForeignLink>();
-	Map<String, String> tableToDisplay = new HashMap<String, String>();
+  protected Map<String, String> tableToDisplay = new HashMap<String, String>();
 	private boolean showSQL = false;
 	private boolean showResults = false;
   protected final Map<String, Set<String>> stot = new HashMap<String, Set<String>>();
@@ -510,7 +506,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	/**
 	 * Assume for the moment that you can either ask for an entity by id or by some set of properties
 	 *
-	 * @see mitll.xdata.binding.KivaBinding#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
+	 * @see mitll.xdata.dataset.kiva.binding.KivaBinding#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
 	 * @param properties
 	 * @param max
 	 * @return
@@ -536,7 +532,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	/**
 	 * Assume for the moment that you can either ask for an entity by id or by some set of properties
 	 *
-	 * @seex mitll.xdata.binding.KivaBinding#searchByExample_ORIG(influent.idl.FL_PatternDescriptor, String, long, long)
+	 * @seex mitll.xdata.dataset.kiva.binding.KivaBinding#searchByExample_ORIG(influent.idl.FL_PatternDescriptor, String, long, long)
 	 * @param descriptor
 	 * @param properties
 	 * @param max
@@ -813,7 +809,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param limit
 	 * @return
 	 */
-	protected ResultInfo getOrEntities(String table, Collection<Triple> triples, long limit) {
+	private ResultInfo getOrEntities(String table, Collection<Triple> triples, long limit) {
 		return getEntities(table, triples, Collections.EMPTY_LIST, limit);
 	}
 
@@ -824,9 +820,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param table
 	 * @param limit
 	 * @return
-	 * @see KivaBinding#getBorrowersForLoan(String)
 	 */
-	protected ResultInfo getEntities(String table, Collection<Triple> orTriples, Collection<Triple> andTriples,
+  private ResultInfo getEntities(String table, Collection<Triple> orTriples, Collection<Triple> andTriples,
 			long limit) {
 		try {
 			String constraint = "";
@@ -1126,6 +1121,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// (2) shortlist (find promising connected subgraphs)
 		// (3) score based on transactions
 
+    logger.debug("found "+example);
+    logger.debug("found "+example.getEntities().size());
 		List<FL_PatternSearchResult> results;
 			results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
 
@@ -1366,7 +1363,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// (2c) filter by activity (i.e., subgraph must be connected)
 
 		List<String> exemplarIDs = getExemplarIDs(example);
-    List<FL_EntityMatchDescriptor> entities1 = example.getEntities();
+    List<FL_EntityMatchDescriptor> objects = Collections.emptyList();
+    List<FL_EntityMatchDescriptor> entities1 = example != null ? example.getEntities() : objects;
 
    // return getShortlist(entities1, exemplarIDs, max);
     return getShortlistFast(entities1,exemplarIDs,max);

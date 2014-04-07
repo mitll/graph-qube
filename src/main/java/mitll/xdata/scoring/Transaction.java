@@ -11,7 +11,7 @@ public class Transaction {
     private double[] features;
 
   /**
-   * @see mitll.xdata.binding.BitcoinBinding#createFeatureVectors(java.util.List)
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#createFeatureVectors
    * @see HmmScorer#createEndTransaction(int)
    * @param source
    * @param target

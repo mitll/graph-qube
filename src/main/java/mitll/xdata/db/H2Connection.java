@@ -20,7 +20,7 @@ public class H2Connection implements DBConnection {
   private static Logger logger = Logger.getLogger(H2Connection.class);
 
   private Connection conn;
-  private int cacheSizeKB;
+ // private int cacheSizeKB;
   private int queryCacheSize;
   private int maxMemoryRows = 50000;
 
@@ -44,7 +44,7 @@ public class H2Connection implements DBConnection {
      * @param dbName
      */
   public H2Connection(String configDir, String dbName, int cacheSizeKB, int queryCacheSize, int maxMemoryRows,boolean createDB) {
-    this.cacheSizeKB = cacheSizeKB;
+  //  this.cacheSizeKB = cacheSizeKB;
     this.queryCacheSize = queryCacheSize;
     this.maxMemoryRows = maxMemoryRows;
     connect(configDir, dbName,createDB);

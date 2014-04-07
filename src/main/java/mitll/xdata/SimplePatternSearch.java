@@ -14,101 +14,22 @@
 
 package mitll.xdata;
 
-import influent.idl.FL_BoundedRange;
-import influent.idl.FL_Entity;
-import influent.idl.FL_EntityMatchResult;
-import influent.idl.FL_EntityTag;
-import influent.idl.FL_Future;
-import influent.idl.FL_PatternDescriptor;
-import influent.idl.FL_PatternSearch;
-import influent.idl.FL_PatternSearchResult;
-import influent.idl.FL_PatternSearchResults;
-import influent.idl.FL_Property;
-import influent.idl.FL_Service;
+import influent.idl.*;
+import mitll.xdata.binding.Binding;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import org.apache.avro.AvroRemoteException;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import mitll.xdata.binding.Binding;
-import mitll.xdata.binding.BitcoinBinding;
-import mitll.xdata.binding.KivaBinding;
-import mitll.xdata.binding.TestBinding;
-import mitll.xdata.db.DBConnection;
-import mitll.xdata.db.H2Connection;
-import mitll.xdata.db.MysqlConnection;
-
-import org.apache.avro.AvroRemoteException;
-import org.apache.log4j.Logger;
-
 public class SimplePatternSearch implements FL_PatternSearch {
   private static Logger logger = Logger.getLogger(SimplePatternSearch.class);
-  private static final boolean USE_H2_KIVA = false;
 
-  //  private Connection connection;
-    private KivaBinding kivaBinding = null;
-  private BitcoinBinding bitcoinBinding = null;
-  private TestBinding testBinding = null;
-
-    /**
-     * @see GraphQuBEServer#main(String[])
-     * @throws Exception
-     * @deprecated unused currently
-     */
-/*    private SimplePatternSearch(String database, boolean useMysql) throws Exception {
-        DBConnection mysqlConnection = useMysql ? new MysqlConnection(database) : new H2Connection("kiva");
-        connection = mysqlConnection.getConnection();
-        kivaBinding = new KivaBinding(mysqlConnection);
-    }*/
-
-  /**
-   *
-   * @paramx database
-   * @paramx username
-   * @paramx password
-   * @throws Exception
-   * @deprecated unused currently
-   */
-/*  private SimplePatternSearch(String database, String username, String password) throws Exception {
-        MysqlConnection mysqlConnection = new MysqlConnection(database, username, password);
-        if (mysqlConnection.isValid()) {
-            connection = mysqlConnection.getConnection();
-        }
-        kivaBinding = new KivaBinding(mysqlConnection);
-    }*/
+  private Binding kivaBinding = null;
+  private Binding bitcoinBinding = null;
 
   public SimplePatternSearch() {}
-
-    /**
-     * Creates SimplePatternSearch that can detect Kiva vs Bitcoin ids in query.
-     * 
-     * Assumes that kiva.h2.db and bitcoin.h2.db are live in kivaDirectory and bitcoinDirectory.
-     * 
-     * @see GraphQuBEServer#main(String[])
-     */
-    public static SimplePatternSearch getDemoPatternSearch(String kivaDirectory, String bitcoinDirectory,
-            boolean useFastBitcoinConnectedTest) throws Exception {
-        SimplePatternSearch search = new SimplePatternSearch();
-
-      if (false) {
-        DBConnection dbConnection = USE_H2_KIVA ? new H2Connection(kivaDirectory, "kiva") : new MysqlConnection("kiva");
-        try {
-          search.kivaBinding = new KivaBinding(dbConnection);
-        } catch (Exception e) {
-          logger.error("got " + e, e);
-        }
-
-        dbConnection = new H2Connection(bitcoinDirectory, "bitcoin");
-        search.bitcoinBinding = new BitcoinBinding(dbConnection, useFastBitcoinConnectedTest);
-      }
-      search.testBinding = new TestBinding();
-
-      return search;
-    }
-
-    /*
-     * public SimplePatternSearch(String jdbcURL, String username, String password) throws Exception {
-     * Class.forName("org.h2.Driver"); connection = DriverManager.getConnection(jdbcURL, username, password); }
-     */
 
     @Override
     public Void setTimeout(FL_Future future, long timeout) throws AvroRemoteException {
@@ -164,8 +85,6 @@ public class SimplePatternSearch implements FL_PatternSearch {
         return null;
     }
 
-  public Binding getTestBinding() { return testBinding; }
-
     @Override
     public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
             FL_BoundedRange dateRange) throws AvroRemoteException {
@@ -191,41 +110,43 @@ public class SimplePatternSearch implements FL_PatternSearch {
             logger.debug("search : " + example + " hmm " + hmm + " binding " + binding);
             return binding.searchByExample(example, service, start, max, hmm, startTime, endTime);
         } else {
-            logger.warn("no binding");
+            logger.error("no binding");
         }
 
-        // return dummy result
-
-        FL_Entity entity = new FL_Entity();
-        entity.setUid("B1234");
-        List<FL_EntityTag> tags = new ArrayList<FL_EntityTag>();
-        tags.add(FL_EntityTag.ACCOUNT);
-        entity.setTags(tags);
-        List<FL_Property> properties = new ArrayList<FL_Property>();
-        entity.setProperties(properties);
-
-        FL_EntityMatchResult entityMatch = new FL_EntityMatchResult();
-        entityMatch.setScore(1.0);
-        entityMatch.setUid("dummy");
-        entityMatch.setEntity(entity);
-        List<FL_EntityMatchResult> entityMatches = new ArrayList<FL_EntityMatchResult>();
-        entityMatches.add(entityMatch);
-
-        FL_PatternSearchResult result = new FL_PatternSearchResult();
-        result.setScore(1.0);
-        result.setEntities(entityMatches);
-
-        List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
-        results.add(result);
-
-        FL_PatternSearchResults queryResult = new FL_PatternSearchResults();
-        queryResult.setResults(results);
-        queryResult.setTotal((long) results.size());
-
-        return queryResult;
+        // return dummy result - maybe this is better than nothing?
+        return makeNoBindingResponse();
     }
 
-    /**
+  private FL_PatternSearchResults makeNoBindingResponse() {
+    FL_Entity entity = new FL_Entity();
+    entity.setUid("B1234");
+    List<FL_EntityTag> tags = new ArrayList<FL_EntityTag>();
+    tags.add(FL_EntityTag.ACCOUNT);
+    entity.setTags(tags);
+    List<FL_Property> properties = new ArrayList<FL_Property>();
+    entity.setProperties(properties);
+
+    FL_EntityMatchResult entityMatch = new FL_EntityMatchResult();
+    entityMatch.setScore(1.0);
+    entityMatch.setUid("dummy");
+    entityMatch.setEntity(entity);
+    List<FL_EntityMatchResult> entityMatches = new ArrayList<FL_EntityMatchResult>();
+    entityMatches.add(entityMatch);
+
+    FL_PatternSearchResult result = new FL_PatternSearchResult();
+    result.setScore(1.0);
+    result.setEntities(entityMatches);
+
+    List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
+    results.add(result);
+
+    FL_PatternSearchResults queryResult = new FL_PatternSearchResults();
+    queryResult.setResults(results);
+    queryResult.setTotal((long) results.size());
+    return queryResult;
+  }
+
+  /**
      * @see #getBinding(influent.idl.FL_PatternDescriptor)
      * @param example
      * @return
@@ -276,4 +197,12 @@ public class SimplePatternSearch implements FL_PatternSearch {
         future.setCompleted(-1L);
         return future;
     }
+
+  public void setKivaBinding(Binding kivaBinding) {
+    this.kivaBinding = kivaBinding;
+  }
+
+  public void setBitcoinBinding(Binding bitcoinBinding) {
+    this.bitcoinBinding = bitcoinBinding;
+  }
 }

@@ -1,4 +1,4 @@
-package mitll.xdata.ingest;
+package mitll.xdata.dataset.bitcoin.ingest;
 
 /**
  * Created with IntelliJ IDEA.
@@ -6,6 +6,9 @@ package mitll.xdata.ingest;
  * Date: 7/25/13
  * Time: 2:26 PM
  * To change this template use File | Settings | File Templates.
+ *
+ * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngest#loadTransactionTable(String, String, String, String, boolean)
+ * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngest#addFeatures(String, java.util.Map, double, mitll.xdata.dataset.bitcoin.ingest.BitcoinIngest.RateConverter)
  */
 public class UserStats {
   double cnum, dnum;

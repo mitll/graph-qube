@@ -1,4 +1,4 @@
-package mitll.xdata.binding;
+package mitll.xdata.dataset.bitcoin.binding;
 
 import influent.idl.FL_EntityMatchDescriptor;
 import influent.idl.FL_EntityMatchResult;
@@ -34,6 +34,7 @@ import java.util.Set;
 
 import mitll.xdata.AvroUtils;
 import mitll.xdata.NodeSimilaritySearch;
+import mitll.xdata.binding.Binding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.hmm.VectorObservation;
@@ -46,28 +47,26 @@ import org.apache.log4j.Logger;
  * File Templates.
  */
 public class BitcoinBinding extends Binding {
-    private static Logger logger = Logger.getLogger(BitcoinBinding.class);
-    public static final String TRANSACTIONS = "transactions";
+    private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
+    private static final String TRANSACTIONS = "transactions";
 	private static final int BUCKET_SIZE = 2;
 
-    NodeSimilaritySearch userIndex;
+    private NodeSimilaritySearch userIndex;
 
     private PreparedStatement pairConnectedStatement;
     private PreparedStatement edgeMetadataKeyStatement;
     private boolean useFastBitcoinConnectedTest = true;
-    private Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
+    private final Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
 
-    public BitcoinBinding() {
-        super(null);
-    }
-
+  public BitcoinBinding(DBConnection connection) {
+    this(connection,true);
+  }
     /**
-     * @see mitll.xdata.SimplePatternSearch#getDemoPatternSearch(String, String, boolean)
      * @param connection
      * @param useFastBitcoinConnectedTest
      * @throws Exception
      */
-    public BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest) throws Exception {
+    private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest) {
         super(connection);
         this.useFastBitcoinConnectedTest = useFastBitcoinConnectedTest;
         prefixToTable.put("t", TRANSACTIONS);
@@ -87,6 +86,7 @@ public class BitcoinBinding extends Binding {
 
         // logger.debug("cols " + tableToColumns);
 
+      try {
         InputStream userIds = this.getClass().getResourceAsStream("/bitcoin_feats_tsv/bitcoin_ids.tsv");
         InputStream userFeatures = this.getClass().getResourceAsStream(
                 "/bitcoin_feats_tsv/bitcoin_features_standardized.tsv");
@@ -116,6 +116,9 @@ public class BitcoinBinding extends Binding {
         if (useFastBitcoinConnectedTest) {
             populateInMemoryAdjacency();
         }
+      } catch (Exception e) {
+        logger.error("got " +e,e);
+      }
     }
 
     private void populateInMemoryAdjacency() throws Exception {
@@ -173,11 +176,11 @@ public class BitcoinBinding extends Binding {
     /**
      * For some reason making a hash set of longs is really slow.
      * 
-     * @param connection
+     * @paramx connection
      * @throws SQLException
      * @deprecated
      */
-    private void getPairs(DBConnection connection) throws SQLException {
+/*    private void getPairs(DBConnection connection) throws SQLException {
         PreparedStatement pairConnectedStatement2 = connection.getConnection().prepareStatement(
                 "select source, target from transactions");
 
@@ -196,7 +199,7 @@ public class BitcoinBinding extends Binding {
         rs.close();
         pairConnectedStatement2.close();
         logger.debug("took  " + (System.currentTimeMillis() - then) + " millis");
-    }
+    }*/
 
     private long storeTwo(long low, long high) {
         long combined = low;
@@ -279,7 +282,7 @@ public class BitcoinBinding extends Binding {
         return false;
     }
 
-    protected boolean inMemoryIsPairConnected(String i, String j) {
+    boolean inMemoryIsPairConnected(String i, String j) {
         int f = Integer.parseInt(i);
         int s = Integer.parseInt(j);
 
@@ -288,9 +291,7 @@ public class BitcoinBinding extends Binding {
             return true;
 
         Set<Integer> integers2 = stot.get(s);
-        if (integers2 != null && integers2.contains(f))
-            return true;
-        return false;
+      return integers2 != null && integers2.contains(f);
     }
 
     /**
@@ -518,8 +519,8 @@ public class BitcoinBinding extends Binding {
 		Collections.sort(edges, new Comparator<Edge>() {
 			@Override
 			public int compare(Edge e1, Edge e2) {
-				long t1 = ((BitcoinEdge) e1).getTime();
-				long t2 = ((BitcoinEdge) e2).getTime();
+				long t1 = e1.getTime();
+				long t2 = e2.getTime();
 				if (t1 < t2) {
 					return -1;
 				} else if (t1 > t2) {
@@ -777,20 +778,12 @@ public class BitcoinBinding extends Binding {
 
         @Override
         public Object getSource() {
-            return (Integer) source;
-        }
-
-        public void setSource(int source) {
-            this.source = source;
+            return source;
         }
 
         @Override
         public Object getTarget() {
-            return (Integer) target;
-        }
-
-        public void setTarget(int target) {
-            this.target = target;
+            return target;
         }
 
         @Override
@@ -798,51 +791,27 @@ public class BitcoinBinding extends Binding {
             return time;
         }
 
-        public void setTime(long time) {
-            this.time = time;
-        }
-
-        public double getAmount() {
+      public double getAmount() {
             return amount;
         }
 
-        public void setAmount(double amount) {
-            this.amount = amount;
-        }
-
-        public double getUsd() {
+      public double getUsd() {
             return usd;
         }
 
-        public void setUsd(double usd) {
-            this.usd = usd;
-        }
-
-        public double getDeviationFromPopulation() {
+      public double getDeviationFromPopulation() {
             return deviationFromPopulation;
         }
 
-        public void setDeviationFromPopulation(double deviationFromPopulation) {
-            this.deviationFromPopulation = deviationFromPopulation;
-        }
-
-        public double getDeviationFromOwnCredits() {
+      public double getDeviationFromOwnCredits() {
             return deviationFromOwnCredits;
         }
 
-        public void setDeviationFromOwnCredits(double deviationFromOwnCredits) {
-            this.deviationFromOwnCredits = deviationFromOwnCredits;
-        }
-
-        public double getDeviationFromOwnDebits() {
+      public double getDeviationFromOwnDebits() {
             return deviationFromOwnDebits;
         }
 
-        public void setDeviationFromOwnDebits(double deviationFromOwnDebits) {
-            this.deviationFromOwnDebits = deviationFromOwnDebits;
-        }
-
-        public String toString() {
+      public String toString() {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             String s = "";
             s += source;
@@ -1010,7 +979,7 @@ public class BitcoinBinding extends Binding {
 
     }
 
-    private static void testCombine() {
+/*    private static void testCombine() {
         long f = 10000;
         long s = 20000;
 
@@ -1033,5 +1002,5 @@ public class BitcoinBinding extends Binding {
         ll = b.storeTwo(s, f);
         both2 = b.recover(ll);
         logger.debug("l " + ll + " both " + both2[0] + " " + both2[1]);
-    }
+    }*/
 }

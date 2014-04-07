@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mitll.xdata.ingest;
+package mitll.xdata.dataset.kiva.ingest;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -42,7 +42,7 @@ public class KivaIngest {
         TYPE_TO_DB.put("BOOLEAN", "BOOLEAN");
     }
 
-    public static Object[] getColumnSpecs(String schema) {
+/*    public static Object[] getColumnSpecs(String schema) {
         List<String> names = new ArrayList<String>();
         List<String> types = new ArrayList<String>();
         String[] columns = schema.split(";");
@@ -52,7 +52,7 @@ public class KivaIngest {
             types.add(columns[i].substring(index + 1).trim());
         }
         return new Object[] { names, types };
-    }
+    }*/
 
     public static Object[] processSchema(String filename) throws Exception {
         // teams:category: [String]
@@ -221,7 +221,7 @@ public class KivaIngest {
         System.out.println((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
     }
 
-    public static void testTabs(String dataFilename) throws Exception {
+/*    public static void testTabs(String dataFilename) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
         String line = null;
         int count = 0;
@@ -254,7 +254,7 @@ public class KivaIngest {
             }
         }
         br.close();
-    }
+    }*/
 
     public static void main(String[] args) throws Exception {
         // System.out.println(split("\ta\tb\t\tc\t", "\t"));
