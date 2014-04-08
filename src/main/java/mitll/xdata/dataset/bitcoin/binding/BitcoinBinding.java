@@ -154,6 +154,11 @@ public class BitcoinBinding extends Binding {
 
   }
 
+  /**
+   * @see mitll.xdata.GraphQuBEServer#getRoute(mitll.xdata.SimplePatternSearch)
+   * @param example
+   * @return
+   */
   @Override
   public List<Binding.ResultInfo> getEntities(FL_PatternDescriptor example) {
     List<String> exemplarIDs = Binding.getExemplarIDs(example);

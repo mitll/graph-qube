@@ -507,6 +507,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * Assume for the moment that you can either ask for an entity by id or by some set of properties
 	 *
 	 * @see mitll.xdata.dataset.kiva.binding.KivaBinding#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
+   * @see #simpleSearch(java.util.List, long, long)
 	 * @param properties
 	 * @param max
 	 * @return
@@ -524,7 +525,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			}
 		}
 
-		patternSearchResult.setTotal(new Long(entitiesMatchingProperties.size()));
+		patternSearchResult.setTotal((long) entitiesMatchingProperties.size());
 
 		return patternSearchResult;
 	}

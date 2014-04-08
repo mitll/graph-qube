@@ -211,7 +211,7 @@ public class GraphQuBEServer {
       public Object handle(Request request, Response response) {
         logger.debug("/pattern/search/example");
 
-        String exampleParameter = request.queryParams("example");
+        //String exampleParameter = request.queryParams("example");
         String service = request.queryParams("service");
         String startParameter = request.queryParams("start");
         String maxParameter = request.queryParams("max");
@@ -304,7 +304,7 @@ public class GraphQuBEServer {
     };
   }
 
-  public static String getBadParamResponse(String exampleParameter, Exception e) {
+/*  public static String getBadParamResponse(String exampleParameter, Exception e) {
     String message = "";
     message += "Bad parameter: example = [" + exampleParameter + "]";
     message += "<br/><br/>";
@@ -314,7 +314,7 @@ public class GraphQuBEServer {
     e.printStackTrace(new PrintWriter(sw));
     message += sw;
     return message;
-  }
+  }*/
 
   public static Route getEntitySearchRoute(final SimplePatternSearch patternSearch) {
     return new Route("/entity/search/example") {
