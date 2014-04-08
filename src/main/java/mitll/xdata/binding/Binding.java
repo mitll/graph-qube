@@ -1087,17 +1087,27 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         "},\n");
   }
 
-  public FL_PatternSearchResults searchByExample(List<String> ids,long start, long max, long startTime, long endTime) {
+  /**
+   * @see #searchByExampleJson(java.util.List, long, long, long, long)
+   * @param ids
+   * @param start
+   * @param max
+   * @param startTime
+   * @param endTime
+   * @return
+   */
+  private FL_PatternSearchResults searchByExample(List<String> ids,long start, long max, long startTime, long endTime) {
     FL_PatternDescriptor descriptor = AvroUtils.createExemplarQuery(ids);
     return searchByExample(descriptor,"",start,max, true,startTime,endTime);
   }
 
 	/**
 	 * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean)
+   * @see #searchByExample(java.util.List, long, long, long, long)
 	 * @param example
 	 * @param ignoredService
-	 * @param start
-	 * @param max
+	 * @param start ignored for now
+	 * @param max items to return
 	 * @param rescoreWithHMM
 	 * @return
 	 */
@@ -1393,6 +1403,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     if (!candidates.isEmpty()) {
      // logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
     }
+    else {
+       logger.debug("depth 1 : " + candidates.size() );
+
+    }
 
     for (int i = 1; i < exemplarIDs.size(); i++) {
       SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
@@ -1412,7 +1426,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       }*/
     }
 
-    logger.debug("getShortlistFast : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+    if (!candidates.isEmpty()) {
+      logger.debug("getShortlistFast : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+    }
 
     List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
     int count = 0;
@@ -1590,6 +1606,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param exemplarIDs
    * @param max
    * @return
+   * @deprecated
    */
   private List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entities1, List<String> exemplarIDs,
                                                     long max) {
@@ -1730,7 +1747,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	/**
 	 * Rescores results by comparing result subgraph's transactions to query graph's transactions.
 	 */
-	private void rescoreWithHMM_OLD(FL_PatternDescriptor query, List<FL_PatternSearchResult> results,
+/*	private void rescoreWithHMM_OLD(FL_PatternDescriptor query, List<FL_PatternSearchResult> results,
 			List<String> exemplarIDs, List<Edge> queryEdges, List<List<Edge>> resultEdges) {
 		//
 		// get edges and features for query subgraph and result subgraphs
@@ -1823,7 +1840,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// } catch (FileNotFoundException e) {
 		// e.printStackTrace();
 		// }
-	}
+	}*/
 
 	/**
 	 * Rescores results by comparing result subgraph's transactions to query graph's transactions.
@@ -2109,7 +2126,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	private boolean connectedGroup(List<String> ids) {
 		// TODO : verify that group is actually connected?
 
-		long then = System.currentTimeMillis();
+		//long then = System.currentTimeMillis();
 
 		if (ids.size() == 1) {
 			return true;

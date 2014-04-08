@@ -6,6 +6,10 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+/**
+ * @see mitll.xdata.binding.Binding#rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
+ * @param <T>
+ */
 public class Hmm<T extends Observation> {
 	private static Logger logger = Logger.getLogger(Hmm.class);
 

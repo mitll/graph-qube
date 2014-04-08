@@ -35,231 +35,231 @@ public class BitcoinIngest {
   private static Logger logger = Logger.getLogger(BitcoinIngest.class);
 
   public static Map<String, String> TYPE_TO_DB = new HashMap<String, String>();
-    static {
-        TYPE_TO_DB.put("INTEGER", "INT");
-        TYPE_TO_DB.put("STRING", "VARCHAR");
-        TYPE_TO_DB.put("DATE", "TIMESTAMP");
-        TYPE_TO_DB.put("REAL", "DOUBLE");
-        TYPE_TO_DB.put("BOOLEAN", "BOOLEAN");
-    }
+
+  static {
+    TYPE_TO_DB.put("INTEGER", "INT");
+    TYPE_TO_DB.put("STRING", "VARCHAR");
+    TYPE_TO_DB.put("DATE", "TIMESTAMP");
+    TYPE_TO_DB.put("REAL", "DOUBLE");
+    TYPE_TO_DB.put("BOOLEAN", "BOOLEAN");
+  }
 
   public static String createCreateSQL(String tableName, List<String> names, List<String> types, boolean mapTypes) {
-        String sql = "CREATE TABLE " + tableName + " (" + "\n";
-        for (int i = 0; i < names.size(); i++) {
-          String statedType = types.get(i).toUpperCase();
-          if (mapTypes) statedType = TYPE_TO_DB.get(statedType);
-          if (statedType == null) logger.error("huh? unknown type " +types.get(i));
-          sql += (i > 0 ? ",\n  " : "  ") + names.get(i) + " " + statedType;
-        }
-        sql += "\n);";
-        return sql;
+    String sql = "CREATE TABLE " + tableName + " (" + "\n";
+    for (int i = 0; i < names.size(); i++) {
+      String statedType = types.get(i).toUpperCase();
+      if (mapTypes) statedType = TYPE_TO_DB.get(statedType);
+      if (statedType == null) logger.error("huh? unknown type " + types.get(i));
+      sql += (i > 0 ? ",\n  " : "  ") + names.get(i) + " " + statedType;
     }
+    sql += "\n);";
+    return sql;
+  }
 
-    public static String createInsertSQL(String tableName, List<String> names) {
-        String sql = "INSERT INTO " + tableName + " (";
-        for (int i = 0; i < names.size(); i++) {
-            sql += (i > 0 ? ", " : "") + names.get(i);
-        }
-        sql += ") VALUES (";
-        for (int i = 0; i < names.size(); i++) {
-            sql += (i > 0 ? ", " : "") + "?";
-        }
-        sql += ");";
-        return sql;
+  public static String createInsertSQL(String tableName, List<String> names) {
+    String sql = "INSERT INTO " + tableName + " (";
+    for (int i = 0; i < names.size(); i++) {
+      sql += (i > 0 ? ", " : "") + names.get(i);
     }
+    sql += ") VALUES (";
+    for (int i = 0; i < names.size(); i++) {
+      sql += (i > 0 ? ", " : "") + "?";
+    }
+    sql += ");";
+    return sql;
+  }
 
   /**
    * Adds equivalent dollar value column
-   * @see #main
-   * @param tableName bitcoin
+   *
+   * @param tableName    bitcoin
    * @param dataFilename e.g. bitcoin-20130410.tsv
-   * @param dbType h2 or mysql
+   * @param dbType       h2 or mysql
    * @param useTimestamp true if we want to store a sql timestamp for time, false if just a long for unix millis
    * @throws Exception
+   * @see #main
    */
-    public static void loadTransactionTable(String tableName, String dataFilename, String btcToDollarFile,
-                                            String dbType, boolean useTimestamp) throws Exception {
-      if (dbType.equals("h2")) tableName = tableName.toUpperCase();
-      List<String> cnames = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
-  //    List<String> names = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD");
-      List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
-          "DECIMAL(20, 8)","DECIMAL","DECIMAL","DECIMAL"); // bitcoin seems to allow 8 digits after the decimal
+  public static void loadTransactionTable(String tableName, String dataFilename, String btcToDollarFile,
+                                          String dbType, boolean useTimestamp) throws Exception {
+    if (dbType.equals("h2")) tableName = tableName.toUpperCase();
+    List<String> cnames = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
+    //    List<String> names = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD");
+    List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
+        "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL"); // bitcoin seems to allow 8 digits after the decimal
 
-      DBConnection connection = dbType.equalsIgnoreCase("h2") ?
-          new H2Connection("bitcoin",10000000,true) : dbType.equalsIgnoreCase("mysql") ?
-          new MysqlConnection("bitcoin") : null;
+    DBConnection connection = dbType.equalsIgnoreCase("h2") ?
+        new H2Connection("bitcoin", 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
+        new MysqlConnection("bitcoin") : null;
 
-      if (connection == null) {
-        logger.error("can't handle dbtype " + dbType);
-        return;
-      }
-
-      String createSQL = createCreateSQL(tableName, cnames, types, false);
-
-      long t = System.currentTimeMillis();
-      logger.debug("dropping current " + tableName);
-      doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
-      logger.debug("took " + (System.currentTimeMillis() - t) + " millis to drop " + tableName);
-      doSQL(connection, createSQL);
-      //doSQL(connection, "ALTER TABLE " + tableName + " ALTER COLUMN UID INT NOT NULL");
-      //doSQL(connection, "ALTER TABLE " + tableName + " ADD PRIMARY KEY (UID)");
-
-      RateConverter rc = new RateConverter(btcToDollarFile);
-
-      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
-      String line;
-      int count = 0;
-      long t0 = System.currentTimeMillis();
-      int max = Integer.MAX_VALUE;
-      int bad = 0;
-    //  int black = 0;
-      double totalUSD = 0;
-      Map<Integer,UserStats> userToStats = new HashMap<Integer, UserStats>();
-
-     // Set<Integer> userBlacklist = new HashSet<Integer>(Arrays.asList(25)); // skip supernode 25
-
-      while ((line = br.readLine()) != null) {
-        count++;
-        if (count > max) break;
-        String[] split = line.split("\\s+"); // 4534248 25      25      2013-01-27 22:41:38     9.91897304
-        if (split.length != 6) {
-          bad++;
-          if (bad <10) logger.warn("badly formed line " + line);
-        }
-
-   //     int transid = Integer.parseInt(split[0]);
-        int sourceid = Integer.parseInt(split[1]);
-        int targetID = Integer.parseInt(split[2]);
-
-        int i = 1;
-    //    statement.setInt(i++, transid);
-     //   statement.setInt(i++, sourceid);
-      //  statement.setInt(i++, targetID);
-        String day = split[3];
-        Timestamp x = Timestamp.valueOf(day + " " + split[4]);
-        if (useTimestamp) {
-        //  statement.setTimestamp(i++, x);
-        }
-        else {
-          //statement.setLong(i++,x.getTime());
-        }
-
-        double btc = Double.parseDouble(split[5]);
-        //statement.setDouble(i++, btc);
-
-        // do dollars
-        Double rate = rc.getConversionRate(day, x.getTime());
-        double usd = btc * rate;
-        //statement.setDouble(i++, usd);
-        totalUSD += usd;
-
-        UserStats userStats = userToStats.get(sourceid);
-        if (userStats == null) userToStats.put(sourceid, userStats = new UserStats());
-        userStats.addDebit(usd);
-
-        UserStats userStats2 = userToStats.get(targetID);
-        if (userStats2 == null) userToStats.put(targetID, userStats2 = new UserStats());
-        userStats2.addCredit(usd);
-
-        if (count % 1000000 == 0) {
-          logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
-              + " ms/read");
-        }
-      }
-      if (bad > 0) logger.warn("Got " + bad + " transactions...");
-      br.close();
-
-
-      double avgUSD = totalUSD/(double)count;
-      List<double[]> feats = addFeatures(dataFilename, userToStats, avgUSD, rc);
-
-       br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
-       count = 0;
-
-      PreparedStatement statement;
-
-      String insertSQL = createInsertSQL(tableName, cnames);
-      statement = connection.getConnection().prepareStatement(insertSQL);
-
-      while ((line = br.readLine()) != null) {
-        double[] additionalFeatures = feats.get(count);
-        count++;
-        String[] split = line.split("\\s+"); // 4534248 25      25      2013-01-27 22:41:38     9.91897304
-
-        int transid = Integer.parseInt(split[0]);
-        int sourceid = Integer.parseInt(split[1]);
-        int targetID = Integer.parseInt(split[2]);
-
-        int i = 1;
-        statement.setInt(i++, transid);
-        statement.setInt(i++, sourceid);
-        statement.setInt(i++, targetID);
-        String day = split[3];
-        Timestamp x = Timestamp.valueOf(day + " " + split[4]);
-        if (useTimestamp) {
-          statement.setTimestamp(i++, x);
-        }
-        else {
-          statement.setLong(i++,x.getTime());
-        }
-
-        double btc = Double.parseDouble(split[5]);
-        statement.setDouble(i++, btc);
-
-        // do dollars
-        Double rate = rc.getConversionRate(day, x.getTime());
-        double usd = btc * rate;
-        statement.setDouble(i++, usd);
-        for (double feat : additionalFeatures) statement.setDouble(i++,feat);
-        try {
-          statement.executeUpdate();
-        } catch (SQLException e) {
-          logger.error("got error " + e + " on  " + line);
-        }
-
-        if (count % 1000000 == 0) {
-          logger.debug("feats count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
-              + " ms/insert");
-        }
-      }
-      if (bad > 0) logger.warn("Got " + bad + " transactions...");
-      br.close();
-      statement.close();
-
-      createIndices(tableName, connection);
-      
-      long t1 = System.currentTimeMillis();
-        System.out.println("total count = " + count);
-        System.out.println("total time = " + ((t1 - t0) / 1000.0) + " s");
-        System.out.println((t1 - 1.0 * t0) / count + " ms/insert");
-        System.out.println((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
+    if (connection == null) {
+      logger.error("can't handle dbtype " + dbType);
+      return;
     }
+
+    String createSQL = createCreateSQL(tableName, cnames, types, false);
+
+    long t = System.currentTimeMillis();
+    logger.debug("dropping current " + tableName);
+    doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
+    logger.debug("took " + (System.currentTimeMillis() - t) + " millis to drop " + tableName);
+    doSQL(connection, createSQL);
+    //doSQL(connection, "ALTER TABLE " + tableName + " ALTER COLUMN UID INT NOT NULL");
+    //doSQL(connection, "ALTER TABLE " + tableName + " ADD PRIMARY KEY (UID)");
+
+    RateConverter rc = new RateConverter(btcToDollarFile);
+
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
+    String line;
+    int count = 0;
+    long t0 = System.currentTimeMillis();
+    int max = Integer.MAX_VALUE;
+    int bad = 0;
+    //  int black = 0;
+    double totalUSD = 0;
+    Map<Integer, UserStats> userToStats = new HashMap<Integer, UserStats>();
+
+    // Set<Integer> userBlacklist = new HashSet<Integer>(Arrays.asList(25)); // skip supernode 25
+
+    while ((line = br.readLine()) != null) {
+      count++;
+      if (count > max) break;
+      String[] split = line.split("\\s+"); // 4534248 25      25      2013-01-27 22:41:38     9.91897304
+      if (split.length != 6) {
+        bad++;
+        if (bad < 10) logger.warn("badly formed line " + line);
+      }
+
+      //     int transid = Integer.parseInt(split[0]);
+      int sourceid = Integer.parseInt(split[1]);
+      int targetID = Integer.parseInt(split[2]);
+
+      int i = 1;
+      //    statement.setInt(i++, transid);
+      //   statement.setInt(i++, sourceid);
+      //  statement.setInt(i++, targetID);
+      String day = split[3];
+      Timestamp x = Timestamp.valueOf(day + " " + split[4]);
+      if (useTimestamp) {
+        //  statement.setTimestamp(i++, x);
+      } else {
+        //statement.setLong(i++,x.getTime());
+      }
+
+      double btc = Double.parseDouble(split[5]);
+      //statement.setDouble(i++, btc);
+
+      // do dollars
+      Double rate = rc.getConversionRate(day, x.getTime());
+      double usd = btc * rate;
+      //statement.setDouble(i++, usd);
+      totalUSD += usd;
+
+      UserStats userStats = userToStats.get(sourceid);
+      if (userStats == null) userToStats.put(sourceid, userStats = new UserStats());
+      userStats.addDebit(usd);
+
+      UserStats userStats2 = userToStats.get(targetID);
+      if (userStats2 == null) userToStats.put(targetID, userStats2 = new UserStats());
+      userStats2.addCredit(usd);
+
+      if (count % 1000000 == 0) {
+        logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
+            + " ms/read");
+      }
+    }
+    if (bad > 0) logger.warn("Got " + bad + " transactions...");
+    br.close();
+
+
+    double avgUSD = totalUSD / (double) count;
+    List<double[]> feats = addFeatures(dataFilename, userToStats, avgUSD, rc);
+
+    br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
+    count = 0;
+
+    PreparedStatement statement;
+
+    String insertSQL = createInsertSQL(tableName, cnames);
+    statement = connection.getConnection().prepareStatement(insertSQL);
+
+    while ((line = br.readLine()) != null) {
+      double[] additionalFeatures = feats.get(count);
+      count++;
+      String[] split = line.split("\\s+"); // 4534248 25      25      2013-01-27 22:41:38     9.91897304
+
+      int transid = Integer.parseInt(split[0]);
+      int sourceid = Integer.parseInt(split[1]);
+      int targetID = Integer.parseInt(split[2]);
+
+      int i = 1;
+      statement.setInt(i++, transid);
+      statement.setInt(i++, sourceid);
+      statement.setInt(i++, targetID);
+      String day = split[3];
+      Timestamp x = Timestamp.valueOf(day + " " + split[4]);
+      if (useTimestamp) {
+        statement.setTimestamp(i++, x);
+      } else {
+        statement.setLong(i++, x.getTime());
+      }
+
+      double btc = Double.parseDouble(split[5]);
+      statement.setDouble(i++, btc);
+
+      // do dollars
+      Double rate = rc.getConversionRate(day, x.getTime());
+      double usd = btc * rate;
+      statement.setDouble(i++, usd);
+      for (double feat : additionalFeatures) statement.setDouble(i++, feat);
+      try {
+        statement.executeUpdate();
+      } catch (SQLException e) {
+        logger.error("got error " + e + " on  " + line);
+      }
+
+      if (count % 1000000 == 0) {
+        logger.debug("feats count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
+            + " ms/insert");
+      }
+    }
+    if (bad > 0) logger.warn("Got " + bad + " transactions...");
+    br.close();
+    statement.close();
+
+    createIndices(tableName, connection);
+
+    long t1 = System.currentTimeMillis();
+    System.out.println("total count = " + count);
+    System.out.println("total time = " + ((t1 - t0) / 1000.0) + " s");
+    System.out.println((t1 - 1.0 * t0) / count + " ms/insert");
+    System.out.println((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
+  }
 
   private static void createIndices(String tableName, DBConnection connection) throws SQLException {
     long then = System.currentTimeMillis();
-    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "SOURCE"+ ")");
-    logger.debug("first index complete in " + (System.currentTimeMillis()-then));
+    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "SOURCE" + ")");
+    logger.debug("first index complete in " + (System.currentTimeMillis() - then));
     then = System.currentTimeMillis();
     doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "TARGET" + ")");
-    logger.debug("second index complete in " + (System.currentTimeMillis()-then));
+    logger.debug("second index complete in " + (System.currentTimeMillis() - then));
 
     then = System.currentTimeMillis();
-    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "TIME"+ ")");
-    logger.debug("third index complete in " + (System.currentTimeMillis()-then));
+    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "TIME" + ")");
+    logger.debug("third index complete in " + (System.currentTimeMillis() - then));
 
     doSQL(connection, "create index " +
         //"idx_transactions_source_target" +
         " on " +
         tableName +
         "(" +
-        "SOURCE"+", TARGET" +")");
+        "SOURCE" + ", TARGET" + ")");
     logger.debug("fourth index complete in " + (System.currentTimeMillis() - then));
   }
 
   private static List<double[]> addFeatures(
-                           String dataFilename, Map<Integer, UserStats> userToStats,
-                           double avgUSD,
-                           RateConverter rc
+      String dataFilename, Map<Integer, UserStats> userToStats,
+      double avgUSD,
+      RateConverter rc
   ) throws Exception {
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
     String line;
@@ -267,7 +267,7 @@ public class BitcoinIngest {
     long t0 = System.currentTimeMillis();
     int max = Integer.MAX_VALUE;
     int bad = 0;
-   // List<String> cnames = Arrays.asList("DEVPOP", "CREDITDEV", "DEBITDEV");
+    // List<String> cnames = Arrays.asList("DEVPOP", "CREDITDEV", "DEBITDEV");
     List<double[]> feats = new ArrayList<double[]>();
 
     while ((line = br.readLine()) != null) {
@@ -276,7 +276,7 @@ public class BitcoinIngest {
       String[] split = line.split("\\s+"); // 4534248 25      25      2013-01-27 22:41:38     9.91897304
       if (split.length != 6) {
         bad++;
-        if (bad <10) logger.warn("badly formed line " + line);
+        if (bad < 10) logger.warn("badly formed line " + line);
       }
 
       try {
@@ -292,25 +292,25 @@ public class BitcoinIngest {
         Double rate = rc.getConversionRate(day, x.getTime());
         double usd = btc * rate;
 
-        double devFraction = (usd-avgUSD)/avgUSD;
+        double devFraction = (usd - avgUSD) / avgUSD;
         //    statement.setDouble(i++, devFraction);
         double[] addFeats = new double[3];
         addFeats[0] = devFraction;
         UserStats sourceStats = userToStats.get(sourceid);
 
         double avgCredit = sourceStats.getAvgCredit();
-        double cdevFraction = avgCredit == 0 ? -1 : (usd - avgCredit)/avgCredit;
+        double cdevFraction = avgCredit == 0 ? -1 : (usd - avgCredit) / avgCredit;
         addFeats[1] = cdevFraction;
 
         UserStats targetStats = userToStats.get(targetID);
 
         double avgDebit = targetStats.getAvgDebit();
-        double ddevFraction = avgDebit == 0 ? -1 : (usd - avgDebit)/avgDebit;
+        double ddevFraction = avgDebit == 0 ? -1 : (usd - avgDebit) / avgDebit;
         addFeats[2] = ddevFraction;
         feats.add(addFeats);
 
         if (count < 100) {
-          logger.debug("source " + sourceid + " target " +targetID+" $"+ usd + " avg " + avgUSD +
+          logger.debug("source " + sourceid + " target " + targetID + " $" + usd + " avg " + avgUSD +
               " dev " + devFraction +
               " cavg  " + avgCredit +
               " cdev " + cdevFraction +
@@ -330,7 +330,7 @@ public class BitcoinIngest {
     if (bad > 0) logger.warn("Got " + bad + " transactions...");
     br.close();
     //statement.close();
-     return feats;
+    return feats;
   }
 
   public static class RateConverter {
@@ -510,25 +510,25 @@ public class BitcoinIngest {
         br.close();
     }*/
 
-    public static void main(String[] args) throws Exception {
-     // String tableName = "loanJournalEntriesLinks";
-        //String schemaFilename = "kiva_schemas/" + tableName + ".schema";
-      logger.debug("loading transactions");
-        String dataFilename = "";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";
-      if (args.length > 0) {
-        dataFilename = args[0];
-        logger.debug("got " + dataFilename);
-      }
-      String btcToDollarFile = "src" +File.separator + "main" + File.separator + "resources" +
-          File.separator +
-          "bitcoin_feats_tsv" +
-          File.separator +
-          "btcToDollarConversion.txt";
-      File file = new File(btcToDollarFile);
-      if (! file.exists()) logger.warn("can't find " + file.getAbsolutePath());
-      loadTransactionTable("transactions", dataFilename, btcToDollarFile,"h2", USE_TIMESTAMP);
-      logger.debug("done loading transactions");
-
-      System.out.println("done");
+  public static void main(String[] args) throws Exception {
+    // String tableName = "loanJournalEntriesLinks";
+    //String schemaFilename = "kiva_schemas/" + tableName + ".schema";
+    logger.debug("loading transactions");
+    String dataFilename = "";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";
+    if (args.length > 0) {
+      dataFilename = args[0];
+      logger.debug("got " + dataFilename);
     }
+    String btcToDollarFile = "src" + File.separator + "main" + File.separator + "resources" +
+        File.separator +
+        "bitcoin_feats_tsv" +
+        File.separator +
+        "btcToDollarConversion.txt";
+    File file = new File(btcToDollarFile);
+    if (!file.exists()) logger.warn("can't find " + file.getAbsolutePath());
+    loadTransactionTable("transactions", dataFilename, btcToDollarFile, "h2", USE_TIMESTAMP);
+    logger.debug("done loading transactions");
+
+    System.out.println("done");
+  }
 }

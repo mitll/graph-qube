@@ -2,6 +2,9 @@ package mitll.xdata.hmm;
 
 import java.util.List;
 
+/**
+ * @see mitll.xdata.binding.Binding#rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
+ */
 public class StateSequence {
 	/** sequence of states for this subsequence */
 	private List<Integer> states;

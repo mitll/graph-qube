@@ -5,11 +5,14 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 
+/**
+ * Do percentile-based normalization.
+ * Less sensitive to outliers.
+ *
+ * @see mitll.xdata.binding.Binding#getStandardFeatures(int, int, double[][])
+ */
 public class FeatureNormalizer {
     private static Logger logger = Logger.getLogger(FeatureNormalizer.class);
-
-    private double[][] rawFeats;
-    private double[][] stdFeats;
 
     private int numSamples;
     private int numDims;
@@ -27,8 +30,6 @@ public class FeatureNormalizer {
      *            output features
      */
     public FeatureNormalizer(double[][] rawFeats, double lowerPctl, double higherPctl) {
-        this.rawFeats = rawFeats;
-
         this.numSamples = rawFeats.length;
         this.numDims = rawFeats[0].length;
 
@@ -67,7 +68,6 @@ public class FeatureNormalizer {
      * @return Return transform
      */
     private double[] getTransform(double[] percentiles) {
-
         double[] b = new double[2];
 
         b[0] = M[0][0] * percentiles[0] + M[0][1] * percentiles[1];
@@ -108,8 +108,12 @@ public class FeatureNormalizer {
         return stdFeats;
     }
 
+  /**
+   * Just for testing.
+   * @param args
+   * @throws Exception
+   */
     public static void main(String[] args) throws Exception {
-
         // Percentiles to standardize by
         double lowerPctl = 0.025;
         double higherPctl = 0.975;

@@ -94,10 +94,10 @@ public class GraphQuBEServer {
     patternSearch = new SimplePatternSearch();
 
     if (USE_KIVA) {
-      DBConnection dbConnection = useMysql ? new MysqlConnection(MYSQL_H2_DATABASE) : new H2Connection("kiva");
+      DBConnection dbConnection = useMysql ? new MysqlConnection(MYSQL_H2_DATABASE) : new H2Connection(kivaDirectory,"kiva");
       patternSearch.setKivaBinding(new KivaBinding(dbConnection));
     }
-    DBConnection dbConnection = useMysql ? new MysqlConnection(MYSQL_BITCOIN_DATABASE) : new H2Connection("bitcoin");
+    DBConnection dbConnection = useMysql ? new MysqlConnection(MYSQL_BITCOIN_DATABASE) : new H2Connection(bitcoinDirectory,"bitcoin");
     patternSearch.setBitcoinBinding(new BitcoinBinding(dbConnection));
 
     // RPC calls from PatternSearch_v1.4.avdl

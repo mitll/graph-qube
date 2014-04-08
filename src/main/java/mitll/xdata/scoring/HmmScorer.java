@@ -13,17 +13,17 @@ import be.ac.ulg.montefiore.run.jahmm.Hmm;
 import be.ac.ulg.montefiore.run.jahmm.ObservationVector;
 
 public class HmmScorer {
-    private static Logger logger = Logger.getLogger(HmmScorer.class);
+    private static final Logger logger = Logger.getLogger(HmmScorer.class);
 
     /** Transactions from query (model) graph. */
-    private List<Transaction> transactions;
+    private final List<Transaction> transactions;
 
     /** Dummy transaction to mark transition to END state. */
     private final Transaction END_TRANSACTION;
 
-    private int numStates;
+    private final int numStates;
 
-    private Hmm<ObservationVector> hmm;
+    private final Hmm<ObservationVector> hmm;
 
     /**
      * @param transactions
@@ -53,7 +53,7 @@ public class HmmScorer {
     /**
      * Sorts copy of List<Transaction>.
      */
-    public List<Transaction> sort(List<Transaction> list) {
+    private List<Transaction> sort(List<Transaction> list) {
         List<Transaction> sorted = new ArrayList<Transaction>(list);
         Collections.sort(sorted, new Comparator<Transaction>() {
             @Override
@@ -168,8 +168,7 @@ public class HmmScorer {
         for (int i = 0; i < numFeatures; i++) {
             features[i] = 1e6;
         }
-        Transaction transaction = new Transaction("", "", 0, features);
-        return transaction;
+      return new Transaction("", "", 0, features);
     }
 
     /**
@@ -192,21 +191,21 @@ public class HmmScorer {
         return opdfs;
     }
 
-    public List<Transaction> getTransactions() {
+    private List<Transaction> getTransactions() {
         return transactions;
     }
 
     /**
      * Converts Transaction to ObservationVector.
      */
-    public ObservationVector ov(Transaction transaction) {
+    private ObservationVector ov(Transaction transaction) {
         return new ObservationVector(transaction.getFeatures());
     }
 
     /**
      * Converts List<Transaction> to List<ObservationVector>.
      */
-    public List<ObservationVector> ovl(List<Transaction> transactions) {
+    private List<ObservationVector> ovl(List<Transaction> transactions) {
         List<ObservationVector> observations = new ArrayList<ObservationVector>();
         for (Transaction transaction : transactions) {
             observations.add(ov(transaction));
@@ -217,7 +216,7 @@ public class HmmScorer {
     /**
      * Converts double array to ObservationVector.
      */
-    public ObservationVector ov(double[] features) {
+    private ObservationVector ov(double[] features) {
         return new ObservationVector(features);
     }
 
@@ -233,14 +232,14 @@ public class HmmScorer {
     /**
      * Makes a test transaction with feature vector in R^2.
      */
-    public static Transaction mt2(String date, double x1, double x2) throws Exception {
+    private static Transaction mt2(String date, double x1, double x2) throws Exception {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         long time = sdf.parse(date).getTime();
         double[] features = new double[] { x1, x2 };
         return new Transaction("source", "target", time, features);
     }
 
-    public static String arrayToString(double[] x) {
+    private static String arrayToString(double[] x) {
         String s = "";
         for (int i = 0; i < x.length; i++) {
             if (i > 0)
@@ -250,7 +249,7 @@ public class HmmScorer {
         return s;
     }
 
-    public static String matrixToString(double[][] x) {
+  private static String matrixToString(double[][] x) {
         String s = "";
         for (int i = 0; i < x.length; i++) {
             if (i > 0)

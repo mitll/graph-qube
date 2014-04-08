@@ -4,6 +4,9 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+/**
+ * @see mitll.xdata.binding.Binding#makeHMM(java.util.List)
+ */
 public class KernelDensityLikelihood implements ObservationLikelihood<VectorObservation> {
 	private static Logger logger = Logger.getLogger(KernelDensityLikelihood.class);
 
@@ -11,6 +14,11 @@ public class KernelDensityLikelihood implements ObservationLikelihood<VectorObse
 
 	private double bandwidth;
 
+  /**
+   * @see mitll.xdata.binding.Binding#makeHMM(java.util.List)
+   * @param observations
+   * @param bandwidth
+   */
 	public KernelDensityLikelihood(List<VectorObservation> observations, double bandwidth) {
 		this.observations = observations;
 		this.bandwidth = bandwidth;
@@ -30,6 +38,9 @@ public class KernelDensityLikelihood implements ObservationLikelihood<VectorObse
 	 * Computes probability of observation using kernel density estimate with Gaussian kernel.
 	 * 
 	 * See "The Elements of Statistical Learning" (Hastie et al 2009), page 209.
+   * @see #logLikelihood(VectorObservation)
+   * @see mitll.xdata.hmm.Hmm#decodeTopK(java.util.List, int)
+   * @see mitll.xdata.hmm.Hmm#probability(java.util.List, java.util.List)
 	 */
 	@Override
 	public double likelihood(VectorObservation x) {

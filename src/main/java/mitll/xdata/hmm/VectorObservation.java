@@ -4,6 +4,9 @@ import java.util.List;
 
 import mitll.xdata.binding.Binding.Edge;
 
+/**
+ * @see mitll.xdata.binding.Binding#addRelevantEdges(influent.idl.FL_PatternSearchResult, java.util.List)
+ */
 public class VectorObservation implements Observation {
 	private double[] values;
 	

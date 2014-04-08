@@ -109,7 +109,7 @@ var resultList;
 var resultIndex = 0;
 function renderQueryAndResultGraphs(queryAndResults) {
     if (!queryAndResults || !queryAndResults.query) {
-        d3.select("#resultTitle").html("No connected components for query.");
+        d3.select("#resultTitle").html("No connected components for query for this time period.");
                                         return;
     }
     graph = queryAndResults.query;
