@@ -211,7 +211,7 @@ public class GraphQuBEServer {
       public Object handle(Request request, Response response) {
         logger.debug("/pattern/search/example");
 
-        //String exampleParameter = request.queryParams("example");
+        String exampleParameter = request.queryParams("example");
         String service = request.queryParams("service");
         String startParameter = request.queryParams("start");
         String maxParameter = request.queryParams("max");
@@ -220,7 +220,21 @@ public class GraphQuBEServer {
         String startTimeParameter = request.queryParams("startTime");
         String endTimeParameter = request.queryParams("endTime");
 
-        FL_PatternDescriptor example = null;
+        FL_PatternDescriptor example;
+
+        if (exampleParameter != null && exampleParameter.trim().length() > 0) {
+          try {
+            example = (FL_PatternDescriptor) AvroUtils.decodeJSON(
+                FL_PatternDescriptor.getClassSchema(), exampleParameter);
+          } catch (Exception e) {
+            logger.error("got " +e,e);
+            response.status(400);
+            return getBadParamResponse(exampleParameter, e);
+          }
+        } else {
+          response.status(400);
+          return "Bad parameter: example = [" + exampleParameter + "]";
+        }
 
         long start = 0;
         if (startParameter != null && startParameter.trim().length() > 0) {
@@ -273,6 +287,7 @@ public class GraphQuBEServer {
               if (svg != null) {
                 Binding binding = patternSearch.getBinding(example);
                 List<Binding.ResultInfo> entities = binding.getEntities(example);
+                response.type("text/html");
 
                 return new SVGGraph().toSVG(entities, results, binding);
               } else {
@@ -304,7 +319,7 @@ public class GraphQuBEServer {
     };
   }
 
-/*  public static String getBadParamResponse(String exampleParameter, Exception e) {
+  public static String getBadParamResponse(String exampleParameter, Exception e) {
     String message = "";
     message += "Bad parameter: example = [" + exampleParameter + "]";
     message += "<br/><br/>";
@@ -314,7 +329,7 @@ public class GraphQuBEServer {
     e.printStackTrace(new PrintWriter(sw));
     message += sw;
     return message;
-  }*/
+  }
 
   public static Route getEntitySearchRoute(final SimplePatternSearch patternSearch) {
     return new Route("/entity/search/example") {

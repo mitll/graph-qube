@@ -97,9 +97,26 @@ public class SimplePatternSearch implements FL_PatternSearch {
     	return searchByExample(example, service, start, max, hmm, Long.MIN_VALUE, Long.MAX_VALUE);
     }
 
+  /**
+   * @see mitll.xdata.GraphQuBEServer#getRoute(SimplePatternSearch)
+   * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
+   * @param example
+   * @param service
+   * @param start
+   * @param max
+   * @param hmm
+   * @param startTime
+   * @param endTime
+   * @return
+   * @throws AvroRemoteException
+   */
     public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
                                   boolean hmm, long startTime, long endTime) throws AvroRemoteException {
         // TODO : support dateRange
+
+      if (example == null) {
+        new Exception("illegal arg exception").printStackTrace();
+      }
 
         // returns FL_Future or FL_PatternSearchResults
 
@@ -107,7 +124,7 @@ public class SimplePatternSearch implements FL_PatternSearch {
         Binding binding = getBinding(example);
 
         if (binding != null) {
-            logger.debug("search : " + example + " hmm " + hmm + " binding " + binding);
+            logger.debug("search : example '" + example + "' hmm " + hmm + " binding " + binding);
             return binding.searchByExample(example, service, start, max, hmm, startTime, endTime);
         } else {
             logger.error("no binding");

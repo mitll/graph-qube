@@ -1133,7 +1133,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// (3) score based on transactions
 
     logger.debug("found "+example);
-    logger.debug("found "+example.getEntities().size());
+//    logger.debug("found "+example.getEntities().size());
 		List<FL_PatternSearchResult> results;
 			results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
 
@@ -1389,42 +1389,43 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
     long then = System.currentTimeMillis();
     SortedSet<CandidateGraph> candidates = new TreeSet<CandidateGraph>();
+    String firstExemplar = null;
+    if (!exemplarIDs.isEmpty()) {
+       firstExemplar = exemplarIDs.iterator().next();
+      List<String> neighbors = getNearestNeighbors(firstExemplar, k, skipSelf);
 
-    String firstExemplar = exemplarIDs.iterator().next();
-    List<String> neighbors = getNearestNeighbors(firstExemplar, k, skipSelf);
+      //  candidates.add(new CandidateGraph(exemplarIDs, firstExemplar, k));
 
-  //  candidates.add(new CandidateGraph(exemplarIDs, firstExemplar, k));
-
-    for (String node : neighbors) {
-      if (stot.containsKey(node)) {
-        candidates.add(new CandidateGraph(exemplarIDs, node, k));
+      for (String node : neighbors) {
+        if (stot.containsKey(node)) {
+          candidates.add(new CandidateGraph(exemplarIDs, node, k));
+        }
       }
-    }
 
-    if (!candidates.isEmpty()) {
-     // logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-    }
-    else {
-       logger.debug("depth 1 : " + candidates.size() );
+      if (!candidates.isEmpty()) {
+        // logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+      } else {
+        logger.debug("depth 1 : " + candidates.size());
 
-    }
+      }
 
-    for (int i = 1; i < exemplarIDs.size(); i++) {
-      SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
-      for (CandidateGraph candidateGraph : candidates) {
-        candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
+      for (int i = 1; i < exemplarIDs.size(); i++) {
+        SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
+        for (CandidateGraph candidateGraph : candidates) {
+          candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
 
        /* if (!nextCandidates.isEmpty()) {
           logger.debug("depth " + i +
               " : " + nextCandidates.size() + " best " + nextCandidates.first() + " worst " + nextCandidates.last());
         }*/
-      }
+        }
 
-      candidates = nextCandidates;
+        candidates = nextCandidates;
  /* if (!candidates.isEmpty()) {
         logger.debug("depth " + i +
             " : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
       }*/
+      }
     }
 
     if (!candidates.isEmpty()) {
@@ -1509,7 +1510,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       }
       return this;
     }
-    public boolean wouldBeConnected(String nodeid) {
+/*    public boolean wouldBeConnected(String nodeid) {
       boolean connected = false;
       try {
         for (String currentNode : nodes) {
@@ -1519,7 +1520,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       } catch (Exception e) {
       }
       return connected;
-    }
+    }*/
 /*    private List<CandidateGraph> makeNextGraphs() {
       List<String> neighbors = getNearestNeighbors(nodes.get(nodes.size() - 1), k, SKIP_SELF_AS_NEIGHBOR);
 
@@ -2314,10 +2315,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		}
 	}
 
-	public interface Edge extends Comparable<Edge> {
-		Object getSource();
+	public interface Edge<T> extends Comparable<Edge> {
+		T getSource();
 
-		Object getTarget();
+		T getTarget();
 
 		long getTime();
 	};

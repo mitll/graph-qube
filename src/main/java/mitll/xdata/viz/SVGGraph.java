@@ -151,9 +151,9 @@ public class SVGGraph {
       //createSampleData();
       //doLayout(model);
       if (count == 0)
-        writer.write("<h2>Query Subgraph</h2>");
+        writer.write("<h2>Query Subgraph</h2>\n");
       else if (count == 1)
-        writer.write("<h2>Results</h2>");
+        writer.write("<h2>Results</h2>\n");
 
         writer.write("<div " +
           //"width='50%'" +
@@ -162,7 +162,7 @@ public class SVGGraph {
             //  "#b0c4de" +
               "#cedcd7"+
               ";'" : "") +
-          ">");
+          ">\n");
       if (true) {
         String newXML = getSVGForGraph();
         //   String newXML = svgXML;
@@ -190,10 +190,10 @@ public class SVGGraph {
     customizeApperance();
 
     ExportController ec = Lookup.getDefault().lookup(ExportController.class);
-    //logger.debug("ec " + ec);
+    logger.debug("ec " + ec);
 
     SVGExporter svg = (SVGExporter) ec.getExporter("svg");
-  //  logger.debug("svg " + svg);
+    logger.debug("svg " + svg);
 //      svg.getWorkspace().getLookup();
 
 
@@ -202,6 +202,16 @@ public class SVGGraph {
 
     String svgXML = internal.toString();
 
+/*    String prefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n" +
+        "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\" >";*/
+  //  if (svgXML.startsWith(prefix)) {
+      if (svgXML.indexOf("<svg") != 0) {
+      logger.debug("trimming doctype! ---> starting at " + svgXML.indexOf("<svg")+
+          " \n\n\n");
+
+      svgXML = svgXML.substring(svgXML.indexOf("<svg"));
+    }
     return fixDimensions(svgXML);
   }
 
@@ -317,7 +327,14 @@ public class SVGGraph {
 
   }
 
+  /**
+   * @see #toSVG2(influent.idl.FL_PatternSearchResults, java.io.Writer, mitll.xdata.binding.Binding)
+   * @param edgeList
+   * @return
+   */
   private String toTimePlot(Collection<Binding.Edge> edgeList) {
+    logger.debug("making time plot for " + edgeList.isEmpty() + " edges----->");
+
     String viewLeft = "-120";
     String header = "<svg version=\"1.1\" " +
         "xmlns=\"http://www.w3.org/2000/svg\" " +
@@ -353,9 +370,11 @@ public class SVGGraph {
     	// logger.debug("source = " + e.getSource() + ", target = " + e.getTarget());
       if (e.getTime() > max) max = e.getTime();
       if (e.getTime() < min) min = e.getTime();
-      if (!users.contains(e.getSource())) inOrder.add("" + e.getSource());
-      if (!users.contains(e.getTarget())) inOrder.add("" + e.getTarget());
-      users.add("" + e.getSource()); users.add("" + e.getTarget());
+      String stringSource = "" + e.getSource();
+      if (!users.contains(stringSource)) inOrder.add(stringSource);
+      String stringTarget = "" + e.getTarget();
+      if (!users.contains(stringTarget)) inOrder.add(stringTarget);
+      users.add(stringSource); users.add(stringTarget);
       //inOrder.add(e.getSource());
     }
     if (max == min) {
@@ -393,17 +412,17 @@ public class SVGGraph {
     String leftAxis   = "<line " +
         "stroke=\"#808080\" stroke-opacity=\"1.0\" " +
 
-        "x1=-6 y1=0 x2=-6 y2="+(height) +
-        " stroke-width=\"6\" fill=\"none\"" +
-        " />";
-    String bottomAxis = "<line x1=-6 y1=" +(height)+
-        " x2=" + (width)+
-        " y2="+(height) +
+        "x1='-6' y1='0' x2='-6' y2='"+(height) +
+        "' stroke-width=\"6\" fill=\"none\"" +
+        " />\n";
+    String bottomAxis = "<line x1='-6' y1='" +(height)+
+        "' x2='" + (width)+
+        "' y2='"+(height) +
 
-        " stroke=\"#808080\" stroke-opacity=\"1.0\" " +
+        "' stroke=\"#808080\" stroke-opacity=\"1.0\" " +
         " stroke-width=\"6\" fill=\"none\"" +
 
-        " />";
+        " />\n";
 
     String marker = "<defs><marker id=\"mTriangle\" markerWidth=\"5\" markerHeight=\"10\"\n" +
         "        refX=\"5\" refY=\"5\" orient=\"auto\">\n" +
@@ -414,8 +433,8 @@ public class SVGGraph {
     xml += header +marker+ leftAxis + bottomAxis;
 
     for (String user : inOrder) {
-       xml += "<text x=-100 y="+((inOrder.indexOf(user)*hUsers) + 10)+
-           " font-size=\"20\"" +
+       xml += "<text x='-100' y='"+((inOrder.indexOf(user)*hUsers) + 10)+
+           "' font-size=\"20\"" +
            " >" + user+
            "</text>";
     }
@@ -450,10 +469,10 @@ public class SVGGraph {
      // logger.debug("toShow '" + toShow + "' format " +format + " at " + x1);
 
       int fontSize = 15;
-      xml += "<text x=" +
+      xml += "<text x='" +
           (x1-20) +
-          " y=" + (height + 20) +
-          " font-size=\"" +
+          "' y='" + (height + 20) +
+          "' font-size=\"" +
           fontSize +
           "\"" +
           " >" + toShow +
@@ -462,12 +481,12 @@ public class SVGGraph {
       // add tic
       xml+=
 
-      "<line x1=" +x1+
-          " y1=" +((height )-6)+
-          " x2=" + x1+
-          " y2="+((height )+6)+
+      "<line x1='" +x1+
+          "' y1='" +((height )-6)+
+          "' x2='" + x1+
+          "' y2='"+((height )+6)+
 
-          " stroke=\"#808080\" stroke-opacity=\"1.0\" " +
+          "' stroke=\"#808080\" stroke-opacity=\"1.0\" " +
           " stroke-width=\"2\" fill=\"none\"" +
 
           " />";
@@ -492,10 +511,10 @@ public class SVGGraph {
           (down ? "blue" : "green")+//"#808080" +
           "\" stroke-opacity=\"1.0\" " +
           //  "d=\"M 21.204346,-1.000000 C 21.363476,-5.159131 27.840870,-11.159131 32.000000,-11.000000\" " +
-          "x1=" + x1 + " " +
-          "y1=" + y1 + " " +
-          "x2=" + x1 + " " +
-          "y2=" + y2 + " " +
+          "x1='" + x1 + "' " +
+          "y1='" + y1 + "' " +
+          "x2='" + x1 + "' " +
+          "y2='" + y2 + "' " +
           "stroke-width=\"" +
           2 +
           "\" fill=\"none\" " +
@@ -992,7 +1011,8 @@ public class SVGGraph {
 
   private String toTable(List<Binding.ResultInfo> entities) {
     String html = "";
-    html += "<table border=1>";
+    html += "<table>";
+   // html += "<table>";
     html += "<tr>";
 //    html += "<th>Score</th>";
 //    html += "<th>ID</th>";
@@ -1025,13 +1045,22 @@ public class SVGGraph {
    * @return
    */
   public String toSVG( List<Binding.ResultInfo> entities, FL_PatternSearchResults results, Binding binding ) {
+    logger.debug("making svg\n\n\n\n--->");
     StringWriter writer = new StringWriter();
-    writer.write("<!DOCTYPE html>\n" +
+
+    String header = "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n" +
+        "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\" >";
+    writer.write(
+
+
+        "<!DOCTYPE html>" +
+        //header+
+        "\n" +
         "<html>\n" +
-        "<body>");
+        "<head></head>\n<body>");
 
     writeQueryToTable(entities, writer);
-    writer.write("<h2>Results with entity scores</h2>");
+    writer.write("<h2>Results with entity scores</h2>\n");
     try {
       toSVG2(results, writer, binding);
     } catch (Exception e) {
@@ -1061,7 +1090,7 @@ public class SVGGraph {
     for (Map.Entry<String, List<Binding.ResultInfo>> entities2 : typeToEntities.entrySet()) {
       List<Binding.ResultInfo> value = entities2.getValue();
       writer.write("<h3>" + entities2.getKey() +
-          "</h3>");
+          "</h3>\n");
       writer.write(toTable(value));
     }
   }

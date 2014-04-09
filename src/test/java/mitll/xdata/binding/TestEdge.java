@@ -5,7 +5,7 @@ import java.util.Date;
 
 import mitll.xdata.binding.Binding.Edge;
 
-public class TestEdge implements Edge {
+public class TestEdge implements Edge<String> {
 	private String source;
 	private String target;
 	private long time;
@@ -32,7 +32,7 @@ public class TestEdge implements Edge {
 	}
 
 	@Override
-	public Object getSource() {
+	public String getSource() {
 		return source;
 	}
 
@@ -41,7 +41,7 @@ public class TestEdge implements Edge {
 	}
 
 	@Override
-	public Object getTarget() {
+	public String getTarget() {
 		return target;
 	}
 

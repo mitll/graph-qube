@@ -749,7 +749,7 @@ public class BitcoinBinding extends Binding {
     return linkMatchResults;
   }
 
-  public static class BitcoinEdge implements Edge/* , Comparable<BitcoinEdge> */ {
+  public static class BitcoinEdge implements Edge<Integer> {
     private int source;
     private int target;
     private long time;
@@ -784,12 +784,12 @@ public class BitcoinBinding extends Binding {
     }
 
     @Override
-    public Object getSource() {
+    public Integer getSource() {
       return source;
     }
 
     @Override
-    public Object getTarget() {
+    public Integer getTarget() {
       return target;
     }
 
