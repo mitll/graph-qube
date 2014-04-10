@@ -35,8 +35,6 @@ import mitll.xdata.hmm.ObservationLikelihood;
 import mitll.xdata.hmm.StateSequence;
 import mitll.xdata.hmm.VectorObservation;
 import mitll.xdata.scoring.FeatureNormalizer;
-import mitll.xdata.scoring.HmmScorer;
-import mitll.xdata.scoring.Transaction;
 import mitll.xdata.sql.SqlUtilities;
 
 import org.apache.log4j.Logger;
@@ -46,13 +44,13 @@ import org.apache.log4j.Logger;
  * File Templates.
  */
 public abstract class Binding extends SqlUtilities implements AVDLQuery {
-  private static Logger logger = Logger.getLogger(Binding.class);
+  private static final Logger logger = Logger.getLogger(Binding.class);
 
  // private static final boolean REVERSE_DIRECTION = false;
   private static final int DEFAULT_SHORT_LIST_SIZE = 100;
-  public static final int MAX_CANDIDATES = 100;
+  private static final int MAX_CANDIDATES = 100;
   private static final long MB = 1024*1024;
-  public static final int FULL_SEARCH_LIST_SIZE = 200;
+  private static final int FULL_SEARCH_LIST_SIZE = 200;
 	private static final int MAX_TRIES = 1000000;
 //	private static final double HMM_KDE_BANDWIDTH = 0.25;
 	/**
@@ -63,20 +61,20 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	private static final boolean SKIP_SELF_AS_NEIGHBOR = false;
 
 	protected Connection connection;
-	protected Map<String, Collection<String>> tableToColumns = new HashMap<String, Collection<String>>();
-	protected Map<String, Collection<String>> columnToTables = new HashMap<String, Collection<String>>();
-	protected Map<String, String> tableToPrimaryKey = new HashMap<String, String>();
+	private final Map<String, Collection<String>> tableToColumns = new HashMap<String, Collection<String>>();
+	private final Map<String, Collection<String>> columnToTables = new HashMap<String, Collection<String>>();
+	protected final Map<String, String> tableToPrimaryKey = new HashMap<String, String>();
 
 	private static final boolean LIMIT = false;
-	protected Map<FL_PropertyTag, List<String>> tagToColumn = new HashMap<FL_PropertyTag, List<String>>();
-  protected Map<String, String> prefixToTable = new HashMap<String, String>();
+	private final Map<FL_PropertyTag, List<String>> tagToColumn = new HashMap<FL_PropertyTag, List<String>>();
+  protected final Map<String, String> prefixToTable = new HashMap<String, String>();
   protected Map<String, Map<String, KivaBinding.ForeignLink>> sourceToTargetToLinkTable = new HashMap<String, Map<String, KivaBinding.ForeignLink>>();
 	// Map<String, ForeignLink> tableToLinkTable = new HashMap<String, ForeignLink>();
-  protected Map<String, String> tableToDisplay = new HashMap<String, String>();
-	private boolean showSQL = false;
-	private boolean showResults = false;
+  protected final Map<String, String> tableToDisplay = new HashMap<String, String>();
+	private final boolean showSQL = false;
+	private final boolean showResults = false;
   protected final Map<String, Set<String>> stot = new HashMap<String, Set<String>>();
-  protected Set<String> validTargets = new HashSet<String>();
+  protected final Set<String> validTargets = new HashSet<String>();
 
   public Binding(DBConnection connection) {
 		try {
@@ -199,7 +197,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param ids
 	 * @return
 	 */
-	protected ResultInfo getEntities(String table, List<String> ids) {
+	private ResultInfo getEntities(String table, List<String> ids) {
 		try {
 			StringBuilder builder = new StringBuilder();
 			for (String id : ids)
@@ -226,7 +224,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param limit
 	 * @return
 	 */
-	protected Collection<ResultInfo> getEntitiesMatchingProperties(List<FL_PropertyMatchDescriptor> properties,
+  private Collection<ResultInfo> getEntitiesMatchingProperties(List<FL_PropertyMatchDescriptor> properties,
 			long limit) {
 		List<Triple> triples = getTriples(properties);
 		return getEntities(triples, limit);
@@ -400,7 +398,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param id
 	 * @return
 	 */
-	protected String getTableForID(String id) {
+  private String getTableForID(String id) {
 		String table = "";
 		for (String pre : prefixToTable.keySet()) {
 			if (id.startsWith(pre))
@@ -411,11 +409,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return table;
 	}
 
-	/*
-	 * private Map<String, String> getEntity(String table, String id) { ResultInfo entities = getEntitiesByID(table
-	 * ,Arrays.asList(id)); if (entities.rows.isEmpty()) return null; else return entities.rows.get(0); }
-	 */
-
 	/**
 	 * Get entities by getting ids from entity match descriptor (ignoring the other fields)
 	 *
@@ -423,7 +416,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param descriptor
 	 * @return
 	 */
-	protected ResultInfo getEntitiesByID(FL_EntityMatchDescriptor descriptor) {
+  private ResultInfo getEntitiesByID(FL_EntityMatchDescriptor descriptor) {
 		List<String> entityIDs = descriptor.getEntities();
 		if (entityIDs != null && !entityIDs.isEmpty()) {
 			String id = entityIDs.iterator().next();
@@ -443,15 +436,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return new ResultInfo();
 	}
 
-	protected ResultInfo createDummyEntity(String id) {
+  private ResultInfo createDummyEntity(String id) {
 		Map<String, String> nameToType = new HashMap<String, String>();
 		nameToType.put("node_id", "BIGINT");
 		List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
 		Map<String, String> row = new HashMap<String, String>();
 		row.put("node_id", id);
 		rows.add(row);
-		ResultInfo result = new ResultInfo(nameToType, rows);
-		return result;
+    return new ResultInfo(nameToType, rows);
 	}
 
 	/**
@@ -477,9 +469,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 				results.addAll(entities);
 			}
 		}
-		/*
-		 * logger.debug("got " + results.size() + " results for " + tag + "=" + value);
-		 */
 
 		return results;
 	}
@@ -491,7 +480,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param value
 	 * @return
 	 */
-	protected Map<String, String> getEntity(FL_PropertyTag tag, String value) {
+	private Map<String, String> getEntity(FL_PropertyTag tag, String value) {
 		Collection<ResultInfo> entitiesForTag = getEntitiesForTag(tag, value, 1);
 		if (entitiesForTag.isEmpty()) {
 			logger.debug("no results for " + tag + "=" + value);
@@ -590,7 +579,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param entityMap
 	 * @return equivalent to entityMap
 	 */
-	protected FL_EntityMatchResult makeEntityMatchResult(FL_EntityMatchDescriptor descriptor, ResultInfo entities,
+  private FL_EntityMatchResult makeEntityMatchResult(FL_EntityMatchDescriptor descriptor, ResultInfo entities,
 			Map<String, String> entityMap) {
 
 		String primaryKeyCol = tableToPrimaryKey.get(entities.getTable());
@@ -634,7 +623,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param entityMap
 	 * @return
 	 */
-	protected FL_Entity makeEntity(Map<String, String> colToType, String primaryKeyCol, Map<String, String> entityMap) {
+  private FL_Entity makeEntity(Map<String, String> colToType, String primaryKeyCol, Map<String, String> entityMap) {
 		FL_Entity entity = new FL_Entity();
 		entity.setTags(new ArrayList<FL_EntityTag>()); // none for now...
 
@@ -656,7 +645,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param entityMap
 	 * @return entity id from entity map
 	 */
-	protected String setProperties(List<FL_Property> properties, Map<String, String> colToType, String primaryKeyCol,
+  private String setProperties(List<FL_Property> properties, Map<String, String> colToType, String primaryKeyCol,
 			Map<String, String> entityMap) {
 		String entityID = null;
 		for (Map.Entry<String, String> kv : entityMap.entrySet()) {
@@ -739,7 +728,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
 	public static class Triple {
-		String key, value, operator;
+		final String key;
+    final String value;
+    String operator;
 
 		public Triple(FL_PropertyMatchDescriptor prop) {
 			// TODO : handle non-singleton ranges?
@@ -800,7 +791,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param limit
 	 * @return
 	 */
-	protected ResultInfo getEntities(String table, Collection<Triple> triples, long limit) {
+  private ResultInfo getEntities(String table, Collection<Triple> triples, long limit) {
 		return getEntities(table, Collections.EMPTY_LIST, triples, limit);
 	}
 
@@ -813,7 +804,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @return
 	 */
 	private ResultInfo getOrEntities(String table, Collection<Triple> triples, long limit) {
-		return getEntities(table, triples, Collections.EMPTY_LIST, limit);
+    List<Triple> objects = Collections.emptyList();
+    return getEntities(table, triples, objects, limit);
 	}
 
 	/**
@@ -885,7 +877,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return ids;
 	}
 
-	public static List<String> getEntityIDs(List<FL_EntityMatchResult> entities) {
+	private static List<String> getEntityIDs(List<FL_EntityMatchResult> entities) {
 		List<String> ids = new ArrayList<String>();
 		for (FL_EntityMatchResult entity : entities) {
 			ids.add(entity.getEntity().getUid());
@@ -903,10 +895,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 */
 	public Object searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max) {
 		// original service
-		return searchByExample(example, ignoredService, start, max, false, Long.MIN_VALUE, Long.MAX_VALUE);
+		return searchByExample(example, start, max, false, Long.MIN_VALUE, Long.MAX_VALUE);
 	}
 
-  public static final int MAX_TEXT_LENGTH = 15;
+  private static final int MAX_TEXT_LENGTH = 15;
 
   /**
    * Return json with nodes and links, suitable for a sankey display
@@ -1101,20 +1093,19 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    */
   private FL_PatternSearchResults searchByExample(List<String> ids,long start, long max, long startTime, long endTime) {
     FL_PatternDescriptor descriptor = AvroUtils.createExemplarQuery(ids);
-    return searchByExample(descriptor,"",start,max, true,startTime,endTime);
+    return searchByExample(descriptor, start,max, true,startTime,endTime);
   }
 
 	/**
 	 * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean)
    * @see #searchByExample(java.util.List, long, long, long, long)
 	 * @param example
-	 * @param ignoredService
 	 * @param start ignored for now
 	 * @param max items to return
 	 * @param rescoreWithHMM
 	 * @return
 	 */
-	public FL_PatternSearchResults searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max,
+	public FL_PatternSearchResults searchByExample(FL_PatternDescriptor example, long start, long max,
                                                  boolean rescoreWithHMM, long startTime, long endTime) {
 		long then = System.currentTimeMillis();
 		logger.debug("ENTER searchByExample() got " + example + " rescore " + rescoreWithHMM);
@@ -1213,7 +1204,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
   /**
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
+   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
    * @param example
    * @param results
    * @param exemplarIDs
@@ -1240,9 +1231,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     List<FL_PatternSearchResult> tempResults = new ArrayList<FL_PatternSearchResult>();
     for (int i = 0; i < results.size(); i++) {
       List<VectorObservation> observations = relevantObservations.get(i);
-      if (observations.isEmpty()) {
-        continue;
-      } else {
+      if (!observations.isEmpty()) {
         // replace links in each subgraph (subsequence) with aggregate links (but only ones in relevant observations)
         List<Edge> relevantEdges = new ArrayList<Edge>();
 
@@ -1292,46 +1281,16 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     return tempResults;
   }
 
-  public void addRelevantEdges(FL_PatternSearchResult result, List<VectorObservation> observations) {
-//		FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
-//        FL_Link link = new FL_Link();
-//        link.setSource(source);
-//        link.setTarget(target);
-//        link.setTags(new ArrayList<FL_LinkTag>());
-//        List<FL_Property> properties = new ArrayList<FL_Property>();
-//        properties.add(createProperty("numEdges", numEdges, FL_PropertyType.LONG));
-//        properties.add(createProperty("outFlow", out, FL_PropertyType.DOUBLE));
-//        properties.add(createProperty("inFlow", in, FL_PropertyType.DOUBLE));
-//        properties.add(createProperty("netFlow", net, FL_PropertyType.DOUBLE));
-//        link.setProperties(properties);
-//        linkMatchResult.setLink(link);
-//        linkMatchResult.setScore(1.0);
-//        linkMatchResult.setUid("");
-//        linkMatchResults.add(linkMatchResult);
-
-		List<FL_LinkMatchResult> linkMatchResults = new ArrayList<FL_LinkMatchResult>();
-
-		for (VectorObservation observation : observations) {
-			for (Edge edge : observation.getEdges()) {
-
-			}
-		}
-
-		result.setLinks(linkMatchResults);
-	}
-
 	public List<Edge> getEdgesForResult(FL_PatternSearchResult result) {
 		List<FL_EntityMatchResult> entities = result.getEntities();
 		List<String> entityIDs = getEntityIDs(entities);
-		// logger.debug("result = " + result.toString());
-		// logger.debug("entityIDs = " + entityIDs);
 		return getAllLinks(entityIDs);
 	}
 
 	/**
 	 * @return Result node IDs in same order as associated exemplar (query) node IDs.
 	 */
-	public List<String> getOrderedIDsForResult(FL_PatternSearchResult result, FL_PatternDescriptor example,
+  private List<String> getOrderedIDsForResult(FL_PatternSearchResult result, FL_PatternDescriptor example,
 			List<String> exemplarIDs) {
 		// Note: just put exemplarIDs in there to get it to be correct size
 		List<String> ids = new ArrayList<String>(exemplarIDs);
@@ -1368,7 +1327,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * Retrieves promising (somewhat) connected subgraphs based on node similarity.
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
+   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
 	 */
 	private List<FL_PatternSearchResult> getShortlist(FL_PatternDescriptor example, long max) {
 		// (2a) retrieve list of nodes for each query node ranked by similarity
@@ -1411,7 +1370,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
     List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
     int count = 0;
-    CandidateGraph queryGraph = new CandidateGraph(exemplarIDs, firstExemplar, 10).makeDefault();
+    CandidateGraph queryGraph = new CandidateGraph(this, exemplarIDs, firstExemplar, 10).makeDefault();
     boolean found = false;
     for (CandidateGraph graph : candidates) {
       if (graph.equals(queryGraph)) {
@@ -1476,7 +1435,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     // for each neighbor, make a one-node graph
     for (String node : neighbors) {
       if (stot.containsKey(node)) {
-        candidates.add(new CandidateGraph(exemplarIDs, node, k));
+        candidates.add(new CandidateGraph(this, exemplarIDs, node, k));
       }
     }
 
@@ -1511,7 +1470,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     return candidates;
   }
 
-  protected void logMemory() {
+  private void logMemory() {
     Runtime rt = Runtime.getRuntime();
     long free = rt.freeMemory();
     long used = rt.totalMemory() - free;
@@ -1519,136 +1478,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
   }
 
-
-  private class CandidateGraph implements Comparable<CandidateGraph> {
-    private static final int MAX_NEIGHBORS = 1000;
-    private final List<String> exemplars;
-    private List<String> nodes = new ArrayList<String>();
-    private float score;
-    int k;
-    CandidateGraph(CandidateGraph toCopy) {
-      exemplars = toCopy.exemplars;
-      nodes = new ArrayList<String>(toCopy.getNodes());
-      this.k = toCopy.k;
-      this.score = toCopy.score;
-    }
-
-    CandidateGraph(List<String> exemplars, String initial, int k) {
-      this.exemplars = exemplars;
-      addNode(initial);
-      this.k = k;
-    }
-    public CandidateGraph makeDefault() {
-      for (String exemplar : exemplars){
-        if (!nodes.contains(exemplar)) nodes.add(exemplar);
-      }
-      return this;
-    }
-/*    public boolean wouldBeConnected(String nodeid) {
-      boolean connected = false;
-      try {
-        for (String currentNode : nodes) {
-          connected = isPairConnected(currentNode, nodeid);
-          if (connected) break;
-        }
-      } catch (Exception e) {
-      }
-      return connected;
-    }*/
-/*    private List<CandidateGraph> makeNextGraphs() {
-      List<String> neighbors = getNearestNeighbors(nodes.get(nodes.size() - 1), k, SKIP_SELF_AS_NEIGHBOR);
-
-      List<CandidateGraph> nextHopGraphs = new ArrayList<CandidateGraph>();
-      for (String nextHopNode : neighbors) {
-        if (!nodes.contains(nextHopNode) && wouldBeConnected(nextHopNode) && validTargets.contains(nextHopNode)) {
-          CandidateGraph candidateGraph = new CandidateGraph(this);
-          candidateGraph.addNode(nextHopNode);
-          nextHopGraphs.add(candidateGraph);
-        }
-      }
-      return nextHopGraphs;
-    }*/
-
-    /**
-     * Find immediate neighbors of the last node added to the graph
-     *
-     * @param candidates
-     * @param maxSize
-     */
-    public void makeNextGraphs2(SortedSet<CandidateGraph> candidates, int maxSize) {
-      final String lastNodeInGraph = nodes.get(nodes.size() - 1);
-      Set<String> oneHopNeighbors = stot.get(lastNodeInGraph);
-      if (oneHopNeighbors == null) {
-        logger.error("huh? '" + lastNodeInGraph + "' has no transactions?");
-        return;
-      }
-      List<String> sortedNeighbors = new ArrayList<String>(oneHopNeighbors);
-      Collections.sort(sortedNeighbors, new Comparator<String>() {
-        @Override
-        public int compare(String o1, String o2) {
-          double toFirst  = getSimilarity(lastNodeInGraph, o1);
-          double toSecond = getSimilarity(lastNodeInGraph, o2);
-          return toFirst < toSecond ? +1 : toFirst > toSecond ? -1 : 0;
-        }
-      });
-
-      sortedNeighbors = sortedNeighbors.subList(0, Math.min(sortedNeighbors.size(), MAX_NEIGHBORS));
-
-      //logger.debug("this " + this + " found " + sortedNeighbors.size() + " neighbors of " + lastNodeInGraph);
-      for (String nextHopNode : sortedNeighbors) {
-        if (!nodes.contains(nextHopNode) && validTargets.contains(nextHopNode)) {    // no cycles!
-          CandidateGraph candidateGraph = new CandidateGraph(this);
-          candidateGraph.addNode(nextHopNode);
-          if (candidates.size() < maxSize || candidateGraph.getScore() > candidates.last().getScore()) {
-            if (candidates.size() == maxSize) {
-              candidates.remove(candidates.last());
-              //logger.debug("this " + this + " removing " + candidates.last()+ " and adding " + candidateGraph);
-
-            }
-            candidates.add(candidateGraph);
-          }
-        }
-      }
-    }
-
-    /**
-     * Compare the node to add against the last node and increment the score.
-     * @param nodeid
-     */
-    private void addNode(String nodeid) {
-      String compareAgainst = exemplars.get(getNodes().size());
-      double similarity = getSimilarity(compareAgainst, nodeid);
-      score += similarity;
-      nodes.add(nodeid);
-    }
-
-    @Override
-    public int compareTo(CandidateGraph o) {
-      return o.getScore() < getScore() ? -1 : o.getScore() > getScore() ? +1 : 0;
-    }
-
-    public List<String> getNodes() {
-      return nodes;
-    }
-
-    public float getScore() {
-      return score;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof CandidateGraph) {
-        CandidateGraph o = (CandidateGraph) obj;
-        return nodes.equals(o.getNodes());
-      }
-      else return false;
-    }
-
-    public String toString() {
-      boolean isQuery = getNodes().equals(exemplars);
-       return (isQuery ? " QUERY " : "")+" nodes " + getNodes() + " score " + getScore();
-    }
-  }
 
   /**
    * @see #getShortlist(influent.idl.FL_PatternDescriptor, long)
@@ -1758,7 +1587,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     return entities;
   }
 
-  public FL_EntityMatchResult makeEntityMatchResult(String queryID, String resultID, double score) {
+  private FL_EntityMatchResult makeEntityMatchResult(String queryID, String resultID, double score) {
 		FL_EntityMatchDescriptor descriptor = new FL_EntityMatchDescriptor();
 		// reuse Uid from query
 		descriptor.setUid(queryID);
@@ -1793,104 +1622,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		fields.add(s.substring(i, s.length()));
 		return fields;
 	}
-
-	/**
-	 * Rescores results by comparing result subgraph's transactions to query graph's transactions.
-	 */
-/*	private void rescoreWithHMM_OLD(FL_PatternDescriptor query, List<FL_PatternSearchResult> results,
-			List<String> exemplarIDs, List<Edge> queryEdges, List<List<Edge>> resultEdges) {
-		//
-		// get edges and features for query subgraph and result subgraphs
-		//
-
-		List<Transaction> queryTransactions = createFeatureVectors(queryEdges, exemplarIDs);
-		List<List<Transaction>> resultTransactions = new ArrayList<List<Transaction>>();
-		for (List<Edge> edges : resultEdges) {
-			resultTransactions.add(createFeatureVectors(edges, exemplarIDs));
-		}
-
-		//
-		// normalize features
-		//
-
-		// pack features from query and results
-		int numDimensions = queryTransactions.get(0).getFeatures().length;
-		int numSamples = queryTransactions.size();
-		for (List<Transaction> transactions : resultTransactions) {
-			numSamples += transactions.size();
-		}
-		double[][] rawFeatures = new double[numSamples][numDimensions];
-		int index = 0;
-		for (Transaction transaction : queryTransactions) {
-			rawFeatures[index++] = transaction.getFeatures();
-		}
-		for (List<Transaction> transactions : resultTransactions) {
-			for (Transaction transaction : transactions) {
-				rawFeatures[index++] = transaction.getFeatures();
-			}
-		}
-
-		double lowerPercentile = 0.025;
-		double upperPercentile = 0.975;
-		FeatureNormalizer normalizer = new FeatureNormalizer(rawFeatures, lowerPercentile, upperPercentile);
-		double[][] stdFeatures = normalizer.normalizeFeatures(rawFeatures);
-
-		// unpack features
-		index = 0;
-		for (Transaction transaction : queryTransactions) {
-			transaction.setFeatures(stdFeatures[index++]);
-		}
-		for (List<Transaction> transactions : resultTransactions) {
-			for (Transaction transaction : transactions) {
-				transaction.setFeatures(stdFeatures[index++]);
-			}
-		}
-
-		//
-		// "train" HMM
-		//
-
-		long hour = 3600L * 1000L;
-		long day = 24L * hour;
-		long week = 7L * day;
-		long timeThresholdMillis = 1L * hour;
-		logger.debug("constructing HMM");
-		HmmScorer scorer = new HmmScorer(queryTransactions, timeThresholdMillis, HMM_KDE_BANDWIDTH);
-
-		//
-		// score result subgraphs
-		//
-
-		logger.debug("scoring subgraphs");
-		double queryScore = scorer.score(queryTransactions);
-		for (int i = 0; i < results.size(); i++) {
-			double score = scorer.score(resultTransactions.get(i));
-			// NOTE: this also penalizes scores that are "better" than the queryScore
-			double distance = Math.abs(score - queryScore);
-			double similarity = 1.0 / (1.0 + HMM_SCALE_DISTANCE * distance);
-			results.get(i).setScore(similarity);
-		}
-
-		// write out edge attributes and features to console
-		// try {
-		// PrintWriter pw = new PrintWriter("c:/temp/edges_" + System.currentTimeMillis() + ".tsv");
-		// for (int i = 0; i < results.size(); i++) {
-		// pw.println(AvroUtils.toString(results.get(i)));
-		// List<Edge> edges = resultEdges.get(i);
-		// List<Transaction> transactions = resultTransactions.get(i);
-		// for (int j = 0; j < edges.size(); j++) {
-		// pw.print(edges.get(j));
-		// pw.print("\t");
-		// pw.print(transactions.get(j).featuresToString("\t"));
-		// pw.println();
-		// }
-		// pw.println();
-		// }
-		// pw.close();
-		// } catch (FileNotFoundException e) {
-		// e.printStackTrace();
-		// }
-	}*/
 
 	/**
 	 * Rescores results by comparing result subgraph's transactions to query graph's transactions.
@@ -2153,8 +1884,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return sum / entities.size();
 	}
 
+  /**
+   * @see #getShortlistFast(java.util.List, java.util.List, long)
+   * @param entities
+   * @param score
+   * @param isQuery
+   * @return
+   */
 	private FL_PatternSearchResult makeResult(List<FL_EntityMatchResult> entities, double score, boolean isQuery) {
-		// FL_PatternSearchResult result = new FL_PatternSearchResult();
 		FL_PatternSearchResult result = new PatternSearchResultWithState(isQuery);
 		result.setEntities(entities);
 		List<FL_LinkMatchResult> links = getLinks(entities);
@@ -2220,8 +1957,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * @return links between entities (if connected in edge_index table)
+   * @see #makeResult(java.util.List, double, boolean)
 	 */
-	protected List<FL_LinkMatchResult> getLinks(List<FL_EntityMatchResult> entities) {
+  private List<FL_LinkMatchResult> getLinks(List<FL_EntityMatchResult> entities) {
 		// NOTE : this returns at most one link per pair of nodes...
 
 		List<FL_LinkMatchResult> linkMatchResults = new ArrayList<FL_LinkMatchResult>();
@@ -2276,7 +2014,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	/**
 	 * @return feature vectors associated with subgraph's edges
 	 */
-	protected abstract List<Transaction> createFeatureVectors(List<Edge> edges, List<String> ids);
+	//protected abstract List<Transaction> createFeatureVectors(List<Edge> edges, List<String> ids);
 
 	// TODO: should make generic base implementation for createObservationVectors()
 	/**
@@ -2285,12 +2023,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	protected abstract List<VectorObservation> createObservationVectors(List<Edge> edges, List<String> ids);
 
 	/**
-	 * Gotta rename this -- represents results of a specific type -- all the lenders, for instance. If a query returned
+	 * Represents results of a specific type -- all the lenders, for instance. If a query returned
 	 * lenders and borrowers, there would be two different instances of this class.
 	 */
 	public static class ResultInfo {
-		public Map<String, String> nameToType;
-		public List<Map<String, String>> rows;
+		public final Map<String, String> nameToType;
+		public final List<Map<String, String>> rows;
 		private String table;
 
 		public ResultInfo() {
@@ -2323,24 +2061,21 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
 	protected static class ForeignLink {
-		public String linkTable;
-		public LocalToForeignKeyJoin sourcePair;
-		public LocalToForeignKeyJoin targetPair;
+		public final String linkTable;
+		public final LocalToForeignKeyJoin sourcePair;
+		public final LocalToForeignKeyJoin targetPair;
 
-		// LocalToForeignKeyJoin pair;
-
-		public ForeignLink(String linkTable, // LocalToForeignKeyJoin pair) {
+		public ForeignLink(String linkTable,
 				String sourceJoin, String targetJoin) {
 			this(linkTable, new LocalToForeignKeyJoin(sourceJoin), new LocalToForeignKeyJoin(targetJoin));
 
 		}
 
-		public ForeignLink(String linkTable, // LocalToForeignKeyJoin pair) {
+		public ForeignLink(String linkTable,
 				LocalToForeignKeyJoin sourcePair, LocalToForeignKeyJoin targetPair) {
 			this.linkTable = linkTable;
 			this.sourcePair = sourcePair;
 			this.targetPair = targetPair;
-			// this.pair = pair;
 		}
 
 		public String toString() {
@@ -2349,8 +2084,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
 	protected static class LocalToForeignKeyJoin {
-		public String entityKey;
-		public String foreignKey;
+		public final String entityKey;
+		public final String foreignKey;
 
 		public LocalToForeignKeyJoin(String commonKey) {
 			this(commonKey, commonKey);
@@ -2368,5 +2103,5 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		T getTarget();
 
 		long getTime();
-	};
+	}
 }

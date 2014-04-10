@@ -285,11 +285,6 @@ public class KivaBinding extends Binding {
   }
 
   @Override
-  protected List<Transaction> createFeatureVectors(List<Edge> edges, List<String> exemplarIDs) {
-    return null;
-  }
-
-  @Override
   protected List<VectorObservation> createObservationVectors(List<Edge> edges, List<String> ids) {
     return null;
   }

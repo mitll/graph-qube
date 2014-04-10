@@ -23,21 +23,9 @@ public class PatternSearchResultWithState extends FL_PatternSearchResult {
 		return phaseLinks;
 	}
 
-/*
-	public void setPhaseLinks(List<List<FL_LinkMatchResult>> phaseLinks) {
-		this.phaseLinks = phaseLinks;
-	}
-*/
-
 	public List<String> getStates() {
 		return states;
 	}
-
-/*
-	public void setStates(List<String> states) {
-		this.states = states;
-	}
-*/
 
   public String toString() {
     return "search result , query " + isQuery + " links " + phaseLinks.size() + " states " + states.size();

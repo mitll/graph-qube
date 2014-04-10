@@ -16,7 +16,6 @@ package mitll.xdata;
 
 import influent.idl.*;
 import mitll.xdata.binding.Binding;
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import org.apache.avro.AvroRemoteException;
 import org.apache.log4j.Logger;
 
@@ -125,7 +124,7 @@ public class SimplePatternSearch implements FL_PatternSearch {
 
         if (binding != null) {
             logger.debug("search : example '" + example + "' hmm " + hmm + " binding " + binding);
-            return binding.searchByExample(example, service, start, max, hmm, startTime, endTime);
+            return binding.searchByExample(example, start, max, hmm, startTime, endTime);
         } else {
             logger.error("no binding");
         }

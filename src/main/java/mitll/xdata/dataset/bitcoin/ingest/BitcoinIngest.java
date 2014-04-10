@@ -31,10 +31,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class BitcoinIngest {
-  public static final boolean USE_TIMESTAMP = false;
-  private static Logger logger = Logger.getLogger(BitcoinIngest.class);
+  private static final boolean USE_TIMESTAMP = false;
+  private static final Logger logger = Logger.getLogger(BitcoinIngest.class);
 
-  public static Map<String, String> TYPE_TO_DB = new HashMap<String, String>();
+  private static final Map<String, String> TYPE_TO_DB = new HashMap<String, String>();
 
   static {
     TYPE_TO_DB.put("INTEGER", "INT");
@@ -44,7 +44,7 @@ public class BitcoinIngest {
     TYPE_TO_DB.put("BOOLEAN", "BOOLEAN");
   }
 
-  public static String createCreateSQL(String tableName, List<String> names, List<String> types, boolean mapTypes) {
+  private static String createCreateSQL(String tableName, List<String> names, List<String> types, boolean mapTypes) {
     String sql = "CREATE TABLE " + tableName + " (" + "\n";
     for (int i = 0; i < names.size(); i++) {
       String statedType = types.get(i).toUpperCase();
@@ -56,7 +56,7 @@ public class BitcoinIngest {
     return sql;
   }
 
-  public static String createInsertSQL(String tableName, List<String> names) {
+  private static String createInsertSQL(String tableName, List<String> names) {
     String sql = "INSERT INTO " + tableName + " (";
     for (int i = 0; i < names.size(); i++) {
       sql += (i > 0 ? ", " : "") + names.get(i);
@@ -79,8 +79,8 @@ public class BitcoinIngest {
    * @throws Exception
    * @see #main
    */
-  public static void loadTransactionTable(String tableName, String dataFilename, String btcToDollarFile,
-                                          String dbType, boolean useTimestamp) throws Exception {
+  private static void loadTransactionTable(String tableName, String dataFilename, String btcToDollarFile,
+                                           String dbType, boolean useTimestamp) throws Exception {
     if (dbType.equals("h2")) tableName = tableName.toUpperCase();
     List<String> cnames = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
     //    List<String> names = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD");
@@ -352,8 +352,8 @@ public class BitcoinIngest {
       last = btcToDollar.get(lastDate);
     }
 
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-    Map<String, Long> dayToTime = new HashMap<String, Long>();
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    final Map<String, Long> dayToTime = new HashMap<String, Long>();
 
     public Double getConversionRate(
         String day, long time) throws Exception {

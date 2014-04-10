@@ -338,8 +338,7 @@ public class GraphQuBEServer {
 
         if (id == null) {
           response.status(400);
-          String message = "Bad parameter: id = [" + id + "]";
-          return message;
+          return "Bad parameter: id = [" + id + "]";
         }
 
         long max = 10;

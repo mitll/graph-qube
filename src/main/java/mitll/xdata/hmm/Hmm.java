@@ -178,8 +178,7 @@ public class Hmm<T extends Observation> {
 			states.add(state);
 		}
 		Collections.reverse(states);
-		StateSequence sequence = new StateSequence(states, viterbi[q_F][endTime], start[q_F][endTime]);
-		return sequence;
+    return new StateSequence(states, viterbi[q_F][endTime], start[q_F][endTime]);
 	}
 
 	/**

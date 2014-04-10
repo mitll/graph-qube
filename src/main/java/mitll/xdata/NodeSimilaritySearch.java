@@ -67,9 +67,8 @@ public class NodeSimilaritySearch {
     BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
     ids = new ArrayList<String>();
     idToRow = new HashMap<String, Integer>();
-    String line = null;
     // skip header
-    line = br.readLine();
+    String line = br.readLine();
     while ((line = br.readLine()) != null) {
       String id = line.trim();
       if (id.length() > 0) {
@@ -82,12 +81,6 @@ public class NodeSimilaritySearch {
     }
     br.close();
     numRows = ids.size();
-
-    // System.out.println("ids.size() = " + ids.size());
-    // System.out.println("idToRow.size() = " + idToRow.size());
-    // String temp = ids.get(0);
-    // System.out.println("ids.get(0) = " + temp);
-    // System.out.println("idToRow.get(" + temp + ") = " + idToRow.get(temp));
   }
 
   private void loadFeatures(String filename) throws Exception {

@@ -68,8 +68,7 @@ public class AvroUtils {
     public static SpecificRecord decodeJSON(Schema schema, String json) throws Exception {
         DatumReader<SpecificRecord> datumReader = new SpecificDatumReader<SpecificRecord>(schema);
         JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, json);
-        SpecificRecord record = datumReader.read(null, decoder);
-        return record;
+      return datumReader.read(null, decoder);
     }
 
     /**

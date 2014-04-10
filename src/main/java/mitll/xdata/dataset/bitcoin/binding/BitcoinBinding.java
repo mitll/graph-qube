@@ -37,7 +37,6 @@ public class BitcoinBinding extends Binding {
   private PreparedStatement pairConnectedStatement;
   private PreparedStatement edgeMetadataKeyStatement;
   private boolean useFastBitcoinConnectedTest = true;
-  //private final Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
 
   public BitcoinBinding(DBConnection connection) {
     this(connection, true);
@@ -385,7 +384,7 @@ public class BitcoinBinding extends Binding {
             double debitdev = rs.getDouble(9);
             BitcoinEdge edge = new BitcoinEdge(source, target, time, amount, usd, devpop, creditdev,
                 debitdev);
-            edges.add((Edge) edge);
+            edges.add(edge);
           }
           // long stop = System.currentTimeMillis();
           // logger.debug("(" + i + ", " + j + ") took " + (start - stop) + " ms for " + ijEdges + " edges");
@@ -450,7 +449,7 @@ public class BitcoinBinding extends Binding {
             double debitdev = rs.getDouble(9);
             BitcoinEdge edge = new BitcoinEdge(source, target, time, amount, usd, devpop, creditdev,
                 debitdev);
-            edges.add((Edge) edge);
+            edges.add(edge);
           }
           // long stop = System.currentTimeMillis();
           // logger.debug("(" + i + ", " + j + ") took " + (start - stop) + " ms for " + ijEdges + " edges");
@@ -472,9 +471,9 @@ public class BitcoinBinding extends Binding {
    * @param edges
    * @return
    * @see #rescoreWithHMM
+   * @deprecated  not used currently
    */
-  @Override
-  protected List<Transaction> createFeatureVectors(List<Edge> edges, List<String> exemplarIDs) {
+  private List<Transaction> createFeatureVectors(List<Edge> edges, List<String> exemplarIDs) {
     // sort edges
     Collections.sort(edges, new Comparator<Edge>() {
       @Override
@@ -768,26 +767,26 @@ public class BitcoinBinding extends Binding {
   }
 
   public static class BitcoinEdge implements Edge<Integer> {
-    private int source;
-    private int target;
-    private long time;
-    private double amount;
-    private double usd;
+    private final int source;
+    private final int target;
+    private final long time;
+    private final double amount;
+    private final double usd;
 
     /**
      * deviation from population mean usd
      */
-    private double deviationFromPopulation;
+    private final double deviationFromPopulation;
 
     /**
      * deviation from target's mean usd
      */
-    private double deviationFromOwnCredits;
+    private final double deviationFromOwnCredits;
 
     /**
      * deviation from source's mean usd
      */
-    private double deviationFromOwnDebits;
+    private final double deviationFromOwnDebits;
 
     public BitcoinEdge(int source, int target, long time, double amount, double usd,
                        double deviationFromPopulation, double deviationFromOwnCredits, double deviationFromOwnDebits) {
@@ -900,7 +899,7 @@ public class BitcoinBinding extends Binding {
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "97409", "11" }));
 
     // query_2
-    descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[]{"11", "1598539", "988143"}));
+    descriptor = AvroUtils.createExemplarQuery(Arrays.asList("11", "1598539", "988143"));
 
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "505134", "137750", "146073",
     // "28946",
@@ -909,7 +908,7 @@ public class BitcoinBinding extends Binding {
     boolean hmmScoring = true;
     // use aptima precomputed results
     logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-    result = binding.searchByExample(descriptor, null, 0, 100, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE);
+    result = binding.searchByExample(descriptor, 0, 100, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE);
     // use LL shortlisting
     // result = binding.searchByExample(descriptor, null, 0, 10, -1, hmmScoring);
     logger.debug("result " + result);
@@ -928,7 +927,7 @@ public class BitcoinBinding extends Binding {
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "4547" }));
 
     // wikileaks, lulzsec
-    descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[]{"4547", "5104"}));
+    descriptor = AvroUtils.createExemplarQuery(Arrays.asList("4547", "5104"));
 
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "1", "12" }));
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "12", "616759" }));
@@ -939,7 +938,7 @@ public class BitcoinBinding extends Binding {
     System.out.println("result = " + AvroUtils.encodeJSON((FL_PatternSearchResults) result));
 
     // query 0
-    descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[]{"505134", "137750", "146073", "28946", "11"}));
+    descriptor = AvroUtils.createExemplarQuery(Arrays.asList("505134", "137750", "146073", "28946", "11"));
     logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
 
     if (true) {
