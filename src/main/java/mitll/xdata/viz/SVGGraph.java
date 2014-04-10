@@ -121,6 +121,13 @@ public class SVGGraph {
 
   }
 
+  /**
+   * @see #toSVG(java.util.List, influent.idl.FL_PatternSearchResults, mitll.xdata.binding.Binding)
+   * @param results
+   * @param writer
+   * @param binding
+   * @throws Exception
+   */
   private void toSVG2(FL_PatternSearchResults results, Writer writer, Binding binding) throws Exception {
     int count = 0;
     for (FL_PatternSearchResult result : results.getResults()) {
@@ -186,14 +193,19 @@ public class SVGGraph {
     }
   }
 
+  /**
+   * Use gephi to convert a graph into an svg rendering.
+   * @see #toSVG2(influent.idl.FL_PatternSearchResults, java.io.Writer, mitll.xdata.binding.Binding)
+   * @return
+   */
   private String getSVGForGraph() {
     customizeApperance();
 
     ExportController ec = Lookup.getDefault().lookup(ExportController.class);
-    logger.debug("ec " + ec);
+    //logger.debug("ec " + ec);
 
     SVGExporter svg = (SVGExporter) ec.getExporter("svg");
-    logger.debug("svg " + svg);
+    //logger.debug("svg " + svg);
 //      svg.getWorkspace().getLookup();
 
 
@@ -201,15 +213,8 @@ public class SVGGraph {
     ec.exportWriter(internal, svg);
 
     String svgXML = internal.toString();
-
-/*    String prefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-        "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n" +
-        "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\" >";*/
-  //  if (svgXML.startsWith(prefix)) {
-      if (svgXML.indexOf("<svg") != 0) {
-      logger.debug("trimming doctype! ---> starting at " + svgXML.indexOf("<svg")+
-          " \n\n\n");
-
+    if (svgXML.indexOf("<svg") != 0) {
+      logger.debug("trimming doctype! ---> starting at " + svgXML.indexOf("<svg"));
       svgXML = svgXML.substring(svgXML.indexOf("<svg"));
     }
     return fixDimensions(svgXML);
@@ -1045,16 +1050,11 @@ public class SVGGraph {
    * @return
    */
   public String toSVG( List<Binding.ResultInfo> entities, FL_PatternSearchResults results, Binding binding ) {
-    logger.debug("making svg\n\n\n\n--->");
+    logger.debug("making svg for " + entities.size() + " entities and " + results.getTotal() +  " results.");
     StringWriter writer = new StringWriter();
 
-    String header = "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n" +
-        "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\" >";
     writer.write(
-
-
         "<!DOCTYPE html>" +
-        //header+
         "\n" +
         "<html>\n" +
         "<head></head>\n<body>");
@@ -1077,20 +1077,23 @@ public class SVGGraph {
     return s;
   }
 
+  /**
+   * @see #toSVG(java.util.List, influent.idl.FL_PatternSearchResults, mitll.xdata.binding.Binding)
+   * @param entities
+   * @param writer
+   */
   private void writeQueryToTable(List<Binding.ResultInfo> entities, StringWriter writer) {
     Map<String,List<Binding.ResultInfo>> typeToEntities = new HashMap<String, List<Binding.ResultInfo>>();
-    logger.debug("entities.size() = " + entities.size());
+    logger.debug("query entities.size() = " + entities.size());
     for ( Binding.ResultInfo entity : entities) {
-    	logger.debug("entity = " + entity);
+    	logger.debug("\tentity = " + entity);
       List<Binding.ResultInfo> resultInfos = typeToEntities.get(entity.getTable());
       if (resultInfos == null) typeToEntities.put (entity.getTable(), resultInfos = new ArrayList<Binding.ResultInfo>());
       resultInfos.add(entity);
     }
-    //writer.write("<h2>Query Entities</h2>");
     for (Map.Entry<String, List<Binding.ResultInfo>> entities2 : typeToEntities.entrySet()) {
       List<Binding.ResultInfo> value = entities2.getValue();
-      writer.write("<h3>" + entities2.getKey() +
-          "</h3>\n");
+      writer.write("<h3>" + entities2.getKey() + "</h3>\n");
       writer.write(toTable(value));
     }
   }

@@ -37,7 +37,7 @@ public class BitcoinBinding extends Binding {
   private PreparedStatement pairConnectedStatement;
   private PreparedStatement edgeMetadataKeyStatement;
   private boolean useFastBitcoinConnectedTest = true;
-  private final Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
+  //private final Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
 
   public BitcoinBinding(DBConnection connection) {
     this(connection, true);
@@ -137,12 +137,18 @@ public class BitcoinBinding extends Binding {
       long[] recover = recover(e);
 
       int source = (int) recover[0];
+      String sSource = ""+source;
       int target = (int) recover[1];
-      Set<Integer> integers = stot.get(source);
-      if (integers == null)
-        stot.put(source, integers = new HashSet<Integer>());
-      if (!integers.contains(target))
-        integers.add(target);
+
+      String sTarget = ""+target;
+
+      Set<String> targetsForSource = stot.get(sSource);
+      if (targetsForSource == null)
+        stot.put(sSource, targetsForSource = new HashSet<String>());
+      if (!targetsForSource.contains(sTarget)) {
+        targetsForSource.add(sTarget);
+        validTargets.add(sTarget);
+      }
 
       if (count % 1000000 == 0) {
         logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count + " ms/read");
@@ -207,6 +213,11 @@ public class BitcoinBinding extends Binding {
     return combined;
   }*/
 
+  /**
+   * split a long into two longs - high and low
+   * @param combined
+   * @return
+   */
   private long[] recover(long combined) {
     long low = combined & Integer.MAX_VALUE;
     long high = (combined >> 32) & Integer.MAX_VALUE;
@@ -283,15 +294,15 @@ public class BitcoinBinding extends Binding {
     }
   }
 
-  private boolean inMemoryIsPairConnected(String i, String j) {
-    int f = Integer.parseInt(i);
-    int s = Integer.parseInt(j);
+  private boolean inMemoryIsPairConnected(String f, String s) {
+    //int f = Integer.parseInt(i);
+    //int s = Integer.parseInt(j);
 
-    Set<Integer> integers = stot.get(f);
+    Set<String> integers = stot.get(f);
     if (integers != null && integers.contains(s))
       return true;
 
-    Set<Integer> integers2 = stot.get(s);
+    Set<String> integers2 = stot.get(s);
     return integers2 != null && integers2.contains(f);
   }
 
@@ -514,6 +525,13 @@ public class BitcoinBinding extends Binding {
     return transactions;
   }
 
+  /**
+   * @see #getResultObservations(java.util.List, java.util.List, java.util.List)
+   * @see #rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
+   * @param edges
+   * @param ids
+   * @return
+   */
   @Override
   protected List<VectorObservation> createObservationVectors(List<Edge> edges, List<String> ids) {
     // sort edges
@@ -551,7 +569,7 @@ public class BitcoinBinding extends Binding {
       }
     }
 
-    logger.debug("indexMap = " + indexMap);
+    //logger.debug("indexMap = " + indexMap);
 
     BitcoinEdge firstEdge = (BitcoinEdge) edges.get(0);
     int edgeCount = 0;
@@ -563,9 +581,9 @@ public class BitcoinBinding extends Binding {
     double[] features = new double[2 + (numNodes * (numNodes - 1)) / 2];
     List<Edge> bucketEdges = new ArrayList<Edge>();
 
-    for (int i = 0; i < edges.size(); i++) {
+    for (Edge edge1 : edges) {
       edgeCount++;
-      BitcoinEdge edge = (BitcoinEdge) edges.get(i);
+      BitcoinEdge edge = (BitcoinEdge) edge1;
       bucketEdges.add(edge);
 
       long thisTime = edge.getTime();

@@ -54,7 +54,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   private static final long MB = 1024*1024;
   public static final int FULL_SEARCH_LIST_SIZE = 200;
 	private static final int MAX_TRIES = 1000000;
-	private static final double HMM_KDE_BANDWIDTH = 0.25;
+//	private static final double HMM_KDE_BANDWIDTH = 0.25;
 	/**
 	 * Scales distance between result probability and query probability when converting to score. Lower makes scores
 	 * look higher.
@@ -86,9 +86,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		}
 	}
 
-	protected Binding() {
-	}
+	protected Binding() {}
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
+   */
 	protected void populateColumnToTables() {
 		for (Map.Entry<String, Collection<String>> kv : tableToColumns.entrySet()) {
 			for (String col : kv.getValue()) {
@@ -1227,10 +1229,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
                                                        List<List<String>> resultIDs, long startTime, long endTime) {
     List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
     if (logger.isDebugEnabled()) {
-      logger.debug("queryEdges = ");
-      for (Edge edge : queryEdges) {
+      logger.debug("queryEdges = "+ queryEdges.size());
+    /*  for (Edge edge : queryEdges) {
         logger.debug(edge);
-      }
+      }*/
     }
 
     List<List<VectorObservation>> relevantObservations = rescoreWithHMM(results, exemplarIDs, queryEdges, resultEdges, resultIDs);
@@ -1376,12 +1378,20 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		List<String> exemplarIDs = getExemplarIDs(example);
     List<FL_EntityMatchDescriptor> objects = Collections.emptyList();
     List<FL_EntityMatchDescriptor> entities1 = example != null ? example.getEntities() : objects;
+    logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
 
    // return getShortlist(entities1, exemplarIDs, max);
-    return getShortlistFast(entities1,exemplarIDs,max);
+    return getShortlistFast(entities1, exemplarIDs, max);
   }
 
-
+  /**
+   * Do simple search of neighbors...
+   *
+   * @param entities1
+   * @param exemplarIDs
+   * @param max
+   * @return
+   */
   private List<FL_PatternSearchResult> getShortlistFast(List<FL_EntityMatchDescriptor> entities1, List<String> exemplarIDs,
                                                         long max) {
     int k = (int) (max/1);
@@ -1391,41 +1401,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     SortedSet<CandidateGraph> candidates = new TreeSet<CandidateGraph>();
     String firstExemplar = null;
     if (!exemplarIDs.isEmpty()) {
-       firstExemplar = exemplarIDs.iterator().next();
-      List<String> neighbors = getNearestNeighbors(firstExemplar, k, skipSelf);
-
-      //  candidates.add(new CandidateGraph(exemplarIDs, firstExemplar, k));
-
-      for (String node : neighbors) {
-        if (stot.containsKey(node)) {
-          candidates.add(new CandidateGraph(exemplarIDs, node, k));
-        }
-      }
-
-      if (!candidates.isEmpty()) {
-        // logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-      } else {
-        logger.debug("depth 1 : " + candidates.size());
-
-      }
-
-      for (int i = 1; i < exemplarIDs.size(); i++) {
-        SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
-        for (CandidateGraph candidateGraph : candidates) {
-          candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
-
-       /* if (!nextCandidates.isEmpty()) {
-          logger.debug("depth " + i +
-              " : " + nextCandidates.size() + " best " + nextCandidates.first() + " worst " + nextCandidates.last());
-        }*/
-        }
-
-        candidates = nextCandidates;
- /* if (!candidates.isEmpty()) {
-        logger.debug("depth " + i +
-            " : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-      }*/
-      }
+      firstExemplar = exemplarIDs.iterator().next();
+      candidates = getCandidateGraphs(exemplarIDs, k, skipSelf, firstExemplar);
     }
 
     if (!candidates.isEmpty()) {
@@ -1437,7 +1414,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     CandidateGraph queryGraph = new CandidateGraph(exemplarIDs, firstExemplar, 10).makeDefault();
     boolean found = false;
     for (CandidateGraph graph : candidates) {
-      if (graph.equals(queryGraph)) { found = true; break; }
+      if (graph.equals(queryGraph)) {
+        found = true;
+        break;
+      }
     }
     if (!found) candidates.add(queryGraph);
 
@@ -1449,7 +1429,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         String similarID = nodes.get(i);
         double similarity = getSimilarity(exemplarIDs.get(i), similarID);
         String exemplarQueryID = entities1.get(i).getUid();
-        if (queryGraph.getScore() > ((float)exemplarIDs.size())-0.1) {
+        if (queryGraph.getScore() > ((float) exemplarIDs.size()) - 0.1) {
           logger.debug("\t graph " + graph + " got " + similarID + " and " + exemplarIDs.get(i));
         }
         FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(exemplarQueryID, similarID, similarity);
@@ -1472,9 +1452,62 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     }
 
     long now = System.currentTimeMillis();
-    logger.debug("getShortlistFast took " + (now-then) + " millis to get " + results.size() + " candidates");
+    logger.debug("getShortlistFast took " + (now - then) + " millis to get " + results.size() + " candidates");
 
     return results;
+  }
+
+  /**
+   * @see #getShortlistFast(java.util.List, java.util.List, long)
+   * @param exemplarIDs
+   * @param k
+   * @param skipSelf
+   * @param firstExemplar
+   * @return
+   */
+  private SortedSet<CandidateGraph> getCandidateGraphs(List<String> exemplarIDs, int k, boolean skipSelf, String firstExemplar) {
+    SortedSet<CandidateGraph> candidates;
+    candidates = new TreeSet<CandidateGraph>();
+
+    List<String> neighbors = getNearestNeighbors(firstExemplar, k, skipSelf);
+    logger.debug("for " + firstExemplar + " found " + neighbors.size() + " neighbors with k " + k + " stot " +stot.size() + " exemplars " + exemplarIDs);
+    //  candidates.add(new CandidateGraph(exemplarIDs, firstExemplar, k));
+
+    // for each neighbor, make a one-node graph
+    for (String node : neighbors) {
+      if (stot.containsKey(node)) {
+        candidates.add(new CandidateGraph(exemplarIDs, node, k));
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+      logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+    } else {
+      logger.debug("depth 1 NO CANDIDATES");
+    }
+
+    for (int i = 1; i < exemplarIDs.size(); i++) {
+      logger.debug("exemplar  #" + i);
+
+      SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
+      for (CandidateGraph candidateGraph : candidates) {
+        candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
+
+        if (!nextCandidates.isEmpty()) {
+          logger.debug("depth " + i +
+              " : " + nextCandidates.size() + " best " + nextCandidates.first() + " worst " + nextCandidates.last());
+        }
+      }
+
+      candidates = nextCandidates;
+      if (!candidates.isEmpty()) {
+        logger.debug("depth " + i +
+            " : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+      }
+    }
+
+    logger.debug("returning " + candidates.size());
+    return candidates;
   }
 
   protected void logMemory() {
@@ -1535,19 +1568,24 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       return nextHopGraphs;
     }*/
 
+    /**
+     * Find immediate neighbors of the last node added to the graph
+     *
+     * @param candidates
+     * @param maxSize
+     */
     public void makeNextGraphs2(SortedSet<CandidateGraph> candidates, int maxSize) {
       final String lastNodeInGraph = nodes.get(nodes.size() - 1);
       Set<String> oneHopNeighbors = stot.get(lastNodeInGraph);
       if (oneHopNeighbors == null) {
-        logger.error("huh? '" + lastNodeInGraph +
-            "' has no transactions?");
+        logger.error("huh? '" + lastNodeInGraph + "' has no transactions?");
         return;
       }
       List<String> sortedNeighbors = new ArrayList<String>(oneHopNeighbors);
       Collections.sort(sortedNeighbors, new Comparator<String>() {
         @Override
         public int compare(String o1, String o2) {
-          double toFirst = getSimilarity(lastNodeInGraph, o1);
+          double toFirst  = getSimilarity(lastNodeInGraph, o1);
           double toSecond = getSimilarity(lastNodeInGraph, o2);
           return toFirst < toSecond ? +1 : toFirst > toSecond ? -1 : 0;
         }
@@ -1555,7 +1593,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
       sortedNeighbors = sortedNeighbors.subList(0,Math.min(sortedNeighbors.size(),MAX_NEIGHBORS));
 
-      //logger.debug("this " + this + " found " + sortedNeighbors.size() + " neighbors of " + lastNodeInGraph);
+      logger.debug("this " + this + " found " + sortedNeighbors.size() + " neighbors of " + lastNodeInGraph);
       for (String nextHopNode : sortedNeighbors) {
         if (!nodes.contains(nextHopNode) && validTargets.contains(nextHopNode)) {    // no cycles!
           CandidateGraph candidateGraph = new CandidateGraph(this);
@@ -1940,8 +1978,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       if (resultObservations.get(i).isEmpty()) {
         if (exemplarIDs.equals(resultIDs.get(i)))
 
-          logger.debug("NO OBSERVATIONS for result i = " + i + "(" + resultIDs.get(i) +
-              "): num edges = " + resultEdges.get(i).size());
+        logger.debug("NO OBSERVATIONS for result i = " + i + "(" + resultIDs.get(i) + "): num edges = " + resultEdges.get(i).size());
 
         results.get(i).setScore(Double.NEGATIVE_INFINITY);
         relevantObservations.add(new ArrayList<VectorObservation>());
@@ -1963,7 +2000,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       }
       sequence = sequences.get(0);
       double score = sequence.getScore();
-      logger.debug("ids = " + resultIDs.get(i) + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
+      logger.debug("Result #" + i+ " ids = " + resultIDs.get(i) + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
       //logger.debug("other scores:");
       for (StateSequence other : sequences.subList(1, sequences.size())) {
         logger.debug("   raw score = " + other.getScore() + "; start index = " + other.getStartIndex() + "; states = " + other.getStates());

@@ -294,15 +294,13 @@ public class GraphQuBEServer {
                 json = AvroUtils.encodeJSON((FL_PatternSearchResults) result);
               }
             } catch (Exception e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
+              logger.error("got " +e,e);
             }
           } else if (result instanceof FL_Future) {
             try {
               json = AvroUtils.encodeJSON((FL_Future) result);
             } catch (Exception e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
+              logger.error("got " +e,e);
             }
           }
           // Note: can install JSONView firefox add-on to handle this content type
@@ -310,8 +308,7 @@ public class GraphQuBEServer {
           // response.type("text/html");
           return json;
         } catch (AvroRemoteException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
+          logger.error("got " +e,e);
         }
 
         return "searchByExample";
