@@ -1,43 +1,19 @@
 package mitll.xdata.binding;
 
-import influent.idl.FL_Constraint;
-import influent.idl.FL_Entity;
-import influent.idl.FL_EntityMatchDescriptor;
-import influent.idl.FL_EntityMatchResult;
-import influent.idl.FL_EntityTag;
-import influent.idl.FL_Link;
-import influent.idl.FL_LinkMatchResult;
-import influent.idl.FL_LinkTag;
-import influent.idl.FL_PatternDescriptor;
-import influent.idl.FL_PatternSearchResult;
-import influent.idl.FL_PatternSearchResults;
-import influent.idl.FL_Property;
-import influent.idl.FL_PropertyMatchDescriptor;
-import influent.idl.FL_PropertyTag;
-import influent.idl.FL_PropertyType;
-import influent.idl.FL_SearchResult;
-import influent.idl.FL_SearchResults;
-import influent.idl.FL_SingletonRange;
+import influent.idl.*;
+import mitll.xdata.AvroUtils;
+import mitll.xdata.dataset.kiva.binding.KivaBinding;
+import mitll.xdata.db.DBConnection;
+import mitll.xdata.hmm.*;
+import mitll.xdata.scoring.FeatureNormalizer;
+import mitll.xdata.sql.SqlUtilities;
+import org.apache.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-
-import mitll.xdata.AvroUtils;
-import mitll.xdata.PrioritizedCartesianProduct;
-import mitll.xdata.dataset.kiva.binding.KivaBinding;
-import mitll.xdata.db.DBConnection;
-import mitll.xdata.hmm.Hmm;
-import mitll.xdata.hmm.KernelDensityLikelihood;
-import mitll.xdata.hmm.ObservationLikelihood;
-import mitll.xdata.hmm.StateSequence;
-import mitll.xdata.hmm.VectorObservation;
-import mitll.xdata.scoring.FeatureNormalizer;
-import mitll.xdata.sql.SqlUtilities;
-
-import org.apache.log4j.Logger;
 
 /**
  * Created with IntelliJ IDEA. User: go22670 Date: 6/25/13 Time: 7:28 PM To change this template use File | Settings |
@@ -48,17 +24,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
  // private static final boolean REVERSE_DIRECTION = false;
   private static final int DEFAULT_SHORT_LIST_SIZE = 100;
-  private static final int MAX_CANDIDATES = 100;
   private static final long MB = 1024*1024;
   private static final int FULL_SEARCH_LIST_SIZE = 200;
-	private static final int MAX_TRIES = 1000000;
 //	private static final double HMM_KDE_BANDWIDTH = 0.25;
 	/**
 	 * Scales distance between result probability and query probability when converting to score. Lower makes scores
 	 * look higher.
 	 */
 	private static final double HMM_SCALE_DISTANCE = 0.1;
-	private static final boolean SKIP_SELF_AS_NEIGHBOR = false;
 
 	protected Connection connection;
 	private final Map<String, Collection<String>> tableToColumns = new HashMap<String, Collection<String>>();
@@ -346,7 +319,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param id
 	 * @return first of all possible matches...
 	 */
-	public Map<String, String> getEntity(String id) {
+	private Map<String, String> getEntity(String id) {
 		try {
 			String table = getTableForID(id);
 			if (table == null)
@@ -779,7 +752,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param limit
 	 * @return
 	 */
-	protected ResultInfo getEntities(String table, String key, String value, long limit) {
+	private ResultInfo getEntities(String table, String key, String value, long limit) {
 		return getEntities(table, Arrays.asList(new Triple(key, value, "=")), limit);
 	}
 
@@ -851,7 +824,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * @return k nearest neighbors to node
-   * @see #getShortlist(java.util.List, java.util.List, long)
+   * @see mitll.xdata.binding.BreadthFirstShortlist#getShortlist(java.util.List, java.util.List, long)
 	 */
 	protected abstract List<String> getNearestNeighbors(String id, int k, boolean skipSelf);
 
@@ -1339,135 +1312,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     List<FL_EntityMatchDescriptor> entities1 = example != null ? example.getEntities() : objects;
     logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
 
+
    // return getShortlist(entities1, exemplarIDs, max);
-    return getShortlistFast(entities1, exemplarIDs, max);
-  }
-
-  /**
-   * Do simple search of neighbors...
-   *
-   * @param entities1
-   * @param exemplarIDs
-   * @param max
-   * @return
-   */
-  private List<FL_PatternSearchResult> getShortlistFast(List<FL_EntityMatchDescriptor> entities1, List<String> exemplarIDs,
-                                                        long max) {
-    int k = (int) (max/1);
-    boolean skipSelf = SKIP_SELF_AS_NEIGHBOR;
-
-    long then = System.currentTimeMillis();
-    SortedSet<CandidateGraph> candidates = new TreeSet<CandidateGraph>();
-    String firstExemplar = null;
-    if (!exemplarIDs.isEmpty()) {
-      firstExemplar = exemplarIDs.iterator().next();
-      candidates = getCandidateGraphs(exemplarIDs, k, skipSelf, firstExemplar);
-    }
-
-    if (!candidates.isEmpty()) {
-      logger.debug("getShortlistFast : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-    }
-
-    List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
-    int count = 0;
-    CandidateGraph queryGraph = new CandidateGraph(this, exemplarIDs, firstExemplar, 10).makeDefault();
-    boolean found = false;
-    for (CandidateGraph graph : candidates) {
-      if (graph.equals(queryGraph)) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) candidates.add(queryGraph);
-
-    for (CandidateGraph graph : candidates) {
-      List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
-
-      List<String> nodes = graph.getNodes();
-      for (int i = 0; i < exemplarIDs.size(); i++) {
-        String similarID = nodes.get(i);
-        double similarity = getSimilarity(exemplarIDs.get(i), similarID);
-        String exemplarQueryID = entities1.get(i).getUid();
-        if (queryGraph.getScore() > ((float) exemplarIDs.size()) - 0.1) {
-          logger.debug("\t graph " + graph + " got " + similarID + " and " + exemplarIDs.get(i));
-        }
-        FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(exemplarQueryID, similarID, similarity);
-        if (entityMatchResult != null) {
-          entities.add(entityMatchResult);
-        }
-      }
-
-      // arithmetic mean
-      double score = getSimpleScore(entities);
-      boolean query = graph == queryGraph;
-      FL_PatternSearchResult result = makeResult(entities, score, query);
-      if (query) logger.debug("\n\n\n\n found query!!! " + result);
-      results.add(result);
-
-     /* count++;
-      if (count >= max+1) {
-        break;
-      }*/
-    }
-
-    long now = System.currentTimeMillis();
-    logger.debug("getShortlistFast took " + (now - then) + " millis to get " + results.size() + " candidates");
-
-    return results;
-  }
-
-  /**
-   * @see #getShortlistFast(java.util.List, java.util.List, long)
-   * @param exemplarIDs
-   * @param k
-   * @param skipSelf
-   * @param firstExemplar
-   * @return
-   */
-  private SortedSet<CandidateGraph> getCandidateGraphs(List<String> exemplarIDs, int k, boolean skipSelf, String firstExemplar) {
-    SortedSet<CandidateGraph> candidates;
-    candidates = new TreeSet<CandidateGraph>();
-
-    List<String> neighbors = getNearestNeighbors(firstExemplar, k, skipSelf);
-    logger.debug("for " + firstExemplar + " found " + neighbors.size() + " neighbors with k " + k + " stot " +stot.size() + " exemplars " + exemplarIDs);
-    //  candidates.add(new CandidateGraph(exemplarIDs, firstExemplar, k));
-
-    // for each neighbor, make a one-node graph
-    for (String node : neighbors) {
-      if (stot.containsKey(node)) {
-        candidates.add(new CandidateGraph(this, exemplarIDs, node, k));
-      }
-    }
-
-    if (!candidates.isEmpty()) {
-      logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-    } else {
-      logger.debug("depth 1 NO CANDIDATES");
-    }
-
-    // create candidate graphs with as many nodes as the exemplar ids
-    for (int i = 1; i < exemplarIDs.size(); i++) {
-      logger.debug("exemplar  #" + i);
-
-      SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
-      for (CandidateGraph candidateGraph : candidates) {
-        candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
-
-      /*  if (!nextCandidates.isEmpty()) {
-          logger.debug("1 depth " + i +
-              " : " + nextCandidates.size() + " best " + nextCandidates.first() + " worst " + nextCandidates.last());
-        }*/
-      }
-
-      candidates = nextCandidates;
-      if (!candidates.isEmpty()) {
-        logger.debug("2 depth " + i +
-            " : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-      }
-    }
-
-    logger.debug("returning " + candidates.size());
-    return candidates;
+    return new BreadthFirstShortlist(this).getShortlist(entities1, exemplarIDs, max);
   }
 
   private void logMemory() {
@@ -1478,116 +1325,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
   }
 
+  public boolean isNodeId(String id) { return stot.containsKey(id); }
+  public int getNumSourceNodes() { return stot.size(); }
 
-  /**
-   * @see #getShortlist(influent.idl.FL_PatternDescriptor, long)
-   * @param entities1
-   * @param exemplarIDs
-   * @param max
-   * @return
-   * @deprecated
-   */
-  private List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entities1, List<String> exemplarIDs,
-                                                    long max) {
-    long then = System.currentTimeMillis();
-    // TODO : skip including self in list?
-    boolean skipSelf = SKIP_SELF_AS_NEIGHBOR;
-    Map<String, List<String>> idToNeighbors = new HashMap<String, List<String>>();
-
-    int k = (int) (100 * max);
-    for (String id : exemplarIDs) {
-      List<String> neighbors = getNearestNeighbors(id, k, skipSelf);
-      if (neighbors.size() == 0) {
-        logger.warn("no neighbors for " + id + " among nearest " +k+ "???\n\n");
-        return Collections.emptyList();
-      }
-      idToNeighbors.put(id, neighbors);
-    }
-
-    logger.debug("for " + exemplarIDs.size() + " examples, took " + (System.currentTimeMillis() - then)
-        + " millis to find neighbors");
-
-    int[] listSizes = new int[exemplarIDs.size()];
-    for (int i = 0; i < exemplarIDs.size(); i++) {
-      listSizes[i] = idToNeighbors.get(exemplarIDs.get(i)).size();
-    }
-    PrioritizedCartesianProduct product = new PrioritizedCartesianProduct(listSizes);
-
-    long maxTries = max + MAX_TRIES;
-    long numTries = 0;
-    int count = 0;
-    List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
-
-    // TODO : grab more than max since we're going to re-sort with a refined subgraph score?
-    while (product.next()) {
-      numTries++;
-
-      if (numTries % 100000 == 0) {
-        logger.debug("numTries = " + numTries + " / maxTries = " + maxTries);
-      }
-
-      if (numTries >= maxTries) {
-        logger.debug("reached maxTries = " + maxTries);
-        break;
-      }
-
-      int[] indices = product.getIndices();
-
-      List<String> subgraphIDs = new ArrayList<String>();
-      for (int i = 0; i < indices.length; i++) {
-        String exemplarID = exemplarIDs.get(i);
-        String similarID = idToNeighbors.get(exemplarID).get(indices[i]);
-        subgraphIDs.add(similarID);
-      }
-
-      // skip if any node id repeated
-      Set<String> idSet = new HashSet<String>(subgraphIDs);
-      if (idSet.size() < subgraphIDs.size()) {
-        continue;
-      }
-
-      // skip if not somewhat connected
-      if (!connectedGroup(subgraphIDs)) {
-        continue;
-      }
-
-      List<FL_EntityMatchResult> entities = getEntitiesFromIds(entities1, exemplarIDs, idToNeighbors, indices);
-
-      // arithmetic mean
-      double score = getSimpleScore(entities);
-      FL_PatternSearchResult result = makeResult(entities, score, false);
-      results.add(result);
-
-      count++;
-      if (count >= max) {
-        break;
-      }
-    }
-
-    //logger.debug("numTries = " + numTries + " results " + results.size());
-
-    return results;
-  }
-
-  private List<FL_EntityMatchResult> getEntitiesFromIds(List<FL_EntityMatchDescriptor> entities1,
-                                                        List<String> exemplarIDs,
-                                                        Map<String, List<String>> idToNeighbors, int[] indices) {
-    List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
-    for (int i = 0; i < indices.length; i++) {
-      String exemplarQueryID = entities1.get(i).getUid();
-
-      String exemplarID = exemplarIDs.get(i);
-      String similarID = idToNeighbors.get(exemplarID).get(indices[i]);
-      double similarity = getSimilarity(exemplarID, similarID);
-      FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(exemplarQueryID, similarID, similarity);
-      if (entityMatchResult != null) {
-        entities.add(entityMatchResult);
-      }
-    }
-    return entities;
-  }
-
-  private FL_EntityMatchResult makeEntityMatchResult(String queryID, String resultID, double score) {
+  public FL_EntityMatchResult makeEntityMatchResult(String queryID, String resultID, double score) {
 		FL_EntityMatchDescriptor descriptor = new FL_EntityMatchDescriptor();
 		// reuse Uid from query
 		descriptor.setUid(queryID);
@@ -1876,72 +1617,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return patternSearchResults;
 	}
 
-	private double getSimpleScore(List<FL_EntityMatchResult> entities) {
-		double sum = 0.0;
-		for (FL_EntityMatchResult entityMatchResult : entities) {
-			sum += entityMatchResult.getScore();
-		}
-		return sum / entities.size();
-	}
-
-  /**
-   * @see #getShortlistFast(java.util.List, java.util.List, long)
-   * @param entities
-   * @param score
-   * @param isQuery
-   * @return
-   */
-	private FL_PatternSearchResult makeResult(List<FL_EntityMatchResult> entities, double score, boolean isQuery) {
-		FL_PatternSearchResult result = new PatternSearchResultWithState(isQuery);
-		result.setEntities(entities);
-		List<FL_LinkMatchResult> links = getLinks(entities);
-		result.setLinks(links);
-		result.setScore(score);
-		return result;
-	}
-
 	/**
 	 * @return true if pair of nodes are connected
 	 */
 	protected abstract boolean isPairConnected(String id1, String id2) throws Exception;
-
-	/**
-	 * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
-	 * @return true if each node connected to at least one other node
-	 */
-	private boolean connectedGroup(List<String> ids) {
-		// TODO : verify that group is actually connected?
-
-		//long then = System.currentTimeMillis();
-
-		if (ids.size() == 1) {
-			return true;
-		}
-
-		try {
-			for (int i = 0; i < ids.size(); i++) {
-				boolean connected = false;
-				for (int j = 0; j < ids.size(); j++) {
-					if (j == i) {
-						continue;
-					}
-					connected = isPairConnected(ids.get(i), ids.get(j));
-					if (connected) {
-						break;
-					}
-				}
-				if (!connected) {
-					return false;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-
-		// logger.debug("connected : took "+ (System.currentTimeMillis()-then) + " millis to check " +ids.size());
-		return true;
-	}
 
 	/**
 	 * @return key into edge metadata table for retrieving metadata on edge between pair of nodes
@@ -1954,52 +1633,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @return FL_Property for edge metadata key (key into table with additional edge attributes)
 	 */
 	protected abstract FL_Property createEdgeMetadataKeyProperty(String id);
-
-	/**
-	 * @return links between entities (if connected in edge_index table)
-   * @see #makeResult(java.util.List, double, boolean)
-	 */
-  private List<FL_LinkMatchResult> getLinks(List<FL_EntityMatchResult> entities) {
-		// NOTE : this returns at most one link per pair of nodes...
-
-		List<FL_LinkMatchResult> linkMatchResults = new ArrayList<FL_LinkMatchResult>();
-
-		if (entities.size() == 1) {
-			return linkMatchResults;
-		}
-
-		try {
-			// iterate over all pairs of entities
-			for (int i = 0; i < entities.size(); i++) {
-				String source = entities.get(i).getEntity().getUid();
-				for (int j = i + 1; j < entities.size(); j++) {
-					String target = entities.get(j).getEntity().getUid();
-					String edgeMetadataKey = getEdgeMetadataKey(source, target);
-					if (edgeMetadataKey != null) {
-						FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
-						FL_Link link = new FL_Link();
-						link.setSource(source);
-						link.setTarget(target);
-						link.setTags(new ArrayList<FL_LinkTag>());
-						List<FL_Property> properties = new ArrayList<FL_Property>();
-						properties.add(createEdgeMetadataKeyProperty(edgeMetadataKey));
-						link.setProperties(properties);
-						linkMatchResult.setLink(link);
-						linkMatchResult.setScore(1.0);
-						linkMatchResult.setUid("");
-						linkMatchResults.add(linkMatchResult);
-					} else {
-						// System.out.println("no edge between: " + source + " & " + target);
-					}
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ArrayList<FL_LinkMatchResult>();
-		}
-
-		return linkMatchResults;
-	}
 
 	/**
 	 * @return all links between entities along with their metadata
@@ -2084,8 +1717,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
 	protected static class LocalToForeignKeyJoin {
-		public final String entityKey;
-		public final String foreignKey;
+		private final String entityKey;
+    private final String foreignKey;
 
 		public LocalToForeignKeyJoin(String commonKey) {
 			this(commonKey, commonKey);

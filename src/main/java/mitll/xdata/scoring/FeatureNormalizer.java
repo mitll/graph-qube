@@ -28,6 +28,7 @@ public class FeatureNormalizer {
      *            input features
      * @param lowerPctl
      *            output features
+     * @see mitll.xdata.binding.Binding#getStandardFeatures(int, int, double[][])
      */
     public FeatureNormalizer(double[][] rawFeats, double lowerPctl, double higherPctl) {
         this.numSamples = rawFeats.length;

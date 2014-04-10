@@ -16,6 +16,12 @@ class CandidateGraph implements Comparable<CandidateGraph> {
   private List<String> nodes = new ArrayList<String>();
   private float score;
   final int k;
+
+  /**
+   *
+   * @param binding
+   * @param toCopy
+   */
   CandidateGraph(Binding binding, CandidateGraph toCopy) {
     this.binding = binding;
     exemplars = toCopy.exemplars;
@@ -24,6 +30,14 @@ class CandidateGraph implements Comparable<CandidateGraph> {
     this.score = toCopy.score;
   }
 
+  /**
+   * @see Binding#getCandidateGraphs(java.util.List, int, boolean, String)
+   * @see mitll.xdata.binding.Binding#getShortlistFast(java.util.List, java.util.List, long)
+   * @param binding
+   * @param exemplars
+   * @param initial
+   * @param k
+   */
   CandidateGraph(Binding binding, List<String> exemplars, String initial, int k) {
     this.binding = binding;
     this.exemplars = exemplars;

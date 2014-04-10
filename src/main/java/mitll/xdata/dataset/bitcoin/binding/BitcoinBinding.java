@@ -4,6 +4,7 @@ import influent.idl.*;
 import mitll.xdata.AvroUtils;
 import mitll.xdata.NodeSimilaritySearch;
 import mitll.xdata.binding.Binding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.hmm.VectorObservation;
@@ -27,10 +28,12 @@ import java.util.Map.Entry;
 public class BitcoinBinding extends Binding {
   private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
 
-  private static final String BITCOIN_FEATURES = "/bitcoin_feats_tsv/bitcoin_features_standardized.tsv";
+  public static final String BITCOIN_FEATS_TSV = "/bitcoin_feats_tsv/"; // TODO : make sure ingest writes to this directory.
+  private static final String BITCOIN_FEATURES = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
   private static final String TRANSACTIONS = "transactions";
   private static final int BUCKET_SIZE = 2;
-  private static final String BITCOIN_IDS = "/bitcoin_feats_tsv/bitcoin_ids.tsv";
+  private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
+  private static final String TRANSID = "transid";
 
   private NodeSimilaritySearch userIndex;
 
@@ -213,7 +216,8 @@ public class BitcoinBinding extends Binding {
   }*/
 
   /**
-   * split a long into two longs - high and low
+   * split a long into two integers - high and low
+   * @see
    * @param combined
    * @return
    */
@@ -337,7 +341,7 @@ public class BitcoinBinding extends Binding {
 
   @Override
   protected FL_Property createEdgeMetadataKeyProperty(String id) {
-    return createProperty("transid", Long.parseLong(id), FL_PropertyType.LONG);
+    return createProperty(TRANSID, Long.parseLong(id), FL_PropertyType.LONG);
   }
 
   @Override

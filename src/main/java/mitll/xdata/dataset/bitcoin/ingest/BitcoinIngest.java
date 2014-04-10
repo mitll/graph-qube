@@ -30,6 +30,9 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * Populates database with transactions
+ */
 public class BitcoinIngest {
   private static final boolean USE_TIMESTAMP = false;
   private static final Logger logger = Logger.getLogger(BitcoinIngest.class);
@@ -80,16 +83,17 @@ public class BitcoinIngest {
    * @see #main
    */
   private static void loadTransactionTable(String tableName, String dataFilename, String btcToDollarFile,
-                                           String dbType, boolean useTimestamp) throws Exception {
+                                           String dbType, String h2DatabaseName, boolean useTimestamp) throws Exception {
     if (dbType.equals("h2")) tableName = tableName.toUpperCase();
     List<String> cnames = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
     //    List<String> names = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD");
     List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
         "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL"); // bitcoin seems to allow 8 digits after the decimal
 
+   // String h2DatabaseName = "bitcoin";
     DBConnection connection = dbType.equalsIgnoreCase("h2") ?
-        new H2Connection("bitcoin", 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
-        new MysqlConnection("bitcoin") : null;
+        new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
+        new MysqlConnection(h2DatabaseName) : null;
 
     if (connection == null) {
       logger.error("can't handle dbtype " + dbType);
@@ -526,9 +530,11 @@ public class BitcoinIngest {
         "btcToDollarConversion.txt";
     File file = new File(btcToDollarFile);
     if (!file.exists()) logger.warn("can't find " + file.getAbsolutePath());
-    loadTransactionTable("transactions", dataFilename, btcToDollarFile, "h2", USE_TIMESTAMP);
+    loadTransactionTable("transactions", dataFilename, btcToDollarFile, "h2",  "bitcoin", USE_TIMESTAMP);
+
+    // TODO add call to BitcoinFeatures
     logger.debug("done loading transactions");
 
-    System.out.println("done");
+    //System.out.println("done");
   }
 }
