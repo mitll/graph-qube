@@ -1486,6 +1486,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       logger.debug("depth 1 NO CANDIDATES");
     }
 
+    // create candidate graphs with as many nodes as the exemplar ids
     for (int i = 1; i < exemplarIDs.size(); i++) {
       logger.debug("exemplar  #" + i);
 
@@ -1493,15 +1494,15 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       for (CandidateGraph candidateGraph : candidates) {
         candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
 
-        if (!nextCandidates.isEmpty()) {
-          logger.debug("depth " + i +
+      /*  if (!nextCandidates.isEmpty()) {
+          logger.debug("1 depth " + i +
               " : " + nextCandidates.size() + " best " + nextCandidates.first() + " worst " + nextCandidates.last());
-        }
+        }*/
       }
 
       candidates = nextCandidates;
       if (!candidates.isEmpty()) {
-        logger.debug("depth " + i +
+        logger.debug("2 depth " + i +
             " : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
       }
     }
@@ -1591,20 +1592,29 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         }
       });
 
-      sortedNeighbors = sortedNeighbors.subList(0,Math.min(sortedNeighbors.size(),MAX_NEIGHBORS));
+      sortedNeighbors = sortedNeighbors.subList(0, Math.min(sortedNeighbors.size(), MAX_NEIGHBORS));
 
-      logger.debug("this " + this + " found " + sortedNeighbors.size() + " neighbors of " + lastNodeInGraph);
+      //logger.debug("this " + this + " found " + sortedNeighbors.size() + " neighbors of " + lastNodeInGraph);
       for (String nextHopNode : sortedNeighbors) {
         if (!nodes.contains(nextHopNode) && validTargets.contains(nextHopNode)) {    // no cycles!
           CandidateGraph candidateGraph = new CandidateGraph(this);
           candidateGraph.addNode(nextHopNode);
           if (candidates.size() < maxSize || candidateGraph.getScore() > candidates.last().getScore()) {
+            if (candidates.size() == maxSize) {
+              candidates.remove(candidates.last());
+              //logger.debug("this " + this + " removing " + candidates.last()+ " and adding " + candidateGraph);
+
+            }
             candidates.add(candidateGraph);
           }
         }
       }
     }
 
+    /**
+     * Compare the node to add against the last node and increment the score.
+     * @param nodeid
+     */
     private void addNode(String nodeid) {
       String compareAgainst = exemplars.get(getNodes().size());
       double similarity = getSimilarity(compareAgainst, nodeid);
