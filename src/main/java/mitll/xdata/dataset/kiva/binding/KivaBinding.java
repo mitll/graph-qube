@@ -104,10 +104,12 @@ public class KivaBinding extends Binding {
 
     // initialize indexes for node similarity search
 
+/*
     InputStream partnerFeatures = this.getClass().getResourceAsStream(
         "/kiva_feats_tsv/partner_features_standardized.tsv");
     InputStream lenderFeatures = this.getClass().getResourceAsStream(
         "/kiva_feats_tsv/lender_features_standardized.tsv");
+*/
 
         /*
          * resourceAsStream = this.getClass().getResourceAsStream("kiva_feats_tsv/partner_ids.tsv");
@@ -117,9 +119,9 @@ public class KivaBinding extends Binding {
          * resourceAsStream);
          */
     logger.debug("indexing partner features");
-    partnerIndex = new NodeSimilaritySearch(partnerFeatures);
+    partnerIndex = new NodeSimilaritySearch("/kiva_feats_tsv/partner_features_standardized.tsv");
     logger.debug("indexing lender features");
-    lenderIndex = new NodeSimilaritySearch(lenderFeatures);
+    lenderIndex = new NodeSimilaritySearch("/kiva_feats_tsv/lender_features_standardized.tsv");
     logger.debug("done indexing node features");
 
     // create prepared statement for determining if two nodes connected

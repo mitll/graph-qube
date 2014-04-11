@@ -569,9 +569,6 @@ public class BitcoinIngest {
     new BitcoinFeatures(dbName, writeDir, dataFilename);
     long now = System.currentTimeMillis();
 
-    // TODO add call to BitcoinFeatures
     logger.debug("done loading transactions, took " +(now-then)/1000 + " seconds");
-
-    //System.out.println("done");
   }
 }

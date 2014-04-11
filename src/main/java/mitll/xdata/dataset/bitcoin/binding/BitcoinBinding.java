@@ -12,6 +12,7 @@ import mitll.xdata.scoring.Transaction;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
@@ -29,7 +30,7 @@ public class BitcoinBinding extends Binding {
   private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
 
   public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
-  private static final String BITCOIN_FEATURES = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
+  private static final String BITCOIN_FEATURES = BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
   public static final String TRANSACTIONS = "transactions";
   private static final int BUCKET_SIZE = 2;
  // private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
@@ -41,16 +42,23 @@ public class BitcoinBinding extends Binding {
   private PreparedStatement edgeMetadataKeyStatement;
   private boolean useFastBitcoinConnectedTest = true;
 
-  public BitcoinBinding(DBConnection connection) {
-    this(connection, true);
+  /**
+   * @see mitll.xdata.GraphQuBEServer#main(String[])
+   * @param connection
+   * @param resourceDir
+   */
+  public BitcoinBinding(DBConnection connection, String resourceDir) {
+    this(connection, true, resourceDir);
   }
 
   /**
+   *
    * @param connection
    * @param useFastBitcoinConnectedTest
+   * @param resourceDir
    * @throws Exception
    */
-  private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest) {
+  private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
     super(connection);
     this.useFastBitcoinConnectedTest = useFastBitcoinConnectedTest;
     prefixToTable.put("t", TRANSACTIONS);
@@ -71,10 +79,10 @@ public class BitcoinBinding extends Binding {
     // logger.debug("cols " + tableToColumns);
 
     try {
-      InputStream userFeatures = this.getClass().getResourceAsStream(BITCOIN_FEATURES);
+    //  InputStream userFeatures = this.getClass().getResourceAsStream(File.separator +resourceDir + File.separator +BITCOIN_FEATURES);
       logger.debug("indexing node features");
       long then = System.currentTimeMillis();
-      userIndex = new NodeSimilaritySearch(userFeatures);
+      userIndex = new NodeSimilaritySearch(File.separator +resourceDir + File.separator +BITCOIN_FEATURES);
       long now = System.currentTimeMillis();
 
       logger.debug("done indexing node features in " +(now-then) + " millis");
@@ -878,7 +886,7 @@ public class BitcoinBinding extends Binding {
     // testCombine();
     BitcoinBinding binding = null;
     try {
-       binding = new BitcoinBinding(new H2Connection("bitcoin"));
+       binding = new BitcoinBinding(new H2Connection("bitcoin"), "");
     //  binding = new BitcoinBinding(new H2Connection("c:/temp/bitcoin", "bitcoin"), true);
       // binding = new BitcoinBinding(new H2Connection( "bitcoin"), false);
     } catch (Exception e) {
