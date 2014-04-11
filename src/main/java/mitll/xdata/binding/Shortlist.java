@@ -25,7 +25,7 @@ public class Shortlist {
   }
 
   /**
-   * @see #getShortlist(java.util.List, java.util.List, long)
+   * @see mitll.xdata.binding.BreadthFirstShortlist#getPatternSearchResults(java.util.List, java.util.List, java.util.Collection, CandidateGraph)
    * @param entities
    * @param score
    * @param isQuery

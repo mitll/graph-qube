@@ -78,6 +78,7 @@ public class FeatureNormalizer {
     }
 
     /**
+     * @see mitll.xdata.dataset.bitcoin.features.BitcoinFeatures#getStandardizedFeatures(java.util.List)
      * @return New array with standardized features
      */
     public double[][] normalizeFeatures(double[][] rawFeats) {

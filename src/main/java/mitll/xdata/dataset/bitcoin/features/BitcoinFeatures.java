@@ -7,26 +7,10 @@ import mitll.xdata.scoring.FeatureNormalizer;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -45,14 +29,14 @@ public class BitcoinFeatures {
   private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
   private static final int SPECLEN = 100;//
   public static final int NUM_STANDARD_FEATURES = 10;
-  public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
-  public static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
+  //public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
+  private static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
   public static final String BITCOIN_FEATURES_STANDARDIZED_TSV = "bitcoin_features_standardized.tsv";
   // private static final boolean USE_SPECTRAL_FEATURES = true;
  // double specWeight = 1.0;
-  private final double statWeight = 15.0;
-  private final double iarrWeight = 30.0;
-  private final double ppWeight   = 20.0;
+ // private final double statWeight = 15.0;
+ // private final double iarrWeight = 30.0;
+ // private final double ppWeight   = 20.0;
   private boolean useSpectral = false;
 
   private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
@@ -61,12 +45,10 @@ public class BitcoinFeatures {
   private final PERIOD period = PERIOD.DAY; // bin by day for now
   private static final Logger logger = Logger.getLogger(BitcoinFeatures.class);
 
-/*
-  private long getTimeForDay(Calendar calendar, String yyyyMMdd) {
-    getDay(calendar, yyyyMMdd);
-    return calendar.getTimeInMillis();
+
+  public BitcoinFeatures(String h2DatabaseFile, String writeDirectory, String datafile) throws Exception {
+    this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory, datafile, false);
   }
-*/
 
   /**
    *   # normalize features
@@ -88,7 +70,7 @@ public class BitcoinFeatures {
    * @param datafile original flat file of data - transactions!
    * @throws Exception
    */
-  private BitcoinFeatures(DBConnection connection, String datafile, boolean useSpectralFeatures) throws Exception {
+  private BitcoinFeatures(DBConnection connection, String writeDirectory, String datafile, boolean useSpectralFeatures) throws Exception {
      long then = System.currentTimeMillis();
     this.useSpectral = useSpectralFeatures;
    // long now = System.currentTimeMillis();
@@ -103,23 +85,52 @@ public class BitcoinFeatures {
     logger.debug("took " +(now-then) + " to read " + transForUsers.size() + " user features");
 
     //BufferedWriter writer = new BufferedWriter(new FileWriter("bitcoin_features.tsv"));
-    BufferedWriter rawWriter = new BufferedWriter(new FileWriter(BITCOIN_RAW_FEATURES_TSV));
-    BufferedWriter idsWriter = new BufferedWriter(new FileWriter(BITCOIN_IDS_TSV));
-    BufferedWriter standardFeatureWriter = new BufferedWriter(new FileWriter(BITCOIN_FEATURES_STANDARDIZED_TSV));
+    BufferedWriter rawWriter = new BufferedWriter(new FileWriter(new File(writeDirectory,BITCOIN_RAW_FEATURES_TSV)));
+    //BufferedWriter idsWriter = new BufferedWriter(new FileWriter(BITCOIN_IDS_TSV));
+    BufferedWriter standardFeatureWriter = new BufferedWriter(new FileWriter(new File(writeDirectory,BITCOIN_FEATURES_STANDARDIZED_TSV)));
 
     // write header liner
-    idsWriter.write("user\n");
+  //  idsWriter.write("user\n");
 
     //writeHeader(writer);
     writeHeader(rawWriter);
     writeHeader(standardFeatureWriter);
 
     List<Features> features = new ArrayList<Features>();
-    int skipped = 0;
     Map<Integer,Features> userToFeatures = new TreeMap<Integer,Features>();
 
     // TODO - change size if we add spectral features
     Map<Integer,Integer> userToIndex = new HashMap<Integer, Integer>();
+
+    populateUserToFeatures(users, transForUsers, features, userToFeatures, userToIndex);
+
+    // copy features into a matrix
+
+    double[][] standardizedFeatures = getStandardizedFeatures(features);
+   // getStandardizationStats();
+
+    writeFeaturesToFiles(rawWriter, standardFeatureWriter, userToFeatures, userToIndex, standardizedFeatures);
+
+    //writer.close();
+    rawWriter.close();
+   // idsWriter.close();
+    standardFeatureWriter.close();
+  }
+
+  /**
+   * Calculate features for each user from the raw features in UserFeatures
+   * @param users
+   * @param transForUsers
+   * @param features
+   * @param userToFeatures
+   * @param userToIndex
+   */
+  private void populateUserToFeatures(Collection<Integer> users,
+                                      Map<Integer, UserFeatures> transForUsers,
+                                      List<Features> features,
+                                      Map<Integer, Features> userToFeatures,
+                                      Map<Integer, Integer> userToIndex) {
+    int skipped = 0;
     int count = 0;
     for (Integer user : users) {
      // logger.debug("user " + user);
@@ -137,19 +148,17 @@ public class BitcoinFeatures {
       }
     }
     logger.info("skipped " + skipped + " out of " + users.size() + " users who had less than 5 credits and less than 5 debits");
+  }
 
-    // copy features into a matrix
-
-    double[][] standardizedFeatures = getStandardizedFeatures(features);
-
+  private void getStandardizationStats() {
     // normalize mean and variance
 
-    Features firstFeature = features.get(0);
-    int numFeatures = firstFeature.other.length;
+    //Features firstFeature = features.get(0);
+    //int numFeatures = firstFeature.other.length;
     //DescriptiveStatistics[] summaries = getSummaries(features, numFeatures);
 
     // TODO : finish adding spectral features -- need weights, need to add mean/std for spectral features
-   // double[] weightVector = new double[useSpectralFeatures ? 160 : 10];
+    // double[] weightVector = new double[useSpectralFeatures ? 160 : 10];
 /*
     double[] weightVector = new double[] {
         statWeight, statWeight, iarrWeight, iarrWeight, statWeight, statWeight, iarrWeight, iarrWeight, ppWeight, ppWeight };
@@ -171,6 +180,13 @@ public class BitcoinFeatures {
       stds[i] = summaries[i].getStandardDeviation();
       logger.debug("feature " + i + " " + means[i] + " std " + stds[i] + " num " + summaries[i].getN());
     }*/
+  }
+
+  private void writeFeaturesToFiles(BufferedWriter rawWriter, BufferedWriter standardFeatureWriter,
+                                    Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
+                                    double[][] standardizedFeatures) throws IOException {
+    Features next = userToFeatures.values().iterator().next();
+    int numFeatures = next.other.length;
 
     int j = 0;
     for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
@@ -179,7 +195,7 @@ public class BitcoinFeatures {
       int id = userFeatPair.getKey();
      // writer.write(id + "\t");
       rawWriter.write(id + "\t");
-      idsWriter.write(id + "\n");
+      //idsWriter.write(id + "\n");
       standardFeatureWriter.write(id + "\t");
 
       //if (useSpectralFeatures) {
@@ -209,11 +225,6 @@ public class BitcoinFeatures {
         }
       }
     }
-
-    //writer.close();
-    rawWriter.close();
-    idsWriter.close();
-    standardFeatureWriter.close();
   }
 
   static String getDoubles(double [] arr) {
@@ -225,11 +236,25 @@ public class BitcoinFeatures {
     double[][] featureMatrix = new double[features.size()][NUM_STANDARD_FEATURES];
     int i = 0;
     for (Features feature : features) {
-      double[] dest = featureMatrix[i];
-      if (feature.other== null) logger.error("huh? feature vector is null");
+      double[] dest = featureMatrix[i++];
+      if (feature.other == null) logger.error("huh? feature vector is null");
       System.arraycopy(feature.other, 0, dest, 0, NUM_STANDARD_FEATURES);
+    }
 
-      i++;
+    for (int j = 0; j < NUM_STANDARD_FEATURES; j++) { //num_feats = 10 for our raw bitcoin features…
+      if (j == 4) {//: #change polarity for mean debits
+        for (int k = 0; k < features.size(); k++) {
+          featureMatrix[k][j] = Math.log(1 + Math.abs(featureMatrix[k][j]));
+        }
+      } else if ((j == 8) | (j == 9)) { //#perplexity metric has min val = 1
+        for (int k = 0; k < features.size(); k++) {
+          featureMatrix[k][j] = Math.log(featureMatrix[k][j]);
+        }
+      } else {
+        for (int k = 0; k < features.size(); k++) {
+          featureMatrix[k][j] = Math.log(1 + Math.abs(featureMatrix[k][j]));
+        }
+      }
     }
 
     double lowerPercentile = 0.025;
@@ -280,7 +305,7 @@ public class BitcoinFeatures {
 
    * @param transForUsers
    * @param user
-   * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String, boolean)
+   * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String,String, boolean)
    */
   private Features getFeaturesForUser(Map<Integer, UserFeatures> transForUsers, Integer user) {
     UserFeatures stats = transForUsers.get(user);
@@ -368,7 +393,7 @@ public class BitcoinFeatures {
    * @param transactions
    * @deprecated
    */
-  private void getStats(List<Transaction> transactions) {
+/*  private void getStats(List<Transaction> transactions) {
     long min = 0;
     long max = 0;
     Map<Integer,Integer> idToIn = new HashMap<Integer, Integer>();
@@ -386,7 +411,7 @@ public class BitcoinFeatures {
     }
 
     logger.debug("min time " + new Date(min) + " max " + new Date(max));
-  }
+  }*/
 
   /**
    * TODO : bitcoin too big to fit into memory... :(
@@ -427,7 +452,7 @@ public class BitcoinFeatures {
    *
    * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#populateInMemoryAdjacency()
    *
-   * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String, boolean)
+   * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String,String, boolean)
    * @param users
    * @param dataFilename
    * @param outfile
@@ -942,7 +967,7 @@ public class BitcoinFeatures {
   public static void main(String [] args) {
     try {
       String dataFilename = null;
-      boolean useSpectralFeatures = false;
+      //boolean useSpectralFeatures = false;
       if (args.length > 0) {
         dataFilename = args[0];
         logger.debug("got " + dataFilename);
@@ -953,7 +978,7 @@ public class BitcoinFeatures {
       long then = System.currentTimeMillis();
 
       String database = "bitcoin";
-      BitcoinFeatures bitcoin = new BitcoinFeatures(new H2Connection(database, 38000000), dataFilename, useSpectralFeatures);
+      new BitcoinFeatures(database, ".", dataFilename);
 
       long now = System.currentTimeMillis();
       logger.debug("took " +(now-then) + " millis to generate features");

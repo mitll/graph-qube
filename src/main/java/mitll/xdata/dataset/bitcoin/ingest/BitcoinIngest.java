@@ -14,6 +14,8 @@
 
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
@@ -29,13 +31,17 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.SynchronousQueue;
 
 /**
  * Populates database with transactions
  */
 public class BitcoinIngest {
-  private static final boolean USE_TIMESTAMP = false;
   private static final Logger logger = Logger.getLogger(BitcoinIngest.class);
+
+  private static final boolean USE_TIMESTAMP = false;
+ // public static final String BITCOIN_FEATS_TSV = "bitcoin_feats_tsv";
+ private static final String BTC_TO_DOLLAR_CONVERSION_TXT = "btcToDollarConversion.txt";
 
   private static final Map<String, String> TYPE_TO_DB = new HashMap<String, String>();
 
@@ -75,7 +81,7 @@ public class BitcoinIngest {
   /**
    * Adds equivalent dollar value column
    *
-   * @param tableName    bitcoin
+   * @param tableName    table name to create
    * @param dataFilename e.g. bitcoin-20130410.tsv
    * @param dbType       h2 or mysql
    * @param useTimestamp true if we want to store a sql timestamp for time, false if just a long for unix millis
@@ -86,11 +92,9 @@ public class BitcoinIngest {
                                            String dbType, String h2DatabaseName, boolean useTimestamp) throws Exception {
     if (dbType.equals("h2")) tableName = tableName.toUpperCase();
     List<String> cnames = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
-    //    List<String> names = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD");
     List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
         "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL"); // bitcoin seems to allow 8 digits after the decimal
 
-   // String h2DatabaseName = "bitcoin";
     DBConnection connection = dbType.equalsIgnoreCase("h2") ?
         new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
         new MysqlConnection(h2DatabaseName) : null;
@@ -100,13 +104,11 @@ public class BitcoinIngest {
       return;
     }
 
-    String createSQL = createCreateSQL(tableName, cnames, types, false);
-
     long t = System.currentTimeMillis();
     logger.debug("dropping current " + tableName);
     doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
     logger.debug("took " + (System.currentTimeMillis() - t) + " millis to drop " + tableName);
-    doSQL(connection, createSQL);
+    doSQL(connection, createCreateSQL(tableName, cnames, types, false));
     //doSQL(connection, "ALTER TABLE " + tableName + " ALTER COLUMN UID INT NOT NULL");
     //doSQL(connection, "ALTER TABLE " + tableName + " ADD PRIMARY KEY (UID)");
 
@@ -133,29 +135,17 @@ public class BitcoinIngest {
         if (bad < 10) logger.warn("badly formed line " + line);
       }
 
-      //     int transid = Integer.parseInt(split[0]);
       int sourceid = Integer.parseInt(split[1]);
       int targetID = Integer.parseInt(split[2]);
 
-      int i = 1;
-      //    statement.setInt(i++, transid);
-      //   statement.setInt(i++, sourceid);
-      //  statement.setInt(i++, targetID);
       String day = split[3];
       Timestamp x = Timestamp.valueOf(day + " " + split[4]);
-      if (useTimestamp) {
-        //  statement.setTimestamp(i++, x);
-      } else {
-        //statement.setLong(i++,x.getTime());
-      }
 
       double btc = Double.parseDouble(split[5]);
-      //statement.setDouble(i++, btc);
 
       // do dollars
       Double rate = rc.getConversionRate(day, x.getTime());
       double usd = btc * rate;
-      //statement.setDouble(i++, usd);
       totalUSD += usd;
 
       UserStats userStats = userToStats.get(sourceid);
@@ -167,7 +157,7 @@ public class BitcoinIngest {
       userStats2.addCredit(usd);
 
       if (count % 1000000 == 0) {
-        logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
+        logger.debug("transaction count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
             + " ms/read");
       }
     }
@@ -179,12 +169,27 @@ public class BitcoinIngest {
     List<double[]> feats = addFeatures(dataFilename, userToStats, avgUSD, rc);
 
     br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
+    count = insertRowsInTable(tableName, useTimestamp, cnames, connection, rc, br, t0, feats);
+
+    br.close();
+
+    createIndices(tableName, connection);
+
+    long t1 = System.currentTimeMillis();
+    System.out.println("total count = " + count);
+    System.out.println("total time = " + ((t1 - t0) / 1000.0) + " s");
+    System.out.println((t1 - 1.0 * t0) / count + " ms/insert");
+    System.out.println((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
+  }
+
+  private static int insertRowsInTable(String tableName, boolean useTimestamp, List<String> cnames,
+                                       DBConnection connection,
+                                       RateConverter rc, BufferedReader br, long t0, List<double[]> feats) throws Exception {
+    int count;
+    String line;
     count = 0;
 
-    PreparedStatement statement;
-
-    String insertSQL = createInsertSQL(tableName, cnames);
-    statement = connection.getConnection().prepareStatement(insertSQL);
+    PreparedStatement statement = connection.getConnection().prepareStatement(createInsertSQL(tableName, cnames));
 
     while ((line = br.readLine()) != null) {
       double[] additionalFeatures = feats.get(count);
@@ -226,17 +231,8 @@ public class BitcoinIngest {
             + " ms/insert");
       }
     }
-    if (bad > 0) logger.warn("Got " + bad + " transactions...");
-    br.close();
     statement.close();
-
-    createIndices(tableName, connection);
-
-    long t1 = System.currentTimeMillis();
-    System.out.println("total count = " + count);
-    System.out.println("total time = " + ((t1 - t0) / 1000.0) + " s");
-    System.out.println((t1 - 1.0 * t0) / count + " ms/insert");
-    System.out.println((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
+    return count;
   }
 
   private static void createIndices(String tableName, DBConnection connection) throws SQLException {
@@ -514,26 +510,57 @@ public class BitcoinIngest {
         br.close();
     }*/
 
+  /**
+   * Remember to give lots of memory if running on fill bitcoin dataset -- more than 2G
+   *
+   * arg 0 is the datafile input
+   * arg 1 is the db to write to
+   * arg 2 is the directory to write the feature files to
+   *
+   * @param args
+   * @throws Exception
+   */
   public static void main(String[] args) throws Exception {
     // String tableName = "loanJournalEntriesLinks";
     //String schemaFilename = "kiva_schemas/" + tableName + ".schema";
     logger.debug("loading transactions");
-    String dataFilename = "";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";
+    String writeDir = "out";
+    String dataFilename = "bitcoin-20130410.tsv";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";
+
+    String dbName = "bitcoin";
     if (args.length > 0) {
       dataFilename = args[0];
-      logger.debug("got " + dataFilename);
+      logger.debug("got data file " + dataFilename);
+    }
+    if (args.length > 1) {
+      dbName = args[1];
+      logger.debug("got db name " + dbName);
+    }
+    if (args.length > 2) {
+      writeDir = args[2];
+      logger.debug("got output dir " + writeDir);
     }
     String btcToDollarFile = "src" + File.separator + "main" + File.separator + "resources" +
         File.separator +
-        "bitcoin_feats_tsv" +
+        BitcoinBinding.BITCOIN_FEATS_TSV +
         File.separator +
-        "btcToDollarConversion.txt";
+        BTC_TO_DOLLAR_CONVERSION_TXT;
     File file = new File(btcToDollarFile);
-    if (!file.exists()) logger.warn("can't find " + file.getAbsolutePath());
-    loadTransactionTable("transactions", dataFilename, btcToDollarFile, "h2",  "bitcoin", USE_TIMESTAMP);
+    if (!file.exists()) {
+      logger.warn("can't find dollar conversion file " + file.getAbsolutePath());
+    }
+    long then = System.currentTimeMillis();
+    // populate the transaction table
+    loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
+    // create a features file for each account
+
+    new File(writeDir).mkdirs();
+
+    new BitcoinFeatures(dbName, writeDir, dataFilename);
+    long now = System.currentTimeMillis();
 
     // TODO add call to BitcoinFeatures
-    logger.debug("done loading transactions");
+    logger.debug("done loading transactions, took " +(now-then)/1000 + " seconds");
 
     //System.out.println("done");
   }

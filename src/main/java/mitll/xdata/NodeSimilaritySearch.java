@@ -27,60 +27,32 @@ public class NodeSimilaritySearch {
 
   /**
    * Just for testing
-   * @param idFile
    * @param featureFile
    * @throws Exception
    */
-  private NodeSimilaritySearch(String idFile, String featureFile) throws Exception {
-    load(idFile, featureFile);
+  private NodeSimilaritySearch(String featureFile) throws Exception {
+    load(featureFile);
   }
 
   /**
-   * @param idFile
+   * @paramx idFile
    * @param featureFile
    * @throws Exception
    * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
    * @see mitll.xdata.dataset.kiva.binding.KivaBinding#KivaBinding(mitll.xdata.db.DBConnection)
    */
-  public NodeSimilaritySearch(InputStream idFile, InputStream featureFile) throws Exception {
-    load(idFile, featureFile);
+  public NodeSimilaritySearch(InputStream featureFile) throws Exception {
+    load(featureFile);
   }
 
-  private void load(String idFile, String featureFile) throws Exception {
-    loadIDs(idFile);
+  private void load(String featureFile) throws Exception {
     loadFeatures(featureFile);
     index();
   }
 
-  private void load(InputStream idFile, InputStream featureFile) throws Exception {
-    loadIDs(idFile);
+  private void load(InputStream featureFile) throws Exception {
     loadFeatures(featureFile);
     index();
-  }
-
-  private void loadIDs(String filename) throws Exception {
-    InputStream in = new FileInputStream(filename);
-    loadIDs(in);
-  }
-
-  private void loadIDs(InputStream in) throws IOException {
-    BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-    ids = new ArrayList<String>();
-    idToRow = new HashMap<String, Integer>();
-    // skip header
-    String line = br.readLine();
-    while ((line = br.readLine()) != null) {
-      String id = line.trim();
-      if (id.length() > 0) {
-        idToRow.put(id, ids.size());
-        ids.add(id);
-      }
-      if (ids.size() % 200000 == 0) {
-        logger.debug("loading ids: ids.size() = " + ids.size());
-      }
-    }
-    br.close();
-    numRows = ids.size();
   }
 
   private void loadFeatures(String filename) throws Exception {
@@ -90,6 +62,13 @@ public class NodeSimilaritySearch {
 
   /**
    * Read tsv features from stream
+   *
+   * Feature file looks like:
+   *
+   * user	credit_mean	credit_std	credit_interarr_mean	credit_interarr_std	debit_mean	debit_std	debit_interarr_mean	debit_interarr_std	perp_in	perp_out
+   * 1	-0.267196747509	4.71845605314	-1.98532168372	-1.81795608209	-0.62572854628	3.50342868639	-1.97913152956	-1.66367390298	3.98604860909	4.15894036513
+   * 2	1.2892458977	-2.0	-2.0	-2.0	0.827426418659	0.452800091031	-2.0	-2.0	-2.0	0.252874980303
+   *
    * TODO : try not to go back and forth between float and double
    * @param in
    * @throws IOException
@@ -114,16 +93,22 @@ public class NodeSimilaritySearch {
         break;
       }
       fields = split(line, "\t");
+      String id = fields.get(0);
       // skip first field (which has an id meant for browsing through data)
       for (int i = 0; i < numFeatures; i++) {
         features[row][i] = (float) Double.parseDouble(fields.get(i + 1));
       }
+
+      idToRow.put(id, ids.size());
+      ids.add(id);
+
       row++;
 
       if (row % 200000 == 0) {
         logger.debug("loading features: " + (100.0 * row / ids.size()) + "% done");
       }
     }
+    numRows = ids.size();
 
     logger.debug("loading features: " + (100.0 * row / ids.size()) + "% done");
 
@@ -155,7 +140,7 @@ public class NodeSimilaritySearch {
   /**
    * Build the KDTree
    * @see net.sf.javaml.core.kdtree.KDTree
-   * @see #load(java.io.InputStream, java.io.InputStream)
+   * @see #load(java.io.InputStream)
    */
   private void index() {
     kdtree = new KDTree(numFeatures);
@@ -235,21 +220,16 @@ public class NodeSimilaritySearch {
   }
 
   public static void main(String[] args) throws Exception {
-    // String idFile = "c:/temp/kiva/kiva_similarity/partner_ids.tsv";
     // String featureFile = "c:/temp/kiva/kiva_similarity/partner_features_standardized.tsv";
     // String id = "p137";
 
-    String idFile = "c:/temp/kiva/kiva_similarity/kiva_feats_tsv/lender_ids.tsv";
     String featureFile = "c:/temp/kiva/kiva_similarity/kiva_feats_tsv/lender_features_standardized.tsv";
     String id = "l0376099";
 
     System.out.println("building search index...");
-    NodeSimilaritySearch search = new NodeSimilaritySearch(idFile, featureFile);
-    search.load(idFile, featureFile);
+    NodeSimilaritySearch search = new NodeSimilaritySearch(featureFile);
     System.out.println("searching...");
     List<String> results = search.neighbors(id, 20);
     System.out.println(results);
-
-    System.out.println("done");
   }
 }

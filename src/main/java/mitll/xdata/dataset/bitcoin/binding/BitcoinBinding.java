@@ -30,9 +30,9 @@ public class BitcoinBinding extends Binding {
 
   public static final String BITCOIN_FEATS_TSV = "/bitcoin_feats_tsv/"; // TODO : make sure ingest writes to this directory.
   private static final String BITCOIN_FEATURES = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
-  private static final String TRANSACTIONS = "transactions";
+  public static final String TRANSACTIONS = "transactions";
   private static final int BUCKET_SIZE = 2;
-  private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
+ // private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
   private static final String TRANSID = "transid";
 
   private NodeSimilaritySearch userIndex;
@@ -61,7 +61,7 @@ public class BitcoinBinding extends Binding {
     // addTagToColumn(FL_PropertyTag.ID, "TARGET");
     addTagToColumn(FL_PropertyTag.DATE, "TIME");
     addTagToColumn(FL_PropertyTag.AMOUNT, "AMOUNT");
-    tableToDisplay.put(TRANSACTIONS, "transactions");
+    tableToDisplay.put(TRANSACTIONS, TRANSACTIONS);
     Collection<String> tablesToQuery = prefixToTable.values();
     tablesToQuery = new ArrayList<String>(tablesToQuery);
 
@@ -71,11 +71,10 @@ public class BitcoinBinding extends Binding {
     // logger.debug("cols " + tableToColumns);
 
     try {
-      InputStream userIds = this.getClass().getResourceAsStream(BITCOIN_IDS);
       InputStream userFeatures = this.getClass().getResourceAsStream(BITCOIN_FEATURES);
       logger.debug("indexing node features");
       long then = System.currentTimeMillis();
-      userIndex = new NodeSimilaritySearch(userIds, userFeatures);
+      userIndex = new NodeSimilaritySearch(userFeatures);
       long now = System.currentTimeMillis();
 
       logger.debug("done indexing node features in " +(now-then) + " millis");
@@ -263,7 +262,7 @@ public class BitcoinBinding extends Binding {
    * @param j
    * @return
    * @throws Exception
-   * @see #connectedGroup(java.util.List)
+   * @see mitll.xdata.binding.CartesianShortlist#connectedGroup
    */
   @Override
   protected boolean isPairConnected(String i, String j) throws Exception {
@@ -297,13 +296,18 @@ public class BitcoinBinding extends Binding {
     }
   }
 
+  /**
+   * Check either order -- first node as source or second
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#isPairConnected(String, String)
+   * @param f
+   * @param s
+   * @return
+   */
   private boolean inMemoryIsPairConnected(String f, String s) {
-    //int f = Integer.parseInt(i);
-    //int s = Integer.parseInt(j);
-
     Set<String> integers = stot.get(f);
-    if (integers != null && integers.contains(s))
+    if (integers != null && integers.contains(s)) {
       return true;
+    }
 
     Set<String> integers2 = stot.get(s);
     return integers2 != null && integers2.contains(f);
@@ -314,7 +318,7 @@ public class BitcoinBinding extends Binding {
    * @param id2
    * @return
    * @throws Exception
-   * @see #getLinks(java.util.List)
+   * @see mitll.xdata.binding.Shortlist#getLinks
    */
   @Override
   protected String getEdgeMetadataKey(String id1, String id2) throws Exception {

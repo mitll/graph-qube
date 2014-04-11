@@ -104,9 +104,6 @@ public class KivaBinding extends Binding {
 
     // initialize indexes for node similarity search
 
-    InputStream partnerIds = this.getClass().getResourceAsStream("/kiva_feats_tsv/partner_ids.tsv");
-    InputStream lenderIds = this.getClass().getResourceAsStream("/kiva_feats_tsv/lender_ids.tsv");
-
     InputStream partnerFeatures = this.getClass().getResourceAsStream(
         "/kiva_feats_tsv/partner_features_standardized.tsv");
     InputStream lenderFeatures = this.getClass().getResourceAsStream(
@@ -120,9 +117,9 @@ public class KivaBinding extends Binding {
          * resourceAsStream);
          */
     logger.debug("indexing partner features");
-    partnerIndex = new NodeSimilaritySearch(partnerIds, partnerFeatures);
+    partnerIndex = new NodeSimilaritySearch(partnerFeatures);
     logger.debug("indexing lender features");
-    lenderIndex = new NodeSimilaritySearch(lenderIds, lenderFeatures);
+    lenderIndex = new NodeSimilaritySearch(lenderFeatures);
     logger.debug("done indexing node features");
 
     // create prepared statement for determining if two nodes connected
@@ -158,7 +155,7 @@ public class KivaBinding extends Binding {
   }
 
   /**
-   * @see Binding#getShortlistFast(java.util.List, java.util.List, long)
+   * @see mitll.xdata.binding.BreadthFirstShortlist#getCandidateGraphs(java.util.List, int, boolean, String)
    * @param id
    * @param k
    * @param skipSelf
@@ -182,7 +179,7 @@ public class KivaBinding extends Binding {
   }
 
   /**
-   * @see #getShortlistFast(java.util.List, java.util.List, long)
+   * @see mitll.xdata.binding.BreadthFirstShortlist#getPatternSearchResults(java.util.List, java.util.List, java.util.Collection, mitll.xdata.binding.CandidateGraph)
    * @param id1
    * @param id2
    * @return
@@ -200,7 +197,7 @@ public class KivaBinding extends Binding {
   }
 
   /**
-   * @see #connectedGroup(java.util.List)
+   * @see mitll.xdata.binding.CartesianShortlist#connectedGroup(java.util.List)
    *
    * @param i
    * @param j
@@ -235,7 +232,7 @@ public class KivaBinding extends Binding {
   }
 
   /**
-   * @see #getLinks(java.util.List)
+   * @see mitll.xdata.binding.Shortlist#getLinks(java.util.List)
    * @param id1
    * @param id2
    * @return
@@ -265,7 +262,7 @@ public class KivaBinding extends Binding {
   }
 
   /**
-   * @see #getLinks(java.util.List)
+   * @see mitll.xdata.binding.Shortlist#getLinks(java.util.List)
    * @param id
    * @return
    */
