@@ -28,7 +28,7 @@ import java.util.Map.Entry;
 public class BitcoinBinding extends Binding {
   private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
 
-  public static final String BITCOIN_FEATS_TSV = "/bitcoin_feats_tsv/"; // TODO : make sure ingest writes to this directory.
+  public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
   private static final String BITCOIN_FEATURES = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
   public static final String TRANSACTIONS = "transactions";
   private static final int BUCKET_SIZE = 2;

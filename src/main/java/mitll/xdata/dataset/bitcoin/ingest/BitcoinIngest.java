@@ -524,22 +524,31 @@ public class BitcoinIngest {
     // String tableName = "loanJournalEntriesLinks";
     //String schemaFilename = "kiva_schemas/" + tableName + ".schema";
     logger.debug("loading transactions");
-    String writeDir = "out";
-    String dataFilename = "bitcoin-20130410.tsv";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";
-
-    String dbName = "bitcoin";
+    
+    //
+    // Parse arguments...
+    //
+    String dataFilename = "bitcoin-20130410.tsv";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";    
     if (args.length > 0) {
       dataFilename = args[0];
       logger.debug("got data file " + dataFilename);
     }
+            
+    String dbName = "bitcoin";
     if (args.length > 1) {
       dbName = args[1];
       logger.debug("got db name " + dbName);
     }
+
+    String writeDir = "out";    
     if (args.length > 2) {
       writeDir = args[2];
       logger.debug("got output dir " + writeDir);
     }
+
+    //
+    // BTC to Dollar File
+    //
     String btcToDollarFile = "src" + File.separator + "main" + File.separator + "resources" +
         File.separator +
         BitcoinBinding.BITCOIN_FEATS_TSV +
@@ -550,10 +559,11 @@ public class BitcoinIngest {
       logger.warn("can't find dollar conversion file " + file.getAbsolutePath());
     }
     long then = System.currentTimeMillis();
+    
     // populate the transaction table
     loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
     // create a features file for each account
-
+    
     new File(writeDir).mkdirs();
 
     new BitcoinFeatures(dbName, writeDir, dataFilename);
