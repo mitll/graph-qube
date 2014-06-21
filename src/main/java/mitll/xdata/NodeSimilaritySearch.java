@@ -1,10 +1,6 @@
 package mitll.xdata;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 import org.apache.log4j.Logger;
@@ -30,35 +26,51 @@ public class NodeSimilaritySearch {
    * @param featureFile
    * @throws Exception
    */
-  private NodeSimilaritySearch(String featureFile) throws Exception {
+/*  private NodeSimilaritySearch(String featureFile) throws Exception {
     load(featureFile);
-  }
+  }*/
 
   /**
    * @paramx idFile
-   * @param featureFile
+   * @paramx featureFile
    * @throws Exception
-   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
+   * @seex mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
    * @see mitll.xdata.dataset.kiva.binding.KivaBinding#KivaBinding(mitll.xdata.db.DBConnection)
    */
-  public NodeSimilaritySearch(InputStream featureFile) throws Exception {
-    load(featureFile);
+  public NodeSimilaritySearch(String featureResource) throws Exception {
+    InputStream userFeatures = this.getClass().getResourceAsStream(featureResource);
+
+    loadIds(userFeatures);
+    userFeatures.close();
+
+    userFeatures = this.getClass().getResourceAsStream(featureResource);
+
+    load(userFeatures);
   }
 
-  private void load(String featureFile) throws Exception {
+/*  private void load(String featureFile) throws Exception {
     loadFeatures(featureFile);
     index();
-  }
+  }*/
 
   private void load(InputStream featureFile) throws Exception {
     loadFeatures(featureFile);
     index();
   }
 
-  private void loadFeatures(String filename) throws Exception {
+/*  private void loadFeatures(String filename) throws Exception {
     InputStream in = new FileInputStream(filename);
+
+    loadIds(in);
+     in.close();
+
+
+    in = new FileInputStream(filename);
+
     loadFeatures(in);
-  }
+    in.close();
+
+  }*/
 
   /**
    * Read tsv features from stream
@@ -99,8 +111,8 @@ public class NodeSimilaritySearch {
         features[row][i] = (float) Double.parseDouble(fields.get(i + 1));
       }
 
-      idToRow.put(id, ids.size());
-      ids.add(id);
+      //idToRow.put(id, ids.size());
+      //ids.add(id);
 
       row++;
 
@@ -108,9 +120,39 @@ public class NodeSimilaritySearch {
         logger.debug("loading features: " + (100.0 * row / ids.size()) + "% done");
       }
     }
-    numRows = ids.size();
+    //numRows = ids.size();
 
     logger.debug("loading features: " + (100.0 * row / ids.size()) + "% done");
+
+    br.close();
+  }
+
+  private void loadIds(InputStream in) throws IOException {
+    BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+
+    // determine number of features from tsv header
+    String line = br.readLine();
+
+    idToRow = new HashMap<String, Integer>();
+    ids=new ArrayList<String>();
+
+    int row = 0;
+    while ((line = br.readLine()) != null) {
+      List<String> fields = split(line, "\t");
+      String id = fields.get(0);
+
+      idToRow.put(id, ids.size());
+      ids.add(id);
+
+      row++;
+
+      if (row % 200000 == 0) {
+        logger.debug("loading ids: " + (100.0 * row / ids.size()) + "% done");
+      }
+    }
+    numRows = ids.size();
+
+    logger.debug("loading ids: " + (100.0 * row / ids.size()) + "% done");
 
     br.close();
   }

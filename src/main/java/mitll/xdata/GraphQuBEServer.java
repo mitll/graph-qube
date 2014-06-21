@@ -45,17 +45,26 @@ import spark.Response;
 import spark.Route;
 
 public class GraphQuBEServer {
-  public static final int DEFAULT_MAX = 5;
-  private static final boolean USE_KIVA = false;
   private static Logger logger = Logger.getLogger(GraphQuBEServer.class);
+
+  private static final int DEFAULT_MAX = 5;
+  private static final boolean USE_KIVA = false;
+  private static final String DEFAULT_BITCOIN_FEATURE_DIR = "bitcoin_small_feats_tsv";
   private static final boolean USE_IN_MEMORY_ADJACENCY_DEFAULT = true;
   private static final int PORT = 8085;
 
-  private static boolean useMysql = false;
   private static final String MYSQL_H2_DATABASE = "";
   private static final String MYSQL_BITCOIN_DATABASE = "";
-  //public static final boolean USE_MYSQL = false;
+  private static final boolean USE_MYSQL = false;
 
+  /**
+   * arg 0 - port to run the server on
+   * arg 1 - kiva directory - "" is OK
+   * arg 2 - bitcoin h2 directory (so you can place it anywhere)
+   * arg 3 - bitcoin feature directory (e.g. bitcoin_small_feats_tsv)
+   * @param args
+   * @throws Exception
+   */
   public static void main(String[] args) throws Exception {
     final SimplePatternSearch patternSearch;
     int port = PORT;
@@ -63,13 +72,14 @@ public class GraphQuBEServer {
       try {
         port = Integer.parseInt(args[0]);
       } catch (NumberFormatException e) {
-        System.err.println("Usage : port kivaDirectory bitcoinDirectory");
+        System.err.println("Usage : port kivaDirectory bitcoinH2Directory bitcoinFeatureDirectory");
         return;
       }
     }
 
     String kivaDirectory = ".";
     String bitcoinDirectory = ".";
+    String bitcoinFeatureDirectory = DEFAULT_BITCOIN_FEATURE_DIR;
 
     if (args.length >= 2) {
       kivaDirectory = args[1];
@@ -77,6 +87,9 @@ public class GraphQuBEServer {
 
     if (args.length >= 3) {
       bitcoinDirectory = args[2];
+    }
+    if (args.length >= 4) {
+      bitcoinFeatureDirectory = args[3];
     }
 
     boolean useFastBitcoinConnectedTest = USE_IN_MEMORY_ADJACENCY_DEFAULT;
@@ -94,11 +107,11 @@ public class GraphQuBEServer {
     patternSearch = new SimplePatternSearch();
 
     if (USE_KIVA) {
-      DBConnection dbConnection = useMysql ? new MysqlConnection(MYSQL_H2_DATABASE) : new H2Connection(kivaDirectory,"kiva");
+      DBConnection dbConnection = USE_MYSQL ? new MysqlConnection(MYSQL_H2_DATABASE) : new H2Connection(kivaDirectory,"kiva");
       patternSearch.setKivaBinding(new KivaBinding(dbConnection));
     }
-    DBConnection dbConnection = useMysql ? new MysqlConnection(MYSQL_BITCOIN_DATABASE) : new H2Connection(bitcoinDirectory,"bitcoin");
-    patternSearch.setBitcoinBinding(new BitcoinBinding(dbConnection));
+    DBConnection dbConnection = USE_MYSQL ? new MysqlConnection(MYSQL_BITCOIN_DATABASE) : new H2Connection(bitcoinDirectory,"bitcoin");
+    patternSearch.setBitcoinBinding(new BitcoinBinding(dbConnection, bitcoinFeatureDirectory));
 
     // RPC calls from PatternSearch_v1.4.avdl
 
