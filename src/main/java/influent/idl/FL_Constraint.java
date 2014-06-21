@@ -10,7 +10,7 @@ package influent.idl;
 	 CHANGED IN 1.5 */
 @org.apache.avro.specific.AvroGenerated
 public enum FL_Constraint { 
-  REQUIRED_EQUALS, FUZZY_PARTIAL_OPTIONAL, NOT  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"namespace\":\"influent.idl\",\"doc\":\"Property value matching constraints\\r\\n\\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\"]}");
+  REQUIRED_EQUALS, FUZZY_PARTIAL_OPTIONAL, NOT, OPTIONAL_EQUALS, FUZZY_REQUIRED  ;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"namespace\":\"influent.idl\",\"doc\":\"Property value matching constraints\\r\\n\\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 }

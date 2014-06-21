@@ -14,8 +14,8 @@ public class UserStats {
   double cnum, dnum;
   double creditTotal;
   double debitTotal;
-  void addCredit(double c) { creditTotal += c; cnum++; }
-  void addDebit(double c)  { debitTotal += c;  dnum++; }
+  public void addCredit(double c) { creditTotal += c; cnum++; }
+  public void addDebit(double c)  { debitTotal += c;  dnum++; }
   public double getAvgCredit() { return cnum == 0 ? 0 : creditTotal/cnum; }
   public double getAvgDebit()  { return dnum == 0 ? 0 : debitTotal/dnum; }
 }

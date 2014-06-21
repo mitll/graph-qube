@@ -26,7 +26,7 @@ public class CartesianShortlist extends Shortlist {
    * @param exemplarIDs
    * @param max
    * @return
-   * deprecated
+   * @deprecated
    */
   public List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entities1, List<String> exemplarIDs,
                                                     long max) {

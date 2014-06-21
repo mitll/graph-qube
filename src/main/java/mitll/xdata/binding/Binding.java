@@ -7,6 +7,7 @@ import mitll.xdata.db.DBConnection;
 import mitll.xdata.hmm.*;
 import mitll.xdata.scoring.FeatureNormalizer;
 import mitll.xdata.sql.SqlUtilities;
+
 import org.apache.log4j.Logger;
 
 import java.sql.Connection;
@@ -33,7 +34,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 */
 	private static final double HMM_SCALE_DISTANCE = 0.1;
 
-	protected Connection connection;
+  // if a candidate graph doesn't have enough links to match a pattern it will be skipped in hmm rescore
+  private static final boolean WARN_ABOUT_NOT_ENOUGH_DATA = false;
+
+  protected Connection connection;
 	private final Map<String, Collection<String>> tableToColumns = new HashMap<String, Collection<String>>();
 	private final Map<String, Collection<String>> columnToTables = new HashMap<String, Collection<String>>();
 	protected final Map<String, String> tableToPrimaryKey = new HashMap<String, String>();
@@ -409,7 +413,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return new ResultInfo();
 	}
 
-  private ResultInfo createDummyEntity(String id) {
+  protected ResultInfo createDummyEntity(String id) {
 		Map<String, String> nameToType = new HashMap<String, String>();
 		nameToType.put("node_id", "BIGINT");
 		List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
@@ -868,7 +872,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 */
 	public Object searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max) {
 		// original service
-		return searchByExample(example, start, max, false, Long.MIN_VALUE, Long.MAX_VALUE);
+    long endTime = (60000l * 60l * 24l * 365l * 30l) + System.currentTimeMillis();
+
+    logger.debug("end is  " + endTime +" or " + new Date(endTime));
+    return searchByExample(example, start, max, true,0, endTime);
 	}
 
   private static final int MAX_TEXT_LENGTH = 15;
@@ -1083,6 +1090,24 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		long then = System.currentTimeMillis();
 		logger.debug("ENTER searchByExample() got " + example + " rescore " + rescoreWithHMM);
 
+    logger.debug("ENTER " + new Date(startTime) + " to " + new Date(endTime));
+
+
+    long future = (60000l * 60l * 24l * 365l * 30l) + System.currentTimeMillis();
+    if (endTime > future) {
+      endTime = future;
+      logger.debug("end is  " + endTime +" or " + new Date(endTime));
+
+    }
+
+    //if (startTime > System.currentTimeMillis()) {
+      startTime = 0;
+      logger.debug("startTime is  " + startTime +" or " + new Date(startTime));
+
+    //}
+    logger.debug("end is  " + endTime +" or " + new Date(endTime));
+
+
 		if (max == 0) {
 			logger.warn("max given as 0, using 10 instead...");
 			max = 10;
@@ -1100,9 +1125,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
     logger.debug("found "+example);
 //    logger.debug("found "+example.getEntities().size());
-		List<FL_PatternSearchResult> results;
-			results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
-
+		List<FL_PatternSearchResult> results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
+    if (results == null) {
+      logger.error("huh? couldn't get results for " + example);
+      return null;
+    }
 		logger.debug("shortlist size = " + results.size());
 
 		// get edges (to use in a couple places)
@@ -1114,24 +1141,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		}
 
 		List<List<Edge>> resultEdges = new ArrayList<List<Edge>>();
-		// need to get nodes ids for each result in same order as associated query nodes
-		List<List<String>> resultIDs = new ArrayList<List<String>>();
-		if (results == null) {
-			logger.error("huh? couldn't get results for " + example);
-			return null;
-		}
-		logger.debug("searchByExample : exemplarIDs = " + exemplarIDs);
-		for (FL_PatternSearchResult result : results) {
-			try {
-				List<Edge> allLinks = getEdgesForResult(result);
-				resultEdges.add(allLinks);
-				List<String> ids = getOrderedIDsForResult(result, example, exemplarIDs);
-			//  logger.debug("result ids = " + ids + " for " + result);
-				resultIDs.add(ids);
-			} catch (Exception e) {
-				e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
-			}
-		}
+    List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
 
     logMemory();
 
@@ -1182,6 +1192,35 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param results
    * @param exemplarIDs
    * @param resultEdges
+   * @return
+   */
+  private List<List<String>> getResultIDsWithEdges(FL_PatternDescriptor example,
+                                                   List<FL_PatternSearchResult> results,
+                                                   List<String> exemplarIDs,
+                                                   List<List<Edge>> resultEdges) {
+    // need to get nodes ids for each result in same order as associated query nodes
+    List<List<String>> resultIDs = new ArrayList<List<String>>();
+
+    logger.debug("searchByExample : exemplarIDs = " + exemplarIDs);
+    for (FL_PatternSearchResult result : results) {
+      try {
+        resultEdges.add(getEdgesForResult(result));
+        List<String> ids = getOrderedIDsForResult(result, example, exemplarIDs);
+      //  logger.debug("result ids = " + ids + " for " + result);
+        resultIDs.add(ids);
+      } catch (Exception e) {
+        e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
+      }
+    }
+    return resultIDs;
+  }
+
+  /**
+   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+   * @param example
+   * @param results
+   * @param exemplarIDs
+   * @param resultEdges
    * @param resultIDs
    * @param startTime
    * @param endTime
@@ -1189,7 +1228,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    */
   private List<FL_PatternSearchResult> rescoreWithHMM1(FL_PatternDescriptor example,
                                                        List<FL_PatternSearchResult> results,
-                                                       List<String> exemplarIDs, List<List<Edge>> resultEdges,
+                                                       List<String> exemplarIDs,
+                                                       List<List<Edge>> resultEdges,
                                                        List<List<String>> resultIDs, long startTime, long endTime) {
     List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
     if (logger.isDebugEnabled()) {
@@ -1202,6 +1242,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     List<List<VectorObservation>> relevantObservations = rescoreWithHMM(results, exemplarIDs, queryEdges, resultEdges, resultIDs);
     // add only relevant edges and remove results that don't have any...
     List<FL_PatternSearchResult> tempResults = new ArrayList<FL_PatternSearchResult>();
+    int notEnoughData = 0;
     for (int i = 0; i < results.size(); i++) {
       List<VectorObservation> observations = relevantObservations.get(i);
       if (!observations.isEmpty()) {
@@ -1250,15 +1291,37 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
         tempResults.add(result);
       }
+      else {
+       // logger.debug("no observations for " + i);
+        notEnoughData++;
+      }
+    }
+
+    if (notEnoughData > 0) {
+      logger.debug("returning = "+ tempResults.size() + " from " + results.size() + " initial candidates, " +
+          notEnoughData + " were rejected b/c there were too few observations.");
     }
     return tempResults;
   }
 
+  /**
+   * We should only find instances of two entities having no links between them on the
+   * initial query pair -- all candidate graphs should have links
+   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+   * @param result
+   * @return
+   */
 	public List<Edge> getEdgesForResult(FL_PatternSearchResult result) {
 		List<FL_EntityMatchResult> entities = result.getEntities();
 		List<String> entityIDs = getEntityIDs(entities);
-		return getAllLinks(entityIDs);
-	}
+    List<Edge> allLinks = getAllLinks(entityIDs);
+
+    if (allLinks.isEmpty()) {
+      logger.warn("no links between " +entityIDs);
+    }
+    return allLinks;
+
+  }
 
 	/**
 	 * @return Result node IDs in same order as associated exemplar (query) node IDs.
@@ -1313,12 +1376,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
 
 
-    // return getShortlist(entities1, exemplarIDs, max);
+   // return getShortlist(entities1, exemplarIDs, max);
     //return new CartesianShortlist(this).getShortlist(entities1, exemplarIDs, max);
     return new BreadthFirstShortlist(this).getShortlist(entities1, exemplarIDs, max);
   }
 
-  private void logMemory() {
+  protected void logMemory() {
     Runtime rt = Runtime.getRuntime();
     long free = rt.freeMemory();
     long used = rt.totalMemory() - free;
@@ -1367,6 +1430,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * Rescores results by comparing result subgraph's transactions to query graph's transactions.
+   * @see #rescoreWithHMM1(influent.idl.FL_PatternDescriptor, java.util.List, java.util.List, java.util.List, java.util.List, long, long)
 	 */
 	private List<List<VectorObservation>> rescoreWithHMM(List<FL_PatternSearchResult> results,
 			List<String> exemplarIDs, List<Edge> queryEdges, List<List<Edge>> resultEdges, List<List<String>> resultIDs) {
@@ -1458,32 +1522,34 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     double bestSoFar = 0;
     int skipped = 0;
     for (int i = 0; i < results.size(); i++) {
-      if (resultObservations.get(i).isEmpty()) {
-        if (exemplarIDs.equals(resultIDs.get(i)))
-
-        logger.debug("NO OBSERVATIONS for result i = " + i + "(" + resultIDs.get(i) + "): num edges = " + resultEdges.get(i).size());
+      List<VectorObservation> vectorObservations = resultObservations.get(i);
+      List<String> obj = resultIDs.get(i);
+      if (vectorObservations.isEmpty()) {
+        //if (exemplarIDs.equals(obj)) {
+          logger.debug("NO OBSERVATIONS for result i = " + i + "(" + obj + "): num edges = " + resultEdges.get(i).size());
+        //}
 
         results.get(i).setScore(Double.NEGATIVE_INFINITY);
         relevantObservations.add(new ArrayList<VectorObservation>());
         skipped++;
         continue;
       }
-      sequences = hmm.decodeTopKLog(resultObservations.get(i), 3);
+      sequences = hmm.decodeTopKLog(vectorObservations, 3);
       if (sequences.isEmpty()) {
-        if (exemplarIDs.equals(resultIDs.get(i)))
-          logger.warn("----> not enough data for result i = " + i + " (" + resultIDs.get(i) +
-              "): num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
-      /*  else {
+        if (exemplarIDs.equals(obj))
+          logger.warn("----> not enough data for result i = " + i + " (" + obj +
+              "): num edges = " + resultEdges.get(i).size() + ", num observations = " + vectorObservations.size());
+        else if (WARN_ABOUT_NOT_ENOUGH_DATA) {
           logger.debug("not enough data for result i = " + i + " (" + resultIDs.get(i) +
               "): num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
-        }*/
+        }
         results.get(i).setScore(Double.NEGATIVE_INFINITY);
         relevantObservations.add(new ArrayList<VectorObservation>());
         continue;
       }
       sequence = sequences.get(0);
       double score = sequence.getScore();
-      logger.debug("Result #" + i+ " ids = " + resultIDs.get(i) + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
+      logger.debug("Result #" + i+ " ids = " + obj + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
       //logger.debug("other scores:");
       for (StateSequence other : sequences.subList(1, sequences.size())) {
         logger.debug("   raw score = " + other.getScore() + "; start index = " + other.getStartIndex() + "; states = " + other.getStates());
@@ -1499,7 +1565,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			// TODO: pack states into VectorObservation objects (so caller has access to associations)
 			int start = sequence.getStartIndex();
 			int end = start + sequence.getStates().size();
-			List<VectorObservation> temp = resultObservations.get(i).subList(start, end);
+			List<VectorObservation> temp = vectorObservations.subList(start, end);
 			// add state information
 			for (int j = 0; j < temp.size(); j++) {
 				temp.get(j).setState("" + sequence.getStates().get(j));
@@ -1578,8 +1644,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   private List<List<VectorObservation>> getResultObservations(List<List<Edge>> resultEdges, List<List<String>> resultIDs, List<String> exemplarIDs) {
     List<List<VectorObservation>> resultObservations = new ArrayList<List<VectorObservation>>();
     for (int i = 0; i < resultEdges.size(); i++) {
-      if (!resultEdges.get(i).isEmpty()) {
-        List<VectorObservation> observationVectors = createObservationVectors(resultEdges.get(i), resultIDs.get(i));
+      List<Edge> edges = resultEdges.get(i);
+      if (!edges.isEmpty()) {
+        List<VectorObservation> observationVectors = createObservationVectors(edges, resultIDs.get(i));
         resultObservations.add(observationVectors);
          if (resultIDs.get(i).equals(exemplarIDs)) {
            logger.debug("\n\n result observations for exemplar " + observationVectors.size() + " at " + i);

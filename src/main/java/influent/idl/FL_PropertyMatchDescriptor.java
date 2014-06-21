@@ -12,7 +12,7 @@ package influent.idl;
 	 CHANGED IN 1.5 */
 @org.apache.avro.specific.AvroGenerated
 public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_PropertyMatchDescriptor\",\"namespace\":\"influent.idl\",\"doc\":\"A PropertyDescriptor is used to describe a possible property that can be present in an entity or link. It describes \\r\\n\\t a single property that can be used in a property search. It can optionally include example or suggested values \\r\\n\\t for searching on.\\r\\n\\t \\r\\n\\t CHANGED IN 1.5\",\"fields\":[{\"name\":\"key\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"field name or FL_PropertyTag (or FL_PathMatchTag) that could be searched on\"},{\"name\":\"range\",\"type\":[{\"type\":\"record\",\"name\":\"FL_SingletonRange\",\"doc\":\"Single value\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"value\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",{\"type\":\"record\",\"name\":\"FL_GeoData\",\"doc\":\"Structured representation of geo-spatial data.\",\"fields\":[{\"name\":\"text\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"an address or other place reference; unstructured text field\",\"default\":null},{\"name\":\"lat\",\"type\":[\"double\",\"null\"],\"doc\":\"latitude\",\"default\":null},{\"name\":\"lon\",\"type\":[\"double\",\"null\"],\"doc\":\"longitude\",\"default\":null},{\"name\":\"cc\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"ISO 3 digit country code\",\"default\":null}]}]},{\"name\":\"type\",\"type\":{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"doc\":\"Allowed types for Property values.\\r\\n\\r\\n\\t CHANGED in 1.5\",\"symbols\":[\"DOUBLE\",\"LONG\",\"BOOLEAN\",\"STRING\",\"DATE\",\"GEO\",\"OTHER\"]},\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]},{\"type\":\"record\",\"name\":\"FL_ListRange\",\"doc\":\"List of values\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"values\",\"type\":{\"type\":\"array\",\"items\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\"]}},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]},{\"type\":\"record\",\"name\":\"FL_BoundedRange\",\"doc\":\"Bounded or unbounded range values\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"start\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"start of range, or null if unbounded start\"},{\"name\":\"end\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"end of range, or null if unbounded start\"},{\"name\":\"inclusive\",\"type\":\"boolean\",\"doc\":\"If true, range includes specified endpoint. If false, range is exclusive.\"},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]}],\"doc\":\"value of the Property to search on\",\"default\":null},{\"name\":\"variable\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"If not null/empty, the value is relative to a logical variable specified here (e.g. \\\"X\\\")\\r\\n\\t\\t *  Other parameters using the same logical variable name are relative to this value.\\r\\n\\t\\t *  For instance, for a {key=\\\"amount\\\", value=\\\"0.98\\\", variable=\\\"A\\\"} means that the value\\r\\n\\t\\t *  of amount is 0.98A.  Another amount might be 0.55A, and the property match engine\\r\\n\\t\\t *  (e.g. search engine, database query or pattern match algorithm) should understand\\r\\n\\t\\t *  the relative values.\\r\\n\\t\\t *  \\r\\n\\t\\t *  If no variable is specified, then the value is an absolute number. For example,\\r\\n\\t\\t *  {key=\\\"amount\\\", value=\\\"0.98\\\"} refers to an amount of exactly 0.98.\",\"default\":\"\"},{\"name\":\"include\",\"type\":\"boolean\",\"doc\":\"If true, INCLUDE all values matching this descriptor. If false, EXCLUDE all values matching this descriptor.\",\"default\":true},{\"name\":\"constraint\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"doc\":\"Property value matching constraints\\r\\n\\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\"]},\"null\"],\"doc\":\"MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_PropertyMatchDescriptor\",\"namespace\":\"influent.idl\",\"doc\":\"A PropertyDescriptor is used to describe a possible property that can be present in an entity or link. It describes \\r\\n\\t a single property that can be used in a property search. It can optionally include example or suggested values \\r\\n\\t for searching on.\\r\\n\\t \\r\\n\\t CHANGED IN 1.5\",\"fields\":[{\"name\":\"key\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"field name or FL_PropertyTag (or FL_PathMatchTag) that could be searched on\"},{\"name\":\"range\",\"type\":[{\"type\":\"record\",\"name\":\"FL_SingletonRange\",\"doc\":\"Single value\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"value\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",{\"type\":\"record\",\"name\":\"FL_GeoData\",\"doc\":\"Structured representation of geo-spatial data.\",\"fields\":[{\"name\":\"text\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"an address or other place reference; unstructured text field\",\"default\":null},{\"name\":\"lat\",\"type\":[\"double\",\"null\"],\"doc\":\"latitude\",\"default\":null},{\"name\":\"lon\",\"type\":[\"double\",\"null\"],\"doc\":\"longitude\",\"default\":null},{\"name\":\"cc\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"ISO 3 digit country code\",\"default\":null}]}]},{\"name\":\"type\",\"type\":{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"doc\":\"Allowed types for Property values.\\r\\n\\r\\n\\t CHANGED in 1.5\",\"symbols\":[\"DOUBLE\",\"LONG\",\"BOOLEAN\",\"STRING\",\"DATE\",\"GEO\",\"OTHER\"]},\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]},{\"type\":\"record\",\"name\":\"FL_ListRange\",\"doc\":\"List of values\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"values\",\"type\":{\"type\":\"array\",\"items\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\"]}},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]},{\"type\":\"record\",\"name\":\"FL_BoundedRange\",\"doc\":\"Bounded or unbounded range values\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"start\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"start of range, or null if unbounded start\"},{\"name\":\"end\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"end of range, or null if unbounded start\"},{\"name\":\"inclusive\",\"type\":\"boolean\",\"doc\":\"If true, range includes specified endpoint. If false, range is exclusive.\"},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]}],\"doc\":\"value of the Property to search on\",\"default\":null},{\"name\":\"variable\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"If not null/empty, the value is relative to a logical variable specified here (e.g. \\\"X\\\")\\r\\n\\t\\t *  Other parameters using the same logical variable name are relative to this value.\\r\\n\\t\\t *  For instance, for a {key=\\\"amount\\\", value=\\\"0.98\\\", variable=\\\"A\\\"} means that the value\\r\\n\\t\\t *  of amount is 0.98A.  Another amount might be 0.55A, and the property match engine\\r\\n\\t\\t *  (e.g. search engine, database query or pattern match algorithm) should understand\\r\\n\\t\\t *  the relative values.\\r\\n\\t\\t *  \\r\\n\\t\\t *  If no variable is specified, then the value is an absolute number. For example,\\r\\n\\t\\t *  {key=\\\"amount\\\", value=\\\"0.98\\\"} refers to an amount of exactly 0.98.\",\"default\":\"\"},{\"name\":\"weight\",\"type\":[\"float\",\"null\"],\"doc\":\"Relative importance of this match criteria, where the default is 1.0.\",\"default\":1.0},{\"name\":\"include\",\"type\":\"boolean\",\"doc\":\"If true, INCLUDE all values matching this descriptor. If false, EXCLUDE all values matching this descriptor.\",\"default\":true},{\"name\":\"constraint\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"doc\":\"Property value matching constraints\\r\\n\\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]},\"null\"],\"doc\":\"MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
   /** field name or FL_PropertyTag (or FL_PathMatchTag) that could be searched on */
    private java.lang.String key;
@@ -28,6 +28,8 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
 		 *  If no variable is specified, then the value is an absolute number. For example,
 		 *  {key="amount", value="0.98"} refers to an amount of exactly 0.98. */
    private java.lang.String variable;
+  /** Relative importance of this match criteria, where the default is 1.0. */
+   private java.lang.Float weight;
   /** If true, INCLUDE all values matching this descriptor. If false, EXCLUDE all values matching this descriptor. */
    private boolean include;
   /** MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT */
@@ -41,10 +43,11 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
   /**
    * All-args constructor.
    */
-  public FL_PropertyMatchDescriptor(java.lang.String key, java.lang.Object range, java.lang.String variable, java.lang.Boolean include, influent.idl.FL_Constraint constraint) {
+  public FL_PropertyMatchDescriptor(java.lang.String key, java.lang.Object range, java.lang.String variable, java.lang.Float weight, java.lang.Boolean include, influent.idl.FL_Constraint constraint) {
     this.key = key;
     this.range = range;
     this.variable = variable;
+    this.weight = weight;
     this.include = include;
     this.constraint = constraint;
   }
@@ -56,8 +59,9 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
     case 0: return key;
     case 1: return range;
     case 2: return variable;
-    case 3: return include;
-    case 4: return constraint;
+    case 3: return weight;
+    case 4: return include;
+    case 5: return constraint;
     default: throw new org.apache.avro.AvroRuntimeException("Bad index");
     }
   }
@@ -68,8 +72,9 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
     case 0: key = (java.lang.String)value$; break;
     case 1: range = (java.lang.Object)value$; break;
     case 2: variable = (java.lang.String)value$; break;
-    case 3: include = (java.lang.Boolean)value$; break;
-    case 4: constraint = (influent.idl.FL_Constraint)value$; break;
+    case 3: weight = (java.lang.Float)value$; break;
+    case 4: include = (java.lang.Boolean)value$; break;
+    case 5: constraint = (influent.idl.FL_Constraint)value$; break;
     default: throw new org.apache.avro.AvroRuntimeException("Bad index");
     }
   }
@@ -136,6 +141,21 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
   }
 
   /**
+   * Gets the value of the 'weight' field.
+   * Relative importance of this match criteria, where the default is 1.0.   */
+  public java.lang.Float getWeight() {
+    return weight;
+  }
+
+  /**
+   * Sets the value of the 'weight' field.
+   * Relative importance of this match criteria, where the default is 1.0.   * @param value the value to set.
+   */
+  public void setWeight(java.lang.Float value) {
+    this.weight = value;
+  }
+
+  /**
    * Gets the value of the 'include' field.
    * If true, INCLUDE all values matching this descriptor. If false, EXCLUDE all values matching this descriptor.   */
   public java.lang.Boolean getInclude() {
@@ -189,6 +209,7 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
     private java.lang.String key;
     private java.lang.Object range;
     private java.lang.String variable;
+    private java.lang.Float weight;
     private boolean include;
     private influent.idl.FL_Constraint constraint;
 
@@ -217,13 +238,17 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
         this.variable = data().deepCopy(fields()[2].schema(), other.variable);
         fieldSetFlags()[2] = true;
       }
-      if (isValidValue(fields()[3], other.include)) {
-        this.include = data().deepCopy(fields()[3].schema(), other.include);
+      if (isValidValue(fields()[3], other.weight)) {
+        this.weight = data().deepCopy(fields()[3].schema(), other.weight);
         fieldSetFlags()[3] = true;
       }
-      if (isValidValue(fields()[4], other.constraint)) {
-        this.constraint = data().deepCopy(fields()[4].schema(), other.constraint);
+      if (isValidValue(fields()[4], other.include)) {
+        this.include = data().deepCopy(fields()[4].schema(), other.include);
         fieldSetFlags()[4] = true;
+      }
+      if (isValidValue(fields()[5], other.constraint)) {
+        this.constraint = data().deepCopy(fields()[5].schema(), other.constraint);
+        fieldSetFlags()[5] = true;
       }
     }
 
@@ -302,6 +327,31 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
       return this;
     }
 
+    /** Gets the value of the 'weight' field */
+    public java.lang.Float getWeight() {
+      return weight;
+    }
+    
+    /** Sets the value of the 'weight' field */
+    public influent.idl.FL_PropertyMatchDescriptor.Builder setWeight(java.lang.Float value) {
+      validate(fields()[3], value);
+      this.weight = value;
+      fieldSetFlags()[3] = true;
+      return this; 
+    }
+    
+    /** Checks whether the 'weight' field has been set */
+    public boolean hasWeight() {
+      return fieldSetFlags()[3];
+    }
+    
+    /** Clears the value of the 'weight' field */
+    public influent.idl.FL_PropertyMatchDescriptor.Builder clearWeight() {
+      weight = null;
+      fieldSetFlags()[3] = false;
+      return this;
+    }
+
     /** Gets the value of the 'include' field */
     public java.lang.Boolean getInclude() {
       return include;
@@ -309,20 +359,20 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
     
     /** Sets the value of the 'include' field */
     public influent.idl.FL_PropertyMatchDescriptor.Builder setInclude(boolean value) {
-      validate(fields()[3], value);
+      validate(fields()[4], value);
       this.include = value;
-      fieldSetFlags()[3] = true;
+      fieldSetFlags()[4] = true;
       return this; 
     }
     
     /** Checks whether the 'include' field has been set */
     public boolean hasInclude() {
-      return fieldSetFlags()[3];
+      return fieldSetFlags()[4];
     }
     
     /** Clears the value of the 'include' field */
     public influent.idl.FL_PropertyMatchDescriptor.Builder clearInclude() {
-      fieldSetFlags()[3] = false;
+      fieldSetFlags()[4] = false;
       return this;
     }
 
@@ -333,21 +383,21 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
     
     /** Sets the value of the 'constraint' field */
     public influent.idl.FL_PropertyMatchDescriptor.Builder setConstraint(influent.idl.FL_Constraint value) {
-      validate(fields()[4], value);
+      validate(fields()[5], value);
       this.constraint = value;
-      fieldSetFlags()[4] = true;
+      fieldSetFlags()[5] = true;
       return this; 
     }
     
     /** Checks whether the 'constraint' field has been set */
     public boolean hasConstraint() {
-      return fieldSetFlags()[4];
+      return fieldSetFlags()[5];
     }
     
     /** Clears the value of the 'constraint' field */
     public influent.idl.FL_PropertyMatchDescriptor.Builder clearConstraint() {
       constraint = null;
-      fieldSetFlags()[4] = false;
+      fieldSetFlags()[5] = false;
       return this;
     }
 
@@ -358,8 +408,9 @@ public class FL_PropertyMatchDescriptor extends org.apache.avro.specific.Specifi
         record.key = fieldSetFlags()[0] ? this.key : (java.lang.String) defaultValue(fields()[0]);
         record.range = fieldSetFlags()[1] ? this.range : (java.lang.Object) defaultValue(fields()[1]);
         record.variable = fieldSetFlags()[2] ? this.variable : (java.lang.String) defaultValue(fields()[2]);
-        record.include = fieldSetFlags()[3] ? this.include : (java.lang.Boolean) defaultValue(fields()[3]);
-        record.constraint = fieldSetFlags()[4] ? this.constraint : (influent.idl.FL_Constraint) defaultValue(fields()[4]);
+        record.weight = fieldSetFlags()[3] ? this.weight : (java.lang.Float) defaultValue(fields()[3]);
+        record.include = fieldSetFlags()[4] ? this.include : (java.lang.Boolean) defaultValue(fields()[4]);
+        record.constraint = fieldSetFlags()[5] ? this.constraint : (influent.idl.FL_Constraint) defaultValue(fields()[5]);
         return record;
       } catch (Exception e) {
         throw new org.apache.avro.AvroRuntimeException(e);

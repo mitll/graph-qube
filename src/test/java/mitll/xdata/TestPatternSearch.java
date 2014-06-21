@@ -69,7 +69,7 @@ public class TestPatternSearch implements FL_PatternSearch {
   }
 
   @Override
-  public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max, FL_BoundedRange dateRange) throws AvroRemoteException {
+  public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max, FL_BoundedRange dateRange, boolean useAptima) throws AvroRemoteException {
     return null;
   }
 

@@ -5,10 +5,13 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** This is the current list of tags for Entities: */
+/** This is the current list of tags for Entities:
+	 
+	 CHANGED in 1.6:
+	   - added ACCOUNT_OWNER, CLUSTER_SUMMARY */
 @org.apache.avro.specific.AvroGenerated
 public enum FL_EntityTag { 
-  ACCOUNT, GROUP, CLUSTER, FILE, ANONYMOUS, OTHER  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_EntityTag\",\"namespace\":\"influent.idl\",\"doc\":\"This is the current list of tags for Entities:\",\"symbols\":[\"ACCOUNT\",\"GROUP\",\"CLUSTER\",\"FILE\",\"ANONYMOUS\",\"OTHER\"]}");
+  ACCOUNT_OWNER, ACCOUNT, GROUP, CLUSTER, CLUSTER_SUMMARY, FILE, ANONYMOUS, OTHER  ;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_EntityTag\",\"namespace\":\"influent.idl\",\"doc\":\"This is the current list of tags for Entities:\\r\\n\\t \\r\\n\\t CHANGED in 1.6:\\r\\n\\t   - added ACCOUNT_OWNER, CLUSTER_SUMMARY\",\"symbols\":[\"ACCOUNT_OWNER\",\"ACCOUNT\",\"GROUP\",\"CLUSTER\",\"CLUSTER_SUMMARY\",\"FILE\",\"ANONYMOUS\",\"OTHER\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 }

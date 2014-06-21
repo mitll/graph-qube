@@ -100,7 +100,7 @@ public class GraphQuBEServer {
     logger.debug("using port = " + port);
     logger.debug("using kivaDirectory = " + kivaDirectory);
     logger.debug("using bitcoinDirectory = " + bitcoinDirectory);
-
+    
     spark.Spark.setPort(port);
     // patternSearch = SimplePatternSearch.getDemoPatternSearch(kivaDirectory, bitcoinDirectory,
     //        useFastBitcoinConnectedTest);
@@ -292,7 +292,7 @@ public class GraphQuBEServer {
 
         try {
           Object result = patternSearch.searchByExample(example, service, start, max,
-              hmm != null, startTime, endTime);
+              hmm == null || (hmm != null && !hmm.equalsIgnoreCase("false")), startTime, endTime);
           String json = null;
           if (result instanceof FL_PatternSearchResults) {
             try {
@@ -366,7 +366,7 @@ public class GraphQuBEServer {
 
         try {
           FL_PatternDescriptor example = AvroUtils.createExemplarQuery(Arrays.asList(id));
-          Object result = patternSearch.searchByExample(example, "", 0, max, null);
+          Object result = patternSearch.searchByExample(example, "", 0, max, null,false);
           if (result instanceof FL_PatternSearchResults) {
             String table = AvroUtils.entityListAsTable((FL_PatternSearchResults) result);
             String html = "";

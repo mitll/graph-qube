@@ -30,16 +30,35 @@ public class NodeSimilaritySearch {
     load(featureFile);
   }*/
 
-  /**
-   * @paramx idFile
-   * @paramx featureFile
-   * @throws Exception
-   * @seex mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
-   * @see mitll.xdata.dataset.kiva.binding.KivaBinding#KivaBinding(mitll.xdata.db.DBConnection)
-   */
-  public NodeSimilaritySearch(String featureResource) throws Exception {
-    InputStream userFeatures = this.getClass().getResourceAsStream(featureResource);
+  public NodeSimilaritySearch(InputStream idStream, InputStream features) throws Exception {
+    //InputStream userFeatures = this.getClass().getResourceAsStream(idStream);
 
+    loadIds(idStream);
+    idStream.close();
+
+   // userFeatures = this.getClass().getResourceAsStream(features);
+
+    load(features);
+    features.close();
+  }
+    /**
+     * @paramx idFile
+     * @paramx featureFile
+     * @throws Exception
+     * @seex mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
+     * @see mitll.xdata.dataset.kiva.binding.KivaBinding#KivaBinding(mitll.xdata.db.DBConnection)
+     */
+  public NodeSimilaritySearch(String featureResource) throws Exception {
+	  logger.debug("trying to use "+  featureResource);
+    InputStream userFeatures = this.getClass().getResourceAsStream(featureResource);
+    if (userFeatures == null) {
+    	if (featureResource.startsWith(File.separator)) featureResource = featureResource.substring(1); 
+    	userFeatures = this.getClass().getResourceAsStream(featureResource);
+    }
+    if (userFeatures == null) {
+  	  logger.error("can't find "+  featureResource);
+
+    }
     loadIds(userFeatures);
     userFeatures.close();
 

@@ -82,7 +82,8 @@ public class BitcoinBinding extends Binding {
     //  InputStream userFeatures = this.getClass().getResourceAsStream(File.separator +resourceDir + File.separator +BITCOIN_FEATURES);
       logger.debug("indexing node features");
       long then = System.currentTimeMillis();
-      userIndex = new NodeSimilaritySearch(File.separator +resourceDir + File.separator +BITCOIN_FEATURES);
+      logger.debug(File.separator + resourceDir + File.separator +BITCOIN_FEATURES);
+      userIndex = new NodeSimilaritySearch("/" +resourceDir + "/" +BITCOIN_FEATURES);
       long now = System.currentTimeMillis();
 
       logger.debug("done indexing node features in " +(now-then) + " millis");

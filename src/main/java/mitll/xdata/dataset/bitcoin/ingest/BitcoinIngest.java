@@ -19,6 +19,7 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
+
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -521,8 +522,7 @@ public class BitcoinIngest {
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
-    // String tableName = "loanJournalEntriesLinks";
-    //String schemaFilename = "kiva_schemas/" + tableName + ".schema";
+	  
     logger.debug("loading transactions");
     
     //
@@ -549,19 +549,27 @@ public class BitcoinIngest {
     //
     // BTC to Dollar File
     //
-    String btcToDollarFile = "src" + File.separator + "main" + File.separator + "resources" +
+    /*String btcToDollarFile = "src" + File.separator + "main" + File.separator + "resources" +
         File.separator +
         BitcoinBinding.BITCOIN_FEATS_TSV +
         File.separator +
         BTC_TO_DOLLAR_CONVERSION_TXT;
+    */
+    String btcToDollarFile = "src/main/resources" +
+            BitcoinBinding.BITCOIN_FEATS_TSV +
+            BTC_TO_DOLLAR_CONVERSION_TXT;    
+    
     File file = new File(btcToDollarFile);
     if (!file.exists()) {
       logger.warn("can't find dollar conversion file " + file.getAbsolutePath());
     }
+    logger.debug("BTC to Dollar File loaded...");
+    
     long then = System.currentTimeMillis();
     
     // populate the transaction table
     loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
+    
     // create a features file for each account
     
     new File(writeDir).mkdirs();
@@ -569,6 +577,9 @@ public class BitcoinIngest {
     new BitcoinFeatures(dbName, writeDir, dataFilename);
     long now = System.currentTimeMillis();
 
-    logger.debug("done loading transactions, took " +(now-then)/1000 + " seconds");
+    logger.debug("done loading transactions and extracting features, took " +(now-then)/1000 + " seconds");
   }
 }
+
+
+

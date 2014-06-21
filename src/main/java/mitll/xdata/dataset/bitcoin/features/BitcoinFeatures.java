@@ -4,6 +4,7 @@ import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.scoring.FeatureNormalizer;
+
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
@@ -244,7 +245,7 @@ public class BitcoinFeatures {
       System.arraycopy(feature.other, 0, dest, 0, NUM_STANDARD_FEATURES);
     }
 
-    for (int j = 0; j < NUM_STANDARD_FEATURES; j++) { //num_feats = 10 for our raw bitcoin features…
+    for (int j = 0; j < NUM_STANDARD_FEATURES; j++) { //num_feats = 10 for our raw bitcoin features
       if (j == 4) {//: #change polarity for mean debits
         for (int k = 0; k < features.size(); k++) {
           featureMatrix[k][j] = Math.log(1 + Math.abs(featureMatrix[k][j]));

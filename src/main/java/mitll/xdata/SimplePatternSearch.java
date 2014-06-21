@@ -72,7 +72,7 @@ public class SimplePatternSearch implements FL_PatternSearch {
         return null;
     }
 
-    public Binding getBinding(FL_PatternDescriptor example) {
+  public Binding getBinding(FL_PatternDescriptor example) {
         boolean useKiva = useKiva(example);
 
         logger.debug("for " + example + " use kiva : " + useKiva);
@@ -86,9 +86,9 @@ public class SimplePatternSearch implements FL_PatternSearch {
 
     @Override
     public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-            FL_BoundedRange dateRange) throws AvroRemoteException {
+            FL_BoundedRange dateRange, boolean useAptima) throws AvroRemoteException {
         // TODO : support dateRange
-        return searchByExample(example, service, start, max, false);
+        return searchByExample(example, service, start, max, true);
     }
 
     public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
