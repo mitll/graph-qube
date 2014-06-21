@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body><h3>transactions</h3>
+<table><tr><th>AMOUNT</th><th>CREDITDEV</th><th>DEBITDEV</th><th>DEVPOP</th><th>SOURCE</th><th>TARGET</th><th>TIME</th><th>TRANSID</th><th>USD</th></tr><tr><td>1.49</td><td>0.33837405</td><td>0.5572568</td><td>-0.6828221</td><td>5104</td><td>732786</td><td>1307760423000</td><td>15292944</td><td>36.7583</td></tr><tr><td>0.01152194</td><td>-0.9959734</td><td>-1.0</td><td>-0.9983884</td><td>725672</td><td>730073</td><td>1307922714000</td><td>14677641</td><td>0.18677065</td></tr></table><h2>Results with entity scores</h2>
+<h2>Query Subgraph</h2>
+<div  style='background-color:#cedcd7;'>
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="1 2" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="1"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="2"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="1">
+            5104 : 100
+        </text>
+        <text font-size="2" x="32.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="2">
+            725672 : 100
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="1">
+            3/103/57/45/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >725672</text><text x='-100' y='155' font-size="20" >5104</text><text x='-20.0' y='320' font-size="15" >2011-05-24 03:06</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >25 11:44</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >27 08:22</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >29 05:01</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >31 01:39</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >06-02 10:17</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >04 06:56</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >06 03:34</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='13.0' y1='155' x2='13.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='1000.0' y1='155' x2='1000.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<h2>Results</h2>
+<div  >
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="3 4" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="3"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="4"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="3">
+            1674 : 20
+        </text>
+        <text font-size="2" x="32.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="4">
+            616182 : 20
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="2">
+            4/54/25/28/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >616182</text><text x='-100' y='155' font-size="20" >1674</text><text x='-20.0' y='320' font-size="15" >2011-10-01</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >14</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >26</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >11-07</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >19</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >12-01</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >13</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >25</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='88.0' y1='155' x2='88.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='218.0' y1='10' x2='218.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='218.0' y1='10' x2='218.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='223.0' y1='10' x2='223.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='224.0' y1='10' x2='224.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='294.0' y1='10' x2='294.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='296.0' y1='10' x2='296.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='297.0' y1='10' x2='297.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='297.0' y1='155' x2='297.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='440.0' y1='10' x2='440.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='440.0' y1='10' x2='440.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='506.0' y1='10' x2='506.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='519.0' y1='155' x2='519.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='521.0' y1='10' x2='521.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='531.0' y1='155' x2='531.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='554.0' y1='10' x2='554.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='584.0' y1='10' x2='584.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='627.0' y1='10' x2='627.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='655.0' y1='10' x2='655.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='701.0' y1='155' x2='701.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='727.0' y1='10' x2='727.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='735.0' y1='155' x2='735.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='770.0' y1='10' x2='770.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='790.0' y1='10' x2='790.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='791.0' y1='10' x2='791.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='794.0' y1='10' x2='794.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='799.0' y1='10' x2='799.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='862.0' y1='10' x2='862.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='871.0' y1='155' x2='871.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='874.0' y1='10' x2='874.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='875.0' y1='10' x2='875.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='896.0' y1='10' x2='896.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='921.0' y1='10' x2='921.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='933.0' y1='10' x2='933.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='943.0' y1='10' x2='943.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='947.0' y1='155' x2='947.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='966.0' y1='10' x2='966.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  style='background-color:#cedcd7;'>
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="5 6" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="5"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="6"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="5">
+            5104 : 100
+        </text>
+        <text font-size="2" x="32.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="6">
+            732786 : 26
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="3">
+            4/29/19/9/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >732786</text><text x='-100' y='155' font-size="20" >5104</text><text x='-20.0' y='320' font-size="15" >2011-05-08 09:42</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >13 12:50</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >17 03:58</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >21 07:06</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >25 10:14</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >29 01:22</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >06-02 04:30</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >06 07:38</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='51.0' y1='10' x2='51.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='607.0' y1='155' x2='607.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='821.0' y1='155' x2='821.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='821.0' y1='155' x2='821.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='1000.0' y1='155' x2='1000.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  >
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="7 8" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="7"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="8"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="7">
+            39337 : 19
+        </text>
+        <text font-size="2" x="32.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="8">
+            492419 : 23
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="4">
+            4/104/0/104/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >39337</text><text x='-100' y='155' font-size="20" >492419</text><text x='-20.0' y='320' font-size="15" >2012-05-05</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >11</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >16</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >22</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >27</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >06-02</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >07</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >13</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='39.0' y1='10' x2='39.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='335.0' y1='10' x2='335.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='337.0' y1='10' x2='337.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='522.0' y1='10' x2='522.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='998.0' y1='10' x2='998.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  style='background-color:#cedcd7;'>
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="9 10" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="9"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="10"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="9">
+            12564 : 22
+        </text>
+        <text font-size="2" x="32.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="10">
+            433843 : 21
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="5">
+            3/3/7/-4.07/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >433843</text><text x='-100' y='155' font-size="20" >12564</text><text x='-20.0' y='320' font-size="15" >2012-01-08</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='104.99999999999999' y='320' font-size="15" >14</text><line x1='124.99999999999999' y1='294' x2='124.99999999999999' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='229.99999999999997' y='320' font-size="15" >20</text><line x1='249.99999999999997' y1='294' x2='249.99999999999997' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='354.99999999999994' y='320' font-size="15" >26</text><line x1='374.99999999999994' y1='294' x2='374.99999999999994' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='479.99999999999994' y='320' font-size="15" >02-01</text><line x1='499.99999999999994' y1='294' x2='499.99999999999994' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >07</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='729.9999999999999' y='320' font-size="15" >13</text><line x1='749.9999999999999' y1='294' x2='749.9999999999999' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='854.9999999999999' y='320' font-size="15" >19</text><line x1='874.9999999999999' y1='294' x2='874.9999999999999' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='2.0' y1='155' x2='2.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='416.0' y1='10' x2='416.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='416.0' y1='10' x2='416.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='1000.0' y1='155' x2='1000.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  >
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="11 12" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="11"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="12"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="11">
+            89322 : 21
+        </text>
+        <text font-size="2" x="32.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="12">
+            7116 : 19
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="6">
+            4/6/23/-17.29/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >89322</text><text x='-100' y='155' font-size="20" >7116</text><text x='-20.0' y='320' font-size="15" >2012-01-10 03:28</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >11 08:10</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >12 12:51</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >05:32</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >13 10:14</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >14 02:55</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >07:36</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >15 12:18</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='79.0' y1='10' x2='79.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='165.0' y1='155' x2='165.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='1000.0' y1='155' x2='1000.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  style='background-color:#cedcd7;'>
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="13 14" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="13"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="14"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="13">
+            7 : 19
+        </text>
+        <text font-size="2" x="32.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="14">
+            3953182 : 21
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="7">
+            4/56/55/1/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >7</text><text x='-100' y='155' font-size="20" >3953182</text><text x='-20.0' y='320' font-size="15" >2012-10-27 01:06</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >31 11:58</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >11-05 09:50</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >10 08:43</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >15 07:35</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >20 06:27</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >25 05:20</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >30 04:12</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='85.0' y1='10' x2='85.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='436.0' y1='155' x2='436.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='437.0' y1='10' x2='437.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='867.0' y1='155' x2='867.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='993.0' y1='155' x2='993.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='1000.0' y1='155' x2='1000.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  >
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="15 16" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="15"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="16"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="15">
+            20 : 14
+        </text>
+        <text font-size="2" x="32.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="16">
+            174301 : 29
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="8">
+            3/196/0/196/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >20</text><text x='-100' y='155' font-size="20" >174301</text><text x='-20.0' y='320' font-size="15" >2013-02-28 08:23</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >08:24</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >08:25</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >08:27</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >08:28</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >08:29</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >08:30</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >08:31</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  style='background-color:#cedcd7;'>
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="17 18" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="17"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="18"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="17">
+            5104 : 100
+        </text>
+        <text font-size="2" x="32.0" y="-0.6344401" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="18">
+            177819 : 14
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="9">
+            4/13/240/-226.42/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >5104</text><text x='-100' y='155' font-size="20" >177819</text><text x='-20.0' y='320' font-size="15" >2011-06-06</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.0' y='320' font-size="15" >12</text><line x1='125.0' y1='294' x2='125.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.0' y='320' font-size="15" >19</text><line x1='250.0' y1='294' x2='250.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >25</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.0' y='320' font-size="15" >07-01</text><line x1='500.0' y1='294' x2='500.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >07</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >13</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >19</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='204.0' y1='155' x2='204.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='248.0' y1='155' x2='248.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='315.0' y1='155' x2='315.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='364.0' y1='155' x2='364.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='982.0' y1='155' x2='982.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='1000.0' y1='155' x2='1000.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+<div  >
+<svg contentScriptType="text/ecmascript" width='60%' xmlns:xlink="http://www.w3.org/1999/xlink" zoomAndPan="magnify"
+     contentStyleType="text/css" viewBox="-16 -8 66 16" height='50%' preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+     version="1.1">
+    <g id="edges">
+        <path fill="none" stroke-width="0.1"
+              d="M 2.000000,-1.000000 C 8.000000,-7.000000 26.000000,-7.000000 32.000000,-1.000000"
+              class="19 20" stroke-opacity="1.0" stroke="#808080"/>
+    </g>
+    <g id="nodes">
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="2.0" class="19"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+        <circle fill-opacity="0.2" fill="#999999" r="1.0" cx="32.0" class="20"
+                cy="-1.0" stroke="#000000" stroke-opacity="0.2"
+                stroke-width="1.0"/>
+    </g>
+    <g id="node-labels">
+        <text font-size="2" x="2.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="19">
+            1932 : 26
+        </text>
+        <text font-size="2" x="32.0" y="-0.63427734" fill="#0000ff"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="20">
+            31976 : 24
+        </text>
+    </g>
+    <g id="edge-labels">
+        <text font-size="2" x="17.0" y="-5.5" fill="#808080"
+              style="text-anchor: middle; dominant-baseline: central;"
+              font-family="Arial" class="10">
+            4/329/506/-176.83/
+        </text>
+    </g>
+</svg>
+
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" height="40%" viewBox="-120 -20 1200 400" contentStyleType="text/css" zoomAndPan="magnify" xmlns:xlink="http://www.w3.org/1999/xlink" width="60%" contentScriptType="text/ecmascript">
+   <defs><marker id="mTriangle" markerWidth="5" markerHeight="10"
+        refX="5" refY="5" orient="auto">
+        <path d="M 0 0 5 5 0 10 Z" style="fill: black;"/>
+    </marker></defs><line stroke="#808080" stroke-opacity="1.0" x1='-6' y1='0' x2='-6' y2='300' stroke-width="6" fill="none" />
+<line x1='-6' y1='300' x2='1000' y2='300' stroke="#808080" stroke-opacity="1.0"  stroke-width="6" fill="none" />
+<text x='-100' y='10' font-size="20" >1932</text><text x='-100' y='155' font-size="20" >31976</text><text x='-20.0' y='320' font-size="15" >2013-02-19 04:49</text><line x1='0.0' y1='294' x2='0.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='105.00000000000001' y='320' font-size="15" >20 10:42</text><line x1='125.00000000000001' y1='294' x2='125.00000000000001' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='230.00000000000003' y='320' font-size="15" >22 04:34</text><line x1='250.00000000000003' y1='294' x2='250.00000000000003' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='355.0' y='320' font-size="15" >24 10:27</text><line x1='375.0' y1='294' x2='375.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='480.00000000000006' y='320' font-size="15" >26 04:20</text><line x1='500.00000000000006' y1='294' x2='500.00000000000006' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='605.0' y='320' font-size="15" >27 10:13</text><line x1='625.0' y1='294' x2='625.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='730.0' y='320' font-size="15" >03-01 04:06</text><line x1='750.0' y1='294' x2='750.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" /><text x='855.0' y='320' font-size="15" >03 09:59</text><line x1='875.0' y1='294' x2='875.0' y2='306' stroke="#808080" stroke-opacity="1.0"  stroke-width="2" fill="none" />   <line stroke="blue" stroke-opacity="1.0" x1='0.0' y1='10' x2='0.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='969.0' y1='155' x2='969.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="green" stroke-opacity="1.0" x1='985.0' y1='155' x2='985.0' y2='10' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+   <line stroke="blue" stroke-opacity="1.0" x1='1000.0' y1='10' x2='1000.0' y2='155' stroke-width="2" fill="none"  marker-end="url(#mTriangle)" ></line>
+</svg></div><p></p>
+ 
+</body>
+</html>
