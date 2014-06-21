@@ -1313,7 +1313,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
 
 
-   // return getShortlist(entities1, exemplarIDs, max);
+    // return getShortlist(entities1, exemplarIDs, max);
+    //return new CartesianShortlist(this).getShortlist(entities1, exemplarIDs, max);
     return new BreadthFirstShortlist(this).getShortlist(entities1, exemplarIDs, max);
   }
 

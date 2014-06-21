@@ -521,14 +521,13 @@ public class BitcoinIngest {
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
-    // String tableName = "loanJournalEntriesLinks";
-    //String schemaFilename = "kiva_schemas/" + tableName + ".schema";
+
     logger.debug("loading transactions");
     
     //
     // Parse arguments...
-    //
-    String dataFilename = "bitcoin-20130410.tsv";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";    
+    ////String dataFilename = "bitcoin-20130410.tsv";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";
+    String dataFilename = "bitcoin-20130410-smaller.tsv";
     if (args.length > 0) {
       dataFilename = args[0];
       logger.debug("got data file " + dataFilename);
@@ -540,7 +539,7 @@ public class BitcoinIngest {
       logger.debug("got db name " + dbName);
     }
 
-    String writeDir = "out";    
+    String writeDir = "out";
     if (args.length > 2) {
       writeDir = args[2];
       logger.debug("got output dir " + writeDir);
@@ -549,19 +548,27 @@ public class BitcoinIngest {
     //
     // BTC to Dollar File
     //
-    String btcToDollarFile = "src" + File.separator + "main" + File.separator + "resources" +
+    /*String btcToDollarFile = "src" + File.separator + "main" + File.separator + "resources" +
         File.separator +
         BitcoinBinding.BITCOIN_FEATS_TSV +
         File.separator +
         BTC_TO_DOLLAR_CONVERSION_TXT;
+    */
+    String btcToDollarFile = "src/main/resources" +
+            BitcoinBinding.BITCOIN_FEATS_TSV +
+            BTC_TO_DOLLAR_CONVERSION_TXT;
+    	
     File file = new File(btcToDollarFile);
     if (!file.exists()) {
       logger.warn("can't find dollar conversion file " + file.getAbsolutePath());
     }
+    logger.debug("BTC to Dollar File loaded...");
+       
     long then = System.currentTimeMillis();
     
     // populate the transaction table
     loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
+    
     // create a features file for each account
     
     new File(writeDir).mkdirs();
@@ -569,8 +576,7 @@ public class BitcoinIngest {
     new BitcoinFeatures(dbName, writeDir, dataFilename);
     long now = System.currentTimeMillis();
 
-    // TODO add call to BitcoinFeatures
-    logger.debug("done loading transactions, took " +(now-then)/1000 + " seconds");
+    logger.debug("done loading transactions and extracting features, took " +(now-then)/1000 + " seconds");
 
     //System.out.println("done");
   }

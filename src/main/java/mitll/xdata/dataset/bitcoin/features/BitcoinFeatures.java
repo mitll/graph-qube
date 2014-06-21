@@ -78,7 +78,10 @@ public class BitcoinFeatures {
     logger.debug("reading users from db " +connection);
 
     Collection<Integer> users = getUsers(connection);
-    writePairs(users, datafile, "pairs.txt");
+    
+    String pairsFilename = writeDirectory + "pairs.txt";
+    
+    writePairs(users, datafile, pairsFilename);
 
     Map<Integer, UserFeatures> transForUsers = getTransForUsers(datafile, users);
     long now = System.currentTimeMillis();
@@ -460,6 +463,7 @@ public class BitcoinFeatures {
    */
   private void writePairs(Collection<Integer> users,
                           String dataFilename, String outfile) throws Exception {
+	  
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
     BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
     String line;
