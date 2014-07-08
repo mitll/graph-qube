@@ -1,5 +1,4 @@
-# MIT Lincoln Laboratory Graph QuBE: Probabilistic Query-by-Example of Large Graphs
-=====
+# MIT Lincoln Laboratory Graph QuBE
 
 This project provides a tool to enable efficient pattern-of-behavior search in data containing entities transacting over time. 
 
@@ -12,6 +11,7 @@ Links to the appropriate documentation are given below:
 The following links give an overview of the underlying technology used by the Graph QuBE system. These documents provide some context on how this technology works as well as some context as to how it compares to other similar technologies. 
 
 [MIT-LL Graph QuBE Executive Summary] (doc/papers/MITLL_GraphQuBE_ExecutiveSummary.pdf)
+
 [MIT-LL Graph QuBE System Description] (doc/papers/MITLL_GraphQuBE_SystemDescription.pdf)
 
 ## Building and Running on Example Data
