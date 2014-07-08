@@ -1,14 +1,16 @@
 # MIT Lincoln Laboratory Graph QuBE
 
-This project provides a tool to enable efficient pattern-of-behavior search in data containing entities transacting over time. 
+This project contains the source for MIT-LL Graph QuBE, a tool to enable efficient pattern-of-behavior search in data containing entities transacting over time. 
 
-From the user's point-of-view, this tools helps to answer the basic question: "If I have an interesting pattern of behavior between some entities-of-interest, can I look through all my data to find other such examples of this type of behavior?"
+This tool helps to answer the basic question: "If I have an interesting pattern of behavior between some entities-of-interest, can I look through all my data to find other such examples of this type of behavior?" Having such a "pattern of behavior" search capability could support many tasks such as situational awareness and decision support.
+
+Developing technology for pattern-of-behavior search in large, transactional data sets, is a challenging task for both the commercial and academic communities. MIT-LL Graph QuBE marries the strengths of approaches from both these communties to develop an efficient two-stage system for pattern search on transactional data.
 
 Links to the appropriate documentation are given below:
 
 ## System Description 
 
-The following links give an overview of the underlying technology used by the Graph QuBE system. These documents provide some context on how this technology works as well as some context as to how it compares to other similar technologies. 
+The following links give an overview of the underlying technology used by the Graph QuBE system. These documents provide both technical details as well as some context as to how it compares to other similar technologies. 
 
 [MIT-LL Graph QuBE Executive Summary] (doc/papers/MITLL_GraphQuBE_ExecutiveSummary.pdf)
 
@@ -16,9 +18,13 @@ The following links give an overview of the underlying technology used by the Gr
 
 ## Building and Running on Example Data
 
-The following links outline how to build, launch and use Graph QuBE from the distributed source. An example program is provided that llustrates how the data ingest process can be done from a sample data set.  
+The following link outlines how to build, launch and use Graph QuBE (with an example data set) from the distributed source. 
 
 [MIT-LL Graph QuBE User Manual] (doc/XDATA_UserManual.pdf)
+
+An example class is provided that llustrates how the data ingest process can be done from a sample Bitcoin data set:
+
+[BitcoinIngest.java] (src/main/java/mitll/xdata/dataset/bitcoin/ingest/BitcoinIngest.java)
 
 ## License
 
