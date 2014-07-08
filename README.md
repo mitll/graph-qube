@@ -12,9 +12,9 @@ Links to the appropriate documentation are given below:
 
 The following links give an overview of the underlying technology used by the Graph QuBE system. These documents provide both technical details as well as some context as to how it compares to other similar technologies. 
 
-[MIT-LL Graph QuBE Executive Summary] (doc/papers/MITLL_GraphQuBE_ExecutiveSummary.pdf)
+>[MIT-LL Graph QuBE Executive Summary] (doc/papers/MITLL_GraphQuBE_ExecutiveSummary.pdf)
 
-[MIT-LL Graph QuBE System Description] (doc/papers/MITLL_GraphQuBE_SystemDescription.pdf)
+>[MIT-LL Graph QuBE System Description] (doc/papers/MITLL_GraphQuBE_SystemDescription.pdf)
 
 ## Building and Running on Example Data
 
@@ -22,9 +22,7 @@ The following link outlines how to build, launch and use Graph QuBE (with an exa
 
 [MIT-LL Graph QuBE User Manual] (doc/XDATA_UserManual.pdf)
 
-An example class is provided that llustrates how the data ingest process can be done from a sample Bitcoin data set:
-
-[BitcoinIngest.java] (src/main/java/mitll/xdata/dataset/bitcoin/ingest/BitcoinIngest.java)
+An example class is provided that llustrates how the data ingest process can be done from a sample Bitcoin data set: [BitcoinIngest.java] (src/main/java/mitll/xdata/dataset/bitcoin/ingest/BitcoinIngest.java)
 
 ## License
 
