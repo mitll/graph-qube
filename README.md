@@ -20,7 +20,7 @@ The following links give an overview of the underlying technology used by the Gr
 
 The following link outlines how to build, launch and use Graph QuBE (with an example data set) from the distributed source. 
 
-[MIT-LL Graph QuBE User Manual] (doc/XDATA_UserManual.pdf)
+>[MIT-LL Graph QuBE User Manual] (doc/XDATA_UserManual.pdf)
 
 An example class is provided that llustrates how the data ingest process can be done from a sample Bitcoin data set: [BitcoinIngest.java] (src/main/java/mitll/xdata/dataset/bitcoin/ingest/BitcoinIngest.java)
 
