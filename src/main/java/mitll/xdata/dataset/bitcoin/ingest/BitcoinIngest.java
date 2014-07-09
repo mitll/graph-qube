@@ -528,7 +528,7 @@ public class BitcoinIngest {
     //
     // Parse arguments...
     //
-    String dataFilename = "bitcoin-20130410.tsv";//"/Users/go22670/xdata/datasets/bitcoin/transactions/bitcoin-20130410.tsv";    
+    String dataFilename = "bitcoin-20130410.tsv";
     if (args.length > 0) {
       dataFilename = args[0];
       logger.debug("got data file " + dataFilename);
