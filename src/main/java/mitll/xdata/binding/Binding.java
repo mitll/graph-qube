@@ -21,37 +21,39 @@ import java.util.*;
  * File Templates.
  */
 public abstract class Binding extends SqlUtilities implements AVDLQuery {
-  private static final Logger logger = Logger.getLogger(Binding.class);
+	private static final Logger logger = Logger.getLogger(Binding.class);
 
- // private static final boolean REVERSE_DIRECTION = false;
-  private static final int DEFAULT_SHORT_LIST_SIZE = 100;
-  private static final long MB = 1024*1024;
-  private static final int FULL_SEARCH_LIST_SIZE = 200;
-//	private static final double HMM_KDE_BANDWIDTH = 0.25;
+	// private static final boolean REVERSE_DIRECTION = false;
+	private static final int DEFAULT_SHORT_LIST_SIZE = 100;
+	private static final long MB = 1024 * 1024;
+	private static final int FULL_SEARCH_LIST_SIZE = 200;
+	// private static final double HMM_KDE_BANDWIDTH = 0.25;
 	/**
-	 * Scales distance between result probability and query probability when converting to score. Lower makes scores
-	 * look higher.
+	 * Scales distance between result probability and query probability when
+	 * converting to score. Lower makes scores look higher.
 	 */
 	private static final double HMM_SCALE_DISTANCE = 0.1;
 
-  // if a candidate graph doesn't have enough links to match a pattern it will be skipped in hmm rescore
-  private static final boolean WARN_ABOUT_NOT_ENOUGH_DATA = false;
+	// if a candidate graph doesn't have enough links to match a pattern it will
+	// be skipped in hmm rescore
+	private static final boolean WARN_ABOUT_NOT_ENOUGH_DATA = false;
 
-  protected Connection connection;
+	protected Connection connection;
 	private final Map<String, Collection<String>> tableToColumns = new HashMap<String, Collection<String>>();
 	private final Map<String, Collection<String>> columnToTables = new HashMap<String, Collection<String>>();
 	protected final Map<String, String> tableToPrimaryKey = new HashMap<String, String>();
 
 	private static final boolean LIMIT = false;
 	private final Map<FL_PropertyTag, List<String>> tagToColumn = new HashMap<FL_PropertyTag, List<String>>();
-  protected final Map<String, String> prefixToTable = new HashMap<String, String>();
-  protected Map<String, Map<String, KivaBinding.ForeignLink>> sourceToTargetToLinkTable = new HashMap<String, Map<String, KivaBinding.ForeignLink>>();
-	// Map<String, ForeignLink> tableToLinkTable = new HashMap<String, ForeignLink>();
-  protected final Map<String, String> tableToDisplay = new HashMap<String, String>();
+	protected final Map<String, String> prefixToTable = new HashMap<String, String>();
+	protected Map<String, Map<String, KivaBinding.ForeignLink>> sourceToTargetToLinkTable = new HashMap<String, Map<String, KivaBinding.ForeignLink>>();
+	// Map<String, ForeignLink> tableToLinkTable = new HashMap<String,
+	// ForeignLink>();
+	protected final Map<String, String> tableToDisplay = new HashMap<String, String>();
 	private final boolean showSQL = false;
 	private final boolean showResults = false;
-  protected final Map<String, Set<String>> stot = new HashMap<String, Set<String>>();
-  protected final Set<String> validTargets = new HashSet<String>();
+	protected final Map<String, Set<String>> stot = new HashMap<String, Set<String>>();
+	protected final Set<String> validTargets = new HashSet<String>();
 
   public Binding(DBConnection connection) {
 		try {

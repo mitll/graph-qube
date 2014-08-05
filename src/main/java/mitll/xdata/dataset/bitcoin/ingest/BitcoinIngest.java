@@ -175,12 +175,15 @@ public class BitcoinIngest {
     br.close();
 
     createIndices(tableName, connection);
+    
+    connection.closeConnection();
 
     long t1 = System.currentTimeMillis();
     System.out.println("total count = " + count);
     System.out.println("total time = " + ((t1 - t0) / 1000.0) + " s");
     System.out.println((t1 - 1.0 * t0) / count + " ms/insert");
     System.out.println((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
+    
   }
 
   private static int insertRowsInTable(String tableName, boolean useTimestamp, List<String> cnames,

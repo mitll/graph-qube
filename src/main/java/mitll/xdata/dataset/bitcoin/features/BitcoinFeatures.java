@@ -119,6 +119,8 @@ public class BitcoinFeatures {
     rawWriter.close();
    // idsWriter.close();
     standardFeatureWriter.close();
+    
+    connection.closeConnection();
   }
 
   /**
@@ -516,6 +518,7 @@ public class BitcoinFeatures {
       }
     }
     writer.close();
+    br.close();
     logger.debug("wrote " + cc + " pairs.");
     if (bad > 0) logger.warn("Got " + bad + " transactions...");
   }
