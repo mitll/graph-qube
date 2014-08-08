@@ -8,10 +8,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<avro.version>1.7.4</avro.version>
-<!--
-        <spark.version>0.9.9.7-SNAPSHOT</spark.version>
--->
-        <spark.version>1.1</spark.version>
+		<!-- <spark.version>0.9.9.7-SNAPSHOT</spark.version> -->
+		<spark.version>1.1</spark.version>
 	</properties>
 
 	<build>
@@ -125,18 +123,18 @@
 					<include> **/*.properties</include>
 				</includes>
 			</resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <includes>
-                    <include> **/*</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/public</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes>
+					<include> **/*</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/public</directory>
+				<includes>
+					<include>**/*</include>
+				</includes>
+			</resource>
 
 
 
@@ -241,20 +239,26 @@
 			<artifactId>commons-math3</artifactId>
 			<version>3.2</version>
 		</dependency>
-        <dependency>
-            <groupId>org.gephi</groupId>
-            <artifactId>gephi-toolkit</artifactId>
-            <version>0.8.2</version>
-        </dependency>
+		<dependency>
+			<groupId>org.gephi</groupId>
+			<artifactId>gephi-toolkit</artifactId>
+			<version>0.8.2</version>
+		</dependency>
 
-        <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-log4j12</artifactId>
-        <version>1.7.5</version>
-    </dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.5</version>
+		</dependency>
 
 		<!-- <dependency> <groupId>org.python</groupId> <artifactId>jython-standalone</artifactId> 
 			<version>2.5.2</version> </dependency> -->
+
+		<dependency>
+			<groupId>jgrapht</groupId>
+			<artifactId>jgrapht</artifactId>
+			<version>0.7.3</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>

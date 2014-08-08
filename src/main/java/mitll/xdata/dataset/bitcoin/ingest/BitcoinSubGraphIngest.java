@@ -15,6 +15,8 @@ import mitll.xdata.db.H2Connection;
 
 import org.apache.log4j.Logger;
 
+
+
 /**
  * Re-creating func
  * 
@@ -22,42 +24,6 @@ import org.apache.log4j.Logger;
  * 
  */
 
-/*
-//0
-alter table transactions_copy add sorted_pair array;
-update transactions_copy 
-set sorted_pair =
-case when (source > target) then (target,source) else (source,target) end;
-// 1
-drop table if exists sorted_pairs;
-create table sorted_pairs as SELECT sorted_pair, sum(usd) as tot_usd, count(*) as num_trans FROM TEST group by sorted_pair;
-alter table sorted_pairs add tot_out decimal(20,8);
-alter table sorted_pairs add tot_in decimal(20,8);
-//2
-drop table if exists tmp;
-create temporary table tmp as select sorted_pair, sum(usd) as tot_out
-from test
-where (source < target)
-group by sorted_pair;
-//3
-update sorted_pairs set tot_out =
-(select tmp.tot_out
-from tmp
-where sorted_pairs.sorted_pair = tmp.sorted_pair);
-//4
-drop table if exists tmp;
-create table tmp as select sorted_pair, sum(usd) as tot_in
-from test
-where (source > target)
-group by sorted_pair;
-//5
-update sorted_pairs set tot_in =
-(select tmp.tot_in
-from tmp
-where sorted_pairs.sorted_pair = tmp.sorted_pair);
-//6
-drop table tmp;
-*/
 
 
 public class BitcoinSubGraphIngest {
@@ -70,6 +36,7 @@ public class BitcoinSubGraphIngest {
 	private static final int USER_LIMIT = 10000000;
 	private static final int MIN_DEBorCRED = 5;
 	private static final String TABLE_NAME = "transactions_copy";
+	private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
 	
 	
 	private static PreparedStatement queryStatement;
@@ -87,7 +54,80 @@ public class BitcoinSubGraphIngest {
 		
 		DBConnection dbConnection = new H2Connection(bitcoinDirectory,"bitcoin");
 		
+		// Filter-out non-active nodes, self-transitions, heavy-hitters
 		filterForActivity(dbConnection);
+		
+		// Create marginalized graph data and various stats
+		extractUndirectedGraph(dbConnection);
+	}
+
+	
+	/**
+	 * Find all unique edges and gather statistics about the activity between them.
+	 * 
+	 * The primary key in this table is the tuple "sorted_pair" which is a guid for each edge 
+	 * where the accounts involved in a transaction are listed in numerical order; 
+	 * e.g. (a,b) for all transactions between a and b, given a < b. 
+	 * 
+	 * The column "TOT_USD" sums the total amount transacted between a and b
+	 * The column "NUM_TRANS" count the total number of transactions between a and b
+	 * The column "TOT_OUT" sums the value of transactions from a->b
+	 * The column "TOT_IN" sums the value of transactions from b->a 
+	 * 
+	 * @param connection
+	 * @return
+	 * @throws Exception
+	 */
+	private static void extractUndirectedGraph(DBConnection connection) throws Exception {
+		
+		/*
+		 * Setup SQL statements
+		 */
+		String sqlGenerateSortedPairs = "alter table "+TABLE_NAME+" add sorted_pair array;" + 
+											" update "+TABLE_NAME+ 		
+											" set sorted_pair =" +
+											" case when (source > target)" +
+											" then (target,source) " +
+											"else (source,target) end;";
+		
+		String sqlPopulateMarginalGraph = "drop table if exists "+GRAPH_TABLE+";" +
+											" create table "+GRAPH_TABLE+" as " +
+											" select sorted_pair, sum(usd) as tot_usd, count(*) as num_trans" +
+											" from "+TABLE_NAME+" group by sorted_pair;" +
+											" alter table "+GRAPH_TABLE+" add tot_out decimal(20,8);" +
+											" alter table "+GRAPH_TABLE+" add tot_in decimal(20,8);";
+		
+		String sqlTotOutTemp = "drop table if exists tmp;" +
+									" create temporary table tmp as select sorted_pair, sum(usd) as tot_out" +
+									" from "+TABLE_NAME +
+									" where (source < target)" +
+									" group by sorted_pair;";
+
+		String sqlUpdateTotOut = "update "+GRAPH_TABLE+" set tot_out =" +
+									" (select tmp.tot_out" +
+									" from tmp" +
+									" where "+GRAPH_TABLE+".sorted_pair = tmp.sorted_pair);";
+
+		String sqlTotInTemp = "drop table if exists tmp;" +
+				" create temporary table tmp as select sorted_pair, sum(usd) as tot_in" +
+				" from "+TABLE_NAME+
+				" where (source > target)" +
+				" group by sorted_pair;";
+
+		String sqlUpdateTotIn = "update "+GRAPH_TABLE+" set tot_in =" +
+				" (select tmp.tot_in" +
+				" from tmp" +
+				" where "+GRAPH_TABLE+".sorted_pair = tmp.sorted_pair);";
+		
+		String sqlDropTemp = "drop table tmp";
+		
+		doSQLUpdate(connection, sqlGenerateSortedPairs);
+		doSQLUpdate(connection, sqlPopulateMarginalGraph);
+		doSQLUpdate(connection, sqlTotOutTemp);
+		doSQLUpdate(connection, sqlUpdateTotOut);
+		doSQLUpdate(connection, sqlTotInTemp);
+		doSQLUpdate(connection, sqlUpdateTotIn);
+		doSQLUpdate(connection, sqlDropTemp);
 	}
 
 	/**
