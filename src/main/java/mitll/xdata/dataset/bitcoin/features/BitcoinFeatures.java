@@ -189,48 +189,48 @@ public class BitcoinFeatures {
   }
 
   private void writeFeaturesToFiles(BufferedWriter rawWriter, BufferedWriter standardFeatureWriter,
-                                    Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
-                                    double[][] standardizedFeatures) throws IOException {
-    Features next = userToFeatures.values().iterator().next();
-    int numFeatures = next.other.length;
+		  Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
+		  double[][] standardizedFeatures) throws IOException {
+	  Features next = userToFeatures.values().iterator().next();
+	  int numFeatures = next.other.length;
 
-    int j = 0;
-    for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
-      Features value = userFeatPair.getValue();
-      double[] featureVector = value.other;
-      int id = userFeatPair.getKey();
-     // writer.write(id + "\t");
-      rawWriter.write(id + "\t");
-      //idsWriter.write(id + "\n");
-      standardFeatureWriter.write(id + "\t");
+	  int j = 0;
+	  for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
+		  Features value = userFeatPair.getValue();
+		  double[] featureVector = value.other;
+		  int id = userFeatPair.getKey();
+		  // writer.write(id + "\t");
+		  rawWriter.write(id + "\t");
+		  //idsWriter.write(id + "\n");
+		  standardFeatureWriter.write(id + "\t");
 
-      //if (useSpectralFeatures) {
-         // TODO write out features, maybe to a separate file?
-     // }
-      Integer userIndex = userToIndex.get(id);
+		  //if (useSpectralFeatures) {
+		  // TODO write out features, maybe to a separate file?
+		  // }
+		  Integer userIndex = userToIndex.get(id);
 
-      double[] standardizedFeature = standardizedFeatures[userIndex];
+		  double[] standardizedFeature = standardizedFeatures[userIndex];
 
-/*      if (id < 10) {
+		  /*      if (id < 10) {
         logger.debug("user " + id + " index " + userIndex + " features " + value + " vs " + getDoubles(standardizedFeature));
       }*/
-      for (int i = 0; i < numFeatures; i++) {
-        double v = featureVector[i];
-  //      double finalValue = ((v - means[i]) / stds[i]) * weightVector[i];
-        String separator = (i == numFeatures - 1) ? "\n" : "\t";
-    //    writer.write(finalValue + separator);
-        rawWriter.write(v + separator);
+		  for (int i = 0; i < numFeatures; i++) {
+			  double v = featureVector[i];
+			  //      double finalValue = ((v - means[i]) / stds[i]) * weightVector[i];
+			  String separator = (i == numFeatures - 1) ? "\n" : "\t";
+			  //    writer.write(finalValue + separator);
+			  rawWriter.write(v + separator);
 
-        double standardizedValue = standardizedFeature[i];
-        standardFeatureWriter.write(standardizedValue+separator);
+			  double standardizedValue = standardizedFeature[i];
+			  standardFeatureWriter.write(standardizedValue+separator);
 
-        if (j++ % 10000 == 0) {
-      //    writer.flush();
-          rawWriter.flush();
-          standardFeatureWriter.flush();
-        }
-      }
-    }
+			  if (j++ % 10000 == 0) {
+				  //    writer.flush();
+				  rawWriter.flush();
+				  standardFeatureWriter.flush();
+			  }
+		  }
+	  }
   }
 
   static String getDoubles(double [] arr) {

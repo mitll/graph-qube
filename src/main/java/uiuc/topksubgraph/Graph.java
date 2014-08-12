@@ -5,12 +5,23 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import mitll.xdata.dataset.bitcoin.ingest.BitcoinSubGraphIngest;
+import mitll.xdata.db.DBConnection;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
 
@@ -24,6 +35,8 @@ public class Graph {
 	public int numEdges=0;
 	public HashSet<Edge> edges;
 	public HashMap<Integer,ArrayList<Edge>> inLinks;
+	
+	private static final Logger logger = Logger.getLogger(Graph.class);
 	
 	/**
 	 * Maps the node to an internal node id.
@@ -453,6 +466,78 @@ public class Graph {
 		}
 		out.close();
 	}
+	
+	/**
+	 * Loads the graph from an h2 database
+	 * @param dbConnection
+	 * @throws Throwable
+	 */
+	public void loadGraph(DBConnection dbConnection, String tableName, String edgeName) throws Throwable
+	{
+		int nodeCount=node2NodeIdMap.size();
+		numNodes = 0;
+		numEdges = 0;
+		
+		/*
+		 * Do database query
+		 */
+		Connection connection = dbConnection.getConnection();
+		
+		String sqlQuery = "select * from "+tableName+";";
+		
+		PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
+		ResultSet rs = queryStatement.executeQuery();
+		
+		/*
+		 * Loop through database table rows...
+		 */
+		int c = 0;
+		while (rs.next()) {
+			c++;
+			if (c % 100000 == 0) logger.debug("read  " +c);	
+	
+			Array array = rs.getArray("sorted_pair");
+			Object rsArray = array.getArray();
+			Object[] sortedPair = (Object[]) rsArray;
+			
+			double weight = rs.getDouble(edgeName);
+			
+			int from = (Integer)sortedPair[0];
+			int to = (Integer)sortedPair[1];
+
+			//logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
+			
+			if(node2NodeIdMap.containsKey(from))
+				from=node2NodeIdMap.get(from);
+			else
+			{
+				node2NodeIdMap.put(from, nodeCount);
+				nodeId2NodeMap.put(nodeCount, from);
+				from=nodeCount;
+				nodeCount++;
+			}
+			if(node2NodeIdMap.containsKey(to))
+				to=node2NodeIdMap.get(to);
+			else
+			{
+				node2NodeIdMap.put(to, nodeCount);
+				nodeId2NodeMap.put(nodeCount, to);
+				to=nodeCount;
+				nodeCount++;
+			}
+
+			this.addEdge(from, to, weight);
+			this.addEdge(to, from, weight);
+			
+		}
+
+		rs.close();
+		queryStatement.close();
+		
+		numNodes = nodeCount;
+		numEdges = c;
+	}
+	
 	/**
 	 * Loads the graph from the file
 	 * @param f

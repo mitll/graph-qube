@@ -15,6 +15,7 @@ import mitll.xdata.db.H2Connection;
 
 import org.apache.log4j.Logger;
 
+import uiuc.topksubgraph.Graph;
 
 
 /**
@@ -44,7 +45,7 @@ public class BitcoinSubGraphIngest {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Throwable {
 		// TODO Auto-generated method stub
 
 		logger.info("test");
@@ -53,12 +54,15 @@ public class BitcoinSubGraphIngest {
 	    String bitcoinDirectory = "src/main/resources" + BitcoinBinding.BITCOIN_FEATS_TSV;
 		
 		DBConnection dbConnection = new H2Connection(bitcoinDirectory,"bitcoin");
-		
+
 		// Filter-out non-active nodes, self-transitions, heavy-hitters
 		filterForActivity(dbConnection);
 		
 		// Create marginalized graph data and various stats
 		extractUndirectedGraph(dbConnection);
+		
+		Graph testGraph = new Graph();
+		testGraph.loadGraph(dbConnection, "MARGINAL_GRAPH", "NUM_TRANS");
 	}
 
 	
@@ -83,7 +87,8 @@ public class BitcoinSubGraphIngest {
 		/*
 		 * Setup SQL statements
 		 */
-		String sqlGenerateSortedPairs = "alter table "+TABLE_NAME+" add sorted_pair array;" + 
+		String sqlGenerateSortedPairs = "alter table "+TABLE_NAME+" drop column if exists sorted_pair;" +
+				 							" alter table "+TABLE_NAME+" add SORTED_PAIR array;" + 
 											" update "+TABLE_NAME+ 		
 											" set sorted_pair =" +
 											" case when (source > target)" +
@@ -92,10 +97,10 @@ public class BitcoinSubGraphIngest {
 		
 		String sqlPopulateMarginalGraph = "drop table if exists "+GRAPH_TABLE+";" +
 											" create table "+GRAPH_TABLE+" as " +
-											" select sorted_pair, sum(usd) as tot_usd, count(*) as num_trans" +
+											" select sorted_pair, sum(usd) as TOT_USD, count(*) as NUM_TRANS" +
 											" from "+TABLE_NAME+" group by sorted_pair;" +
-											" alter table "+GRAPH_TABLE+" add tot_out decimal(20,8);" +
-											" alter table "+GRAPH_TABLE+" add tot_in decimal(20,8);";
+											" alter table "+GRAPH_TABLE+" add TOT_OUT decimal(20,8);" +
+											" alter table "+GRAPH_TABLE+" add TOT_IN decimal(20,8);";
 		
 		String sqlTotOutTemp = "drop table if exists tmp;" +
 									" create temporary table tmp as select sorted_pair, sum(usd) as tot_out" +
