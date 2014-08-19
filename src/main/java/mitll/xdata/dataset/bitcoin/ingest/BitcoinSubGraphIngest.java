@@ -3,20 +3,28 @@
  */
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import uiuc.topksubgraph.Graph;
+import uiuc.topksubgraph.MultipleIndexConstructor;
 
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Re-creating func
@@ -32,12 +40,13 @@ public class BitcoinSubGraphIngest {
 	private static final Logger logger = Logger.getLogger(BitcoinSubGraphIngest.class);
 	
 	private static final int MIN_TRANSACTIONS = 10;
-	private static final boolean LIMIT = false;
 	private static final int BITCOIN_OUTLIER = 25;
-	private static final int USER_LIMIT = 10000000;
-	private static final int MIN_DEBorCRED = 5;
 	private static final String TABLE_NAME = "transactions_copy";
 	private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
+	
+	private static final String USERS = "users";
+	private static final String TYPE_COLUMN = "type";
+	private static final String USERID_COLUMN = "user";
 	
 	
 	private static PreparedStatement queryStatement;
@@ -46,23 +55,79 @@ public class BitcoinSubGraphIngest {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Throwable {
-		// TODO Auto-generated method stub
-
-		logger.info("test");
 		
+		/*
+		 * All this should be wrapped in methods, and then put into BitcoinIngest
+		 */
+		
+		/*
+		 * This stuff is pre-processing the graph to prepare it for topk-subgraph ingest/indexing 
+		 */
 		//String bitcoinDirectory = "src/main/resources/bitcoin_small_feats_tsv/";
 	    String bitcoinDirectory = "src/main/resources" + BitcoinBinding.BITCOIN_FEATS_TSV;
 		
 		DBConnection dbConnection = new H2Connection(bitcoinDirectory,"bitcoin");
-
+	    
 		// Filter-out non-active nodes, self-transitions, heavy-hitters
 		filterForActivity(dbConnection);
 		
 		// Create marginalized graph data and various stats
 		extractUndirectedGraph(dbConnection);
 		
-		Graph testGraph = new Graph();
-		testGraph.loadGraph(dbConnection, "MARGINAL_GRAPH", "NUM_TRANS");
+		
+		/*
+		 * This is stuff is doing the actual topk-subgraph indexing
+		 */
+		MultipleIndexConstructor.outDir=bitcoinDirectory;
+	    MultipleIndexConstructor.D = 2;
+	   
+		// Load graph into topk-subgraph Graph object
+		Graph g = new Graph();
+		g.loadGraph(dbConnection, "MARGINAL_GRAPH", "NUM_TRANS");
+		MultipleIndexConstructor.setGraph(g);
+	    logger.info("Loaded graph file...");
+		
+	    //iterate through hashmap test
+	    int c=0;
+	    int max_val = 0;
+	    for (Integer key : g.node2NodeIdMap.keySet()) {
+	        if (g.node2NodeIdMap.get(key) > max_val) {
+	        	max_val = g.node2NodeIdMap.get(key);
+	        }
+	        c++;
+	    }
+	    logger.info("There are: "+c+" unique nodes in the graph...");
+	    logger.info("max internal-id val is..."+max_val);
+	    
+		// Insert default type into users table... (this is actually now done in BitcoinFeatures)
+//		String sqlInsertType = "alter table "+USERS+" drop if exists "+TYPE_COLUMN+";"+
+//								" alter table "+USERS+" add "+TYPE_COLUMN+" int not null default(1);";
+//		doSQLUpdate(dbConnection, sqlInsertType);
+		
+		
+		// Load types into topk-subgraph object...
+		MultipleIndexConstructor.loadTypesFromDatabase(dbConnection,USERS,USERID_COLUMN,TYPE_COLUMN);
+	    logger.info("Loaded types file...");
+	    logger.debug("Number of types: "+MultipleIndexConstructor.totalTypes);	
+		
+		// Create Typed Edges
+		MultipleIndexConstructor.createTypedEdges();
+		
+		// Load and Sort Edges from Graph
+		//MultipleIndexConstructor.loadAndSortEdges();
+		MultipleIndexConstructor.populateSortedEdgeLists();
+		
+		//save the sorted edge lists
+		MultipleIndexConstructor.saveSortedEdgeList();
+		
+		//hash map for all possible "edge-type" paths: i.e. doubles,triples,...D-tuples
+		//this gets you the "official" ordering
+		logger.info("Computing Edge-Type Path Ordering...");
+		MultipleIndexConstructor.computeEdgeTypePathOrdering();
+		
+		logger.info("Computing SPD, Topology and SPath Indices...");
+		MultipleIndexConstructor.computeIndices();
+		
 	}
 
 	

@@ -21,12 +21,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.db.DBConnection;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -136,14 +142,24 @@ public class MultipleIndexConstructor {
 			throw new IOException("Could not create directory: " + outDir);
 		
 		//setup output files
-		String filename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".spath";
+//		String filename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".spath";
+//		logger.info(graphFile);
+//		logger.info(filename);
+//		BufferedWriter out = new BufferedWriter(new FileWriter(new File(outDir, filename)));
+//		String topologyFilename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".topology";
+//		BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
+//		String spdFilename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".spd";
+//		BufferedWriter outSPD = new BufferedWriter(new FileWriter(new File(outDir, spdFilename)));
+		
+		String filename=BitcoinBinding.DATASET_ID+"."+Integer.toString(D)+".spath";
 		BufferedWriter out = new BufferedWriter(new FileWriter(new File(outDir, filename)));
-		String topologyFilename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".topology";
+		String topologyFilename=BitcoinBinding.DATASET_ID+"."+Integer.toString(D)+".topology";
 		BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
-		String spdFilename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".spd";
+		String spdFilename=BitcoinBinding.DATASET_ID+"."+Integer.toString(D)+".spd";
 		BufferedWriter outSPD = new BufferedWriter(new FileWriter(new File(outDir, spdFilename)));
 		
-		for(int i=1;i<=g.numNodes;i++)
+		//for(int i=1;i<=g.numNodes;i++)
+		for(int i=0;i<g.numNodes;i++)
 		{
 			if(i%100==0)
 				//System.err.println("Nodes processed: "+i+" out of "+g.numNodes);
@@ -151,7 +167,8 @@ public class MultipleIndexConstructor {
 			out.write(i+"\t");
 			outTopology.write(i+"\t");
 			outSPD.write(i+"\t");
-			int n=g.node2NodeIdMap.get(i);//internalID
+			//int n=g.node2NodeIdMap.get(i);//this is a big-bug fixed...
+			int n=i;//internalID
 			HashSet<Integer> queue = new HashSet<Integer>();
 			HashMap<Integer, Double> sumWeight = new HashMap<Integer, Double>();
 			queue.add(n);
@@ -350,7 +367,8 @@ public class MultipleIndexConstructor {
 		//Save out....
 		for(String key:sortedEdgeLists.keySet())
 		{
-			String fileName=graphFile.split("\\.")[0]+"_"+key+".list";
+			//String fileName=graphFile.split("\\.")[0]+"_"+key+".list";
+			String fileName=BitcoinBinding.DATASET_ID+"_"+key+".list";
 			
 			BufferedWriter out = new BufferedWriter(new FileWriter(new File(outDir, fileName)));
 			ArrayList<Edge> arr = sortedEdgeLists.get(key);
@@ -487,7 +505,49 @@ public class MultipleIndexConstructor {
 				totalTypes=type;
 		}
 		in.close();
+	}
+	
+	/**
+	 * Load types info from database
+	 * 
+	 * @param dbConnection
+	 * @return
+	 * @throws Exception
+	 */
+	public static void loadTypesFromDatabase(DBConnection dbConnection, String tableName, String uidColumn, String typeColumn)
+			throws Exception {
 		
+		/*
+		 * Do query
+		 */
+		Connection connection = dbConnection.getConnection();
+
+		String sqlQuery = "select "+uidColumn+", "+typeColumn+" from "+tableName+";";
+
+		PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
+		ResultSet rs = queryStatement.executeQuery();
+
+		/*
+		 * Loop-through result set, populate node2Type
+		 */
+		int c=0;
+		while (rs.next()) {
+			c++;
+			if (c % 100000 == 0) {logger.debug("read  " +c);}
+
+			//Retrieve by column name
+			int guid  = rs.getInt(uidColumn);
+			int type = rs.getInt(typeColumn);
+
+			//logger.info("UID: "+guid+"\tTYPE: "+type);
+			node2Type.put(guid, type);
+			if(type>totalTypes)
+				totalTypes=type;   
+		}
+
+		rs.close();
+		queryStatement.close();
+		connection.close();		
 	}
 	
 	/**

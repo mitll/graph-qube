@@ -1,14 +1,17 @@
 package mitll.xdata.dataset.bitcoin.features;
 
 import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.scoring.FeatureNormalizer;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.*;
@@ -114,6 +117,8 @@ public class BitcoinFeatures {
    // getStandardizationStats();
 
     writeFeaturesToFiles(rawWriter, standardFeatureWriter, userToFeatures, userToIndex, standardizedFeatures);
+    
+    writeFeaturesToDatabase(connection, userToFeatures, userToIndex, standardizedFeatures);
 
     //writer.close();
     rawWriter.close();
@@ -233,6 +238,72 @@ public class BitcoinFeatures {
 	  }
   }
 
+  private void writeFeaturesToDatabase(DBConnection dbConnection, Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
+		  double[][] standardizedFeatures) throws Exception {
+
+	  /*
+	   * Make USERS table
+	   */
+	  String sqlMakeTable = "drop table USERS if exists;"+
+			  " create table USERS"+
+			  " (USER integer(10),"+
+			  " CREDIT_MEAN double,"+
+			  " CREDIT_STD double,"+
+			  " CREDIT_INTERARR_MEAN double,"+
+			  " CREDIT_INTERARR_STD double,"+
+			  " DEBIT_MEAN double," +
+			  " DEBIT_STD double,"+
+			  " DEBIT_INTERARR_MEAN double,"+
+			  " DEBIT_INTERARR_STD double," +
+			  " PERP_IN double," +
+			  " PERP_OUT double)";
+		Connection connection = dbConnection.getConnection();
+		PreparedStatement statement = connection.prepareStatement(sqlMakeTable);
+		statement.executeUpdate();
+		statement.close();
+
+	  String[] columnLabels = {"USER", "CREDIT_MEAN","CREDIT_STD",
+			  "CREDIT_INTERARR_MEAN","CREDIT_INTERARR_STD",
+			  "DEBIT_MEAN","DEBIT_STD",
+			  "DEBIT_INTERARR_MEAN","DEBIT_INTERARR_STD",
+			  "PERP_IN","PERP_OUT"};	
+	  String columnLabelText = "("+StringUtils.join(columnLabels,", ")+")";
+	  
+	  
+	  int numFeatures = columnLabels.length - 1;
+	  
+
+	  for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
+		  
+		  int id = userFeatPair.getKey();
+		  Integer userIndex = userToIndex.get(id);
+		  double[] standardizedFeature = standardizedFeatures[userIndex];
+
+		  String featValueText = "("+id+", ";
+		  for (int i = 0; i < numFeatures; i++) {
+
+			  if (i != numFeatures-1) {
+				  featValueText += Double.toString(standardizedFeature[i])+", ";
+			  } else {
+				  featValueText += Double.toString(standardizedFeature[i])+")";
+			  }
+		  }
+
+		  String sqlInsertVector = "insert into users "+columnLabelText+" values "+featValueText+";";
+		  statement = connection.prepareStatement(sqlInsertVector);
+		  statement.executeUpdate();
+		  statement.close();		  
+	  }
+	  
+	  // Insert default type into table (to possibly be overwritten by clustering output)
+	  String sqlInsertType = "alter table USERS add TYPE int not null default(1);";
+	  statement = connection.prepareStatement(sqlInsertType);
+	  statement.executeUpdate();
+	  statement.close();		  
+	  
+	  connection.close();
+  }
+  
   static String getDoubles(double [] arr) {
     String val = "";
     for (double d: arr) val += d + " ";
@@ -912,34 +983,63 @@ public class BitcoinFeatures {
    * @throws Exception
    */
   private Collection<Integer> getUsers(DBConnection connection) throws Exception {
-    long then = System.currentTimeMillis();
+	  long then = System.currentTimeMillis();
 
+	  /*
+	   * Grab only those users having more than MIN_TRANSACTIONS total transactions
+	   * (as either source or target); filter out BITCOIN_OUTLIER
+	   */
+	  /*
     String sql =
-        "select source, count(*) as cnt from transactions " +
+        "select source, count(*) as cnt from "+BitcoinBinding.TRANSACTIONS+" "+
             "where source <> " +
             BITCOIN_OUTLIER +
             " " +
-            "group by source having cnt > " +
-            MIN_TRANSACTIONS +
-            (LIMIT ? " limit " +
-                USER_LIMIT : "");
+            //"group by source having cnt > " +
+            //MIN_TRANSACTIONS +
+            (LIMIT ? " limit " + USER_LIMIT : "");
+	   */
 
-    PreparedStatement statement = connection.getConnection().prepareStatement(sql);
-    ResultSet rs = statement.executeQuery();
-    Set<Integer> ids = new HashSet<Integer>();
-    int c = 0;
+	  /*
+	   * Execute updates to figure out 
+	   */
+	  String sql = "drop table temp if exists;"+
+			  " drop table temp2 if exists;"+
+			  " create table temp as select source as uid, count(*) as num_trans "+
+			  " from "+BitcoinBinding.TRANSACTIONS+" where source <> "+BITCOIN_OUTLIER+" group by source;"+
+			  " insert into temp (uid,num_trans)"+
+			  " select target, count(*) from "+BitcoinBinding.TRANSACTIONS+
+			  " where target <> "+BITCOIN_OUTLIER+" group by target;"+
+			  " drop table temp2 if exists;"+
+			  " create table temp2 as select uid, sum(num_trans) as tot_num_trans"+
+			  " from temp group by uid having tot_num_trans >= "+MIN_TRANSACTIONS+";"+
+			  " drop table temp;"+
+			  " select * from temp2;";
 
-    while (rs.next()) {
-      c++;
-      if (c % 100000 == 0) logger.debug("read  " +c);
-      ids.add(rs.getInt(1));
-    }
-    long now = System.currentTimeMillis();
-     logger.debug("took " +(now-then) + " millis to read " + ids.size() + " users");
+	  PreparedStatement statement = connection.getConnection().prepareStatement(sql);
+	  statement.executeUpdate();
 
-    rs.close();
-    statement.close();
-    return  ids;
+	  /*
+	   * Execute query to load in active-enough users...
+	   */
+	  String sqlQuery = "select * from temp2;";
+	  statement = connection.getConnection().prepareStatement(sqlQuery);
+	  ResultSet rs = statement.executeQuery();		
+
+	  Set<Integer> ids = new HashSet<Integer>();
+	  int c = 0;
+
+	  while (rs.next()) {
+		  c++;
+		  if (c % 100000 == 0) logger.debug("read  " +c);
+		  ids.add(rs.getInt(1));
+	  }
+	  long now = System.currentTimeMillis();
+	  logger.debug("took " +(now-then) + " millis to read " + ids.size() + " users");
+
+	  rs.close();
+	  statement.close();
+	  return  ids;
    }
 
   private static class Transaction implements Comparable<Transaction> {

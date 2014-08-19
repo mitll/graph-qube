@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,11 +14,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import mitll.xdata.dataset.bitcoin.ingest.BitcoinSubGraphIngest;
 import mitll.xdata.db.DBConnection;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;

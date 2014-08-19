@@ -81,7 +81,6 @@ public class DatabaseTester {
 	         
 	         logger.info(msg);
 	       
-	         
 	      }
 
 	      rs.close();
