@@ -33,7 +33,8 @@ public class BitcoinBinding extends Binding {
   public static final String DATASET_ID = "bitcoin_small";
   private static final String BITCOIN_FEATURES = BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
   public static final String TRANSACTIONS = "transactions";
-  private static final String USERS = "users";
+  public static final int SHORTLISTING_D = 2;
+  public static final String USER_FEATURES_TABLE = "users";
   private static final int BUCKET_SIZE = 2;
  // private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
   private static final String TRANSID = "transid";

@@ -249,7 +249,7 @@ public class MultipleIndexConstructor {
 				}
 				out.write(" ");
 				
-				//process paths
+				//process pathsq
 				HashMap<String, ArrayList<Integer>> topo = new HashMap<String, ArrayList<Integer>>();
 				HashMap<String, Double> spd = new HashMap<String, Double>();
 				for(int ii:paths.keySet())
@@ -547,7 +547,7 @@ public class MultipleIndexConstructor {
 
 		rs.close();
 		queryStatement.close();
-		connection.close();		
+		//connection.close();		
 	}
 	
 	/**
@@ -563,4 +563,11 @@ public class MultipleIndexConstructor {
 	public static void setGraph(Graph in) {
 		g = in;
 	}
+
+	/**
+	 * Getter for graph g
+	 */
+	public static Graph getGraph() {
+		return g;
+	}	
 }

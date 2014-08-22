@@ -8,10 +8,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Pattern;
+
+import mitll.xdata.db.DBConnection;
 
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
@@ -35,6 +40,7 @@ import org.apache.log4j.BasicConfigurator;
 public class QueryExecutor {
 	private static Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
 	
+	public static String datasetId;
 	public static String baseDir;
 	public static String graphFile;
 	public static String graphFileBasename;
@@ -50,6 +56,8 @@ public class QueryExecutor {
 	public static int k0;
 	
 	//no more statics after this...
+	public Graph g;
+	
 	private HashMap<Integer, Integer> node2Type;
 	private int totalTypes;
 	
@@ -91,6 +99,7 @@ public class QueryExecutor {
 	 */
 	public QueryExecutor() {
 		
+		datasetId="";
 		baseDir="";
 		graphFile="";
 		graphFileBasename="";
@@ -104,6 +113,8 @@ public class QueryExecutor {
 		
 		topK=10;
 		k0=2;
+		
+		g = new Graph();
 		
 		node2Type = new HashMap<Integer, Integer>();
 		totalTypes=0;
@@ -943,7 +954,8 @@ public class QueryExecutor {
 			int node=Integer.parseInt(tokens[0]);
 			String toks[]=tokens[1].split(";");
 			for(int t2=0;t2<toks.length;t2++)
-				spd[node-1][t2]=Double.parseDouble(toks[t2]);
+				//spd[node-1][t2]=Double.parseDouble(toks[t2]);
+				spd[node][t2]=Double.parseDouble(toks[t2]);
 		}
 		in.close();
 	}
@@ -957,7 +969,8 @@ public class QueryExecutor {
 		{
 			for(int j=i;j<=totalTypes;j++)
 			{
-				BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+"indices/"+graphFileBasename.split("\\.txt")[0]+"_"+i+"#"+j+".list")));
+				//BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+"indices/"+graphFileBasename.split("\\.txt")[0]+"_"+i+"#"+j+".list")));
+				BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+datasetId+"_"+i+"#"+j+".list")));
 				String str="";
 				ArrayList<String> list = new ArrayList<String>();
 				while((str=in.readLine())!=null)
@@ -1001,7 +1014,8 @@ public class QueryExecutor {
 			{
 				int chunk=ordering.get(k1).size()/totalTypes;
 				int localType=(k2-1)/chunk;
-				count[localType]+=graphSign[u-1][oc];
+				//count[localType]+=graphSign[u-1][oc];
+				count[localType]+=graphSign[g.node2NodeIdMap.get(u)][oc];
 				if(querySign[v][oc]>count[localType])
 					return -1;
 				count[localType]-=querySign[v][oc];
@@ -1021,28 +1035,13 @@ public class QueryExecutor {
 			int node=Integer.parseInt(tokens[0]);
 			String toks[]=tokens[1].split(";");
 			for(int t2=0;t2<toks.length;t2++)
-				graphSign[node-1][t2]=Integer.parseInt(toks[t2]);
+//				graphSign[node-1][t2]=Integer.parseInt(toks[t2]);
+				graphSign[node][t2]=Integer.parseInt(toks[t2]);
 		}
 		in.close();
 	}
 	
 	public void loadGraphNodesType() throws Throwable {
-		//load types file
-		/**
-		BufferedReader in = new BufferedReader(new FileReader(new File(baseDir,typesFile)));
-		String str = "";
-		while ((str = in.readLine()) != null) {
-			String tokens[] = str.split("\\t");
-			int node=Integer.parseInt(tokens[0]);
-			int type=Integer.parseInt(tokens[1]);
-			node2Type.put(node, type);
-			if(type>totalTypes)
-				totalTypes=type;
-		}
-		in.close();
-		*/
-		
-		
 		
 		for(int t=1;t<=totalTypes;t++)
 		{
@@ -1163,7 +1162,14 @@ public class QueryExecutor {
 			String typeStr="";
 			for(int ll=1;ll<maxPath.size();ll++)
 				typeStr+=queryNodeID2Type.get(maxPath.get(ll));
-			score+=spd[map.get(maxPath.get(0))-1][orderingType2Index.get(typeStr)];
+			
+			
+			//logger.info("map call: "+(map.get(maxPath.get(0))-1));
+			//logger.info("actual node tag: "+(map.get(maxPath.get(0))));
+			logger.info("node2nodeId: "+g.node2NodeIdMap.get(map.get(maxPath.get(0))));
+			//logger.info("type call: "+orderingType2Index.get(typeStr));
+			//score+=spd[map.get(maxPath.get(0))-1][orderingType2Index.get(typeStr)];
+			score+=spd[g.node2NodeIdMap.get(map.get(maxPath.get(0)))][orderingType2Index.get(typeStr)];
 			//remove paths in globalPath containing edges on globalPath.
 			HashSet<Path> globalPathSetNew = new HashSet<Path>();
 			for(Path p:globalPathSet)
@@ -1274,8 +1280,52 @@ public class QueryExecutor {
 				totalTypes=type;
 		}
 		in.close();
-		
 	}
+	
+	
+	/**
+	 * Load types info from database
+	 * 
+	 * @param dbConnection
+	 * @return
+	 * @throws Exception
+	 */
+	public void loadTypesFromDatabase(DBConnection dbConnection, String tableName, String uidColumn, String typeColumn)
+			throws Exception {
+		
+		/*
+		 * Do query
+		 */
+		Connection connection = dbConnection.getConnection();
+
+		String sqlQuery = "select "+uidColumn+", "+typeColumn+" from "+tableName+";";
+
+		PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
+		ResultSet rs = queryStatement.executeQuery();
+
+		/*
+		 * Loop-through result set, populate node2Type
+		 */
+		int c=0;
+		while (rs.next()) {
+			c++;
+			if (c % 100000 == 0) {logger.debug("read  " +c);}
+
+			//Retrieve by column name
+			int guid  = rs.getInt(uidColumn);
+			int type = rs.getInt(typeColumn);
+
+			//logger.info("UID: "+guid+"\tTYPE: "+type);
+			node2Type.put(guid, type);
+			if(type>totalTypes)
+				totalTypes=type;   
+		}
+
+		rs.close();
+		queryStatement.close();
+		connection.close();		
+	}
+	
 	
 	/**
 	 * Figure out how many types there are (in the case where we're not loading everything from file)
