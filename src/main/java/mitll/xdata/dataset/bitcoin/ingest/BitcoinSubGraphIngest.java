@@ -15,21 +15,21 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+//import java.util.Set;
 import java.util.regex.Pattern;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+//import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
 import uiuc.topksubgraph.QueryExecutor;
 
-import org.apache.commons.lang.StringUtils;
+//import org.apache.commons.lang.StringUtils;
 
 /**
  * Re-creating func
@@ -61,7 +61,13 @@ public class BitcoinSubGraphIngest {
 	 */
 	public static void main(String[] args) throws Throwable {
 		
-
+//	    String bitcoinDirectory = "src/main/resources" + BitcoinBinding.BITCOIN_FEATS_TSV;
+//		DBConnection dbConnection = new H2Connection(bitcoinDirectory,"bitcoin");
+//		
+//		// Load graph into topk-subgraph Graph object
+//		Graph g = new Graph();
+//		g.loadGraph(dbConnection, "MARGINAL_GRAPH", "NUM_TRANS");
+		
 		
 		/*
 		 * All this should be wrapped in methods, and then put into BitcoinIngest
@@ -129,7 +135,7 @@ public class BitcoinSubGraphIngest {
 		executor.g = MultipleIndexConstructor.getGraph(); //this is assuming graph has already been loaded..
 		QueryExecutor.baseDir=outDir;
 		QueryExecutor.k0 = 2;
-		QueryExecutor.topK=1000;
+		QueryExecutor.topK=5001;
 
 		QueryExecutor.spathFile=QueryExecutor.datasetId+"."+QueryExecutor.k0+".spath";
 		QueryExecutor.topologyFile=QueryExecutor.datasetId+"."+QueryExecutor.k0+".topology"; ////////////////////
@@ -160,8 +166,6 @@ public class BitcoinSubGraphIngest {
 		if (!directory.exists() && !directory.mkdirs()) 
 			throw new IOException("Could not create directory: " + QueryExecutor.baseDir+QueryExecutor.resultDir);
 		
-
-
 		
 		/*
 		 * Execute queries

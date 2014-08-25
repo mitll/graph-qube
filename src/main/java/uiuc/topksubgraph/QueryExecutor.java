@@ -1163,11 +1163,7 @@ public class QueryExecutor {
 			for(int ll=1;ll<maxPath.size();ll++)
 				typeStr+=queryNodeID2Type.get(maxPath.get(ll));
 			
-			
-			//logger.info("map call: "+(map.get(maxPath.get(0))-1));
-			//logger.info("actual node tag: "+(map.get(maxPath.get(0))));
-			logger.info("node2nodeId: "+g.node2NodeIdMap.get(map.get(maxPath.get(0))));
-			//logger.info("type call: "+orderingType2Index.get(typeStr));
+
 			//score+=spd[map.get(maxPath.get(0))-1][orderingType2Index.get(typeStr)];
 			score+=spd[g.node2NodeIdMap.get(map.get(maxPath.get(0)))][orderingType2Index.get(typeStr)];
 			//remove paths in globalPath containing edges on globalPath.

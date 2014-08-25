@@ -499,6 +499,13 @@ public class Graph {
 			
 			double weight = rs.getDouble(edgeName);
 			
+//			double tot_out = rs.getDouble("tot_out");
+//			double tot_in = rs.getDouble("tot_in");
+//			double tot_usd = rs.getDouble("tot_usd");
+//			double num_trans = rs.getDouble("num_trans");
+//			weight = tot_usd/num_trans;
+//			weight = 1;
+			
 			int from = (Integer)sortedPair[0];
 			int to = (Integer)sortedPair[1];
 
@@ -523,9 +530,16 @@ public class Graph {
 				nodeCount++;
 			}
 
+//			if (tot_out == 0.0) {this.addEdge(to,from,weight);}
+//			if (tot_in == 0.0) {this.addEdge(from,to,weight);}
+//			
+//			if (tot_out != 0.0 && tot_in != 0.0) {
+//				this.addEdge(from, to, weight);
+//				this.addEdge(to, from, weight);
+//			}
+			
 			this.addEdge(from, to, weight);
 			this.addEdge(to, from, weight);
-			
 		}
 
 		rs.close();
