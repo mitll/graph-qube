@@ -43,47 +43,65 @@ protocol FL_DataTypes {
 	   - CREDIT/DEBIT changed to INFLOWING/OUTFLOWING
 	   - added USD
 	   - added DURATION
-	 
+	   
+	 CHANGED in 1.6:
+	   - added ENTITY_TYPE
+	   - added ACCOUNT_OWNER, CLUSTER_SUMMARY, COUNTRY_CODE
+	   
+	 CHANGED in 1.7:
+	   - added CLUSTER
+	   
 	 */
 	enum FL_PropertyTag {
-		ID, 		 // Underlying identifier in data set (not necessary a UID)	
-		TYPE,		 // Dataset-specific type information (e.g. in Kiva: Lender, Borrower, Loan, etc).
-					 // Shown to the user for context, and used in segmentation and clustering of data.
-		NAME,		 // A name, often also used in the label.
-		LABEL,		 // A text label suitable for displaying to a user.
-		STAT,		 // A text label containing aggregate or statistical summaries of numeric data.
-		TEXT,		 // Comment or other arbitrarily long text field
-		STATUS,		 // Status indication in the form of a text field
-		ANNOTATION,	 // A generic annotation in the form of a text field
-		WARNING,	 // Warning annotation in the form of a text field
-		LINKED_DATA, // A LinkedData resource, with URL and a MIME type
-		IMAGE,		 // A LinkedData image that could be embedded in the app (e.g. person's picture, corporate logo, etc).
-		GEO,		 // A Geo object 
-		DATE,		 // Date in Long format
-		AMOUNT,		 // Financial amount (any currency)
-		INFLOWING,	 // Amount flowing in (incoming messages, credits, etc)
-		OUTFLOWING,	 // Amount flowing out (outgoing messages, debits, etc)
-		COUNT,		 // When returned an aggregated Link (see below), this is the number of records.
-		SERIES,		 // Timeseries or other series data suitable for building charts
-		CONSTRUCTED, // This property was not in the original data, but was constructed by algorithms.
-				     // See Provenance and/or Uncertainty fields for more information.
-		RAW,	 	 // This property was present in the original data. See Provenance for more information.
-		USD,		 // flags an amount as being USD (for formatting purposes),
-		DURATION	 // An FL_Duration object
+		ID, 		 	// Underlying identifier in data set (not necessary a UID)	
+		TYPE,		 	// Data set specific account type (e.g. in Kiva: Lender, Borrower, Partner, etc).
+					 	// Shown to the user for context, and used in segmentation and clustering of data.
+		ENTITY_TYPE, 	// Data set specific entity type (e.g. person, organisation). 		 
+		ACCOUNT_OWNER,	// The account owner for an entity
+		CLUSTER_SUMMARY,// The associated cluster summary for an entity
+		CLUSTER,		// The cluster an entity belongs to
+		NAME,		 	// A name, often also used in the label.
+		LABEL,		 	// A text label suitable for displaying to a user.
+		STAT,		 	// A text label containing aggregate or statistical summaries of numeric data.
+		TEXT,		 	// Comment or other arbitrarily long text field
+		STATUS,		 	// Status indication in the form of a text field
+		ANNOTATION,	 	// A generic annotation in the form of a text field
+		WARNING,	 	// Warning annotation in the form of a text field
+		LINKED_DATA, 	// A LinkedData resource, with URL and a MIME type
+		IMAGE,		 	// A LinkedData image that could be embedded in the app (e.g. person's picture, corporate logo, etc).
+		GEO,		 	// A GeoData object 
+		COUNTRY_CODE,	// An ISO 3 digit country code
+		DATE,		 	// Date in Long format
+		AMOUNT,		 	// Financial amount (any currency)
+		INFLOWING,	 	// Amount flowing in (incoming messages, credits, etc)
+		OUTFLOWING,	 	// Amount flowing out (outgoing messages, debits, etc)
+		COUNT,		 	// When returned an aggregated Link (see below), this is the number of records.
+		SERIES,		 	// Timeseries or other series data suitable for building charts
+		CONSTRUCTED, 	// This property was not in the original data, but was constructed by algorithms.
+				     	// See Provenance and/or Uncertainty fields for more information.
+		RAW,	 	 	// This property was present in the original data. See Provenance for more information.
+		USD,		 	// flags an amount as being USD (for formatting purposes),
+		DURATION	 	// An FL_Duration object
 	}
 
 	/**
 	 This is the current list of tags for Entities:
+	 
+	 CHANGED in 1.6:
+	   - added ACCOUNT_OWNER, CLUSTER_SUMMARY
+	  
 	 */
 	enum FL_EntityTag {
-		ACCOUNT,	// a financial/communications/social account (regardless of owner: person, corporate, shared or otherwise)
-		GROUP, 		// a social group
-		CLUSTER,	// group of entities (system-generated)
-		FILE,		// group of entities (user-created) e.g. in the sense of a "case file"
-		ANONYMOUS,	// This entity does not have a globally unique ID, and represents only a class of underlying data.
-					// The ID contains only sufficient information to perform searches, not to retrieve exact matches.
-					// For example, in Kiva, a Borrower has no UID, but is represented as a FirstName&LastName&Gender
-					// query in the Loans table.
+		ACCOUNT_OWNER,		// an owner of accounts
+		ACCOUNT,			// a financial/communications/social account (regardless of owner: person, corporate, shared or otherwise)
+		GROUP, 				// a social group
+		CLUSTER,			// group of entities (system-generated)
+		CLUSTER_SUMMARY,	// summarizes a group of entities (does not allow drill-down to group members)
+		FILE,				// group of entities (user-created) e.g. in the sense of a "case file"
+		ANONYMOUS,			// This entity does not have a globally unique ID, and represents only a class of underlying data.
+							// The ID contains only sufficient information to perform searches, not to retrieve exact matches.
+							// For example, in Kiva, a Borrower has no UID, but is represented as a FirstName&LastName&Gender
+							// query in the Loans table.
 		OTHER
 	}
 
@@ -122,10 +140,15 @@ protocol FL_DataTypes {
 	
 	/**
 	 This is a placeholder for future modeling of uncertainty. It is not a required field in any service calls.
+	
+	CHANGED IN 1.6
 	 */
 	record FL_Uncertainty {
-		/** Placeholder for now. Express uncertainty as a single number from 0 to 1. */
+		/** Placeholder for now. Express original source confidence as a single number from 0 to 1. */
 		double confidence = 1;
+		
+		/** Placeholder for now. Express confidence in currency of data as a single number from 0 to 1. */
+		double currency = 1; // ADDED IN 1.6
 	}
 	
 	/**
@@ -159,9 +182,40 @@ protocol FL_DataTypes {
 		union {string, null} cc = null;
 	}
 
+	/**
+	 Standard two letter continent code
+	  
+	 ADDED IN 1.6
+	 */
+	enum FL_ContinentCode {
+		AF, // Africa
+		AS, // Asia
+		EU, // Europe
+		NA, // North America
+		SA, // South America
+		OC, // Oceania
+		AN  // Antarctica
+	}
+	
+	/**
+	 Structured representation of country data, which includes geo-spatial data.
+	  
+	 ADDED IN 1.6
+	 */
+	record FL_Country {
+	
+		/** country geo data, including the name as text */
+		FL_GeoData country;
+		
+		/** the name of the global region to which the country belongs; any common classification here is acceptable */
+		string region;
+
+		/** continent */
+		FL_ContinentCode continent;
+	}
 
 	/**
-	 Temporal resolution of a duratino
+	 Temporal resolution of a duration
 	 
 	 CHANGED IN 1.5
 	 */
@@ -201,6 +255,18 @@ protocol FL_DataTypes {
 		
 		/** number of intervals in a bin, e.g. 2 months/bin in 12 bins for 2 years of data */
 		FL_Duration durationPerBin;  // CHANGED IN 1.5
+	}
+
+	/**
+	 Allowed types for Ranges of values.
+	
+	CHANGED IN 1.6
+	 */
+	enum FL_RangeType {
+		SINGLETON,
+		LIST,
+		BOUNDED,
+		DISTRIBUTION // ADDED IN 1.6
 	}
 
 	/** 
@@ -247,22 +313,42 @@ protocol FL_DataTypes {
 	}
 	
 	/**
-	 Allowed types for Ranges of values.
-	
-	ADDED IN 1.5
-	 */
-	enum FL_RangeType {
-		SINGLETON,
-		LIST,
-		BOUNDED
+	A frequency or probability element of a distribution.
+	 
+	ADDED IN 1.6
+	*/
+	record FL_Frequency {
+		/** the value range which occurs with some specified frequency */
+		union {string, int, float, double, long, boolean, FL_GeoData, FL_ListRange, FL_BoundedRange} range;
+		
+		/** frequency as a count, or probability as a value from 0-1. */
+		double frequency;
 	}
 
+	/**
+	Describes a distribution of values. 
+	 
+	ADDED IN 1.6
+	*/
+	record FL_DistributionRange {
+		array<FL_Frequency> distribution;
+
+		/** Describes how the values in the distribution are summarised */	
+		FL_RangeType rangeType;
+		
+		/** The type of value that the distribution describes. One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER */
+		FL_PropertyType type;
+		
+		/** True if a probability distribution, false if a frequency distribution */
+		boolean isProbability = false;
+	}
+		
 	/**
 	 Each property on an Entity or Link is a name-value pair, with data type information, as well as optional
 	 provenance. Tags provide a way for the data provider to associate semantic annotations to each property
 	 in terms of the semantics of the application.  
 	 
-	 CHANGED IN 1.5
+	 CHANGED IN 1.6
 	 */
 	record FL_Property {
 		/** the field name in the underlying data source */
@@ -272,7 +358,7 @@ protocol FL_DataTypes {
 		union {string, null} friendlyText = null;
 		
 		/** range of values */
-		union {FL_SingletonRange, FL_ListRange, FL_BoundedRange} range = null; // CHANGED IN 1.5
+		union {FL_SingletonRange, FL_ListRange, FL_BoundedRange, FL_DistributionRange} range = null; // CHANGED IN 1.6
 		
 		union {FL_Provenance, null} provenance = null;
 		
@@ -333,6 +419,9 @@ protocol FL_DataTypes {
 	
 	/**
 	 Cluster of nodes in the social, financial, communications or other graphs. 
+	 
+	 CHANGED in 1.7:
+	    - added version
 	 */
 	record FL_Cluster {
 		/** A unique identifier use to retrieve data about this cluster. Should not be used for non-global identifiers. */
@@ -361,6 +450,9 @@ protocol FL_DataTypes {
 		
 		/** The degree from the root this cluster is in the hierarchy - level = 0 if this is a root cluster **/
 		int level = 0;
+		
+		/** The version number of the cluster - each time the cluster contents is modified the version should be incremented **/
+		int version = 1;
 	}
 	
 	/**

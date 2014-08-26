@@ -28,8 +28,8 @@
  This defines an API for searching a graph-like database based on patterns.
  */
 protocol FL_PatternSearch {
-	import idl "Search_v1.5.avdl";
-	import idl "FutureResults_v1.5.avdl";
+	import idl "Search_v1.7.avdl";
+	import idl "FutureResults_v1.7.avdl";
 	
 	/**
 	 Description of entity match criteria within a pattern.
@@ -230,7 +230,8 @@ protocol FL_PatternSearch {
 			union {string, null} service = null,
 			long start = 0,
 			long max = -1,
-			union {FL_BoundedRange, null} dateRange = null // ADDED IN 1.5
+			union {FL_BoundedRange, null} dateRange = null, // ADDED IN 1.5
+			boolean useAptima // ADDED IN 1.5
 	);
 
 	/**

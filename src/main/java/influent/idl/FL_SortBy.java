@@ -5,10 +5,10 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** Sort type for transactions */
+/** Sort type for transactionts */
 @org.apache.avro.specific.AvroGenerated
 public enum FL_SortBy { 
   DATE, AMOUNT  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_SortBy\",\"namespace\":\"influent.idl\",\"doc\":\"Sort type for transactions\",\"symbols\":[\"DATE\",\"AMOUNT\"]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_SortBy\",\"namespace\":\"influent.idl\",\"doc\":\"Sort type for transactionts\",\"symbols\":[\"DATE\",\"AMOUNT\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 }

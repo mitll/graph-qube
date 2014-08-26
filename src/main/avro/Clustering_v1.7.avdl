@@ -28,38 +28,45 @@
  Services for clustering
 */
 protocol FL_Clustering {
-	import idl "DataTypes_v1.5.avdl";
+	import idl "DataTypes_v1.7.avdl";
 	
 	/**
-	 Clusters are associated with a context.  This method creates a context and returns the unique context id that must be used for other cluster api methods
-	 @return			id of created context 
-	*/
-	string createContext();
-	
-	/**
-	 Clusters the specified entities and returns the resulting set of clusters (if entities are hierarchically clustered returns the root clusters) 
+	 Clusters the specified entities and returns the resulting set of clusters (if entities are hierarchically 
+	 clustered returns the root clusters) 
 	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
+	   - entityIds can contain uid's to entity clusters
+	   - Added source and target context
+	   
 	 Service URL: /cluster
 	 HTTP Method: POST and GET
 	 
-	 @param entityIds 	uids of entities to cluster
-	 @param contextId	the context to store the resulting clusters, either newly created, or of an existing cluster with more IDs
-	 @param sessionId	the user session the clusters are associated with
+	 @param entityIds 	uids of entities or entity clusters to cluster in target cluster context
+	 @param sourceContextId	the source context the entityIds are being inserted from (entity clusters must have a source context)
+	 @param targetContextId	the context to store the resulting clusters
 	 @return 			uids of clusters
 	 */
-	array<string> clusterEntitiesById(array<string> entityIds, string contextId, string sessionId);
+	array<string> clusterEntitiesById(array<string> entityIds, string sourceContextId, string targetContextId);
 	
 	/**
-	 Clusters the specified entities and returns the resulting set of clusters (if entities are hierarchically clustered returns the root clusters) 
+	 Clusters the specified entities and returns the resulting set of clusters (if entities are hierarchically 
+	 clustered returns the root clusters) 
 	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
+	   - Added clusters to allow for clustering of entity clusters
+	   - Added source and target context
+	   
 	 Service URL: /cluster
 	 HTTP Method: POST and GET
 	 
-	 @param entities 	entities to cluster
-	 @param contextId	the context to store the resulting clusters, either newly created, or of an existing cluster with more entities
-	 @param sessionId	the user session the clusters are associated with
+	 @param entities 	entities to cluster in target cluster context
+	 @param clusters	entity clusters to cluster in target cluster context
+	 @param sourceContextId	the source context the entityIds are being inserted from (entity clusters must have a source context)
+	 @param targetContextId	the context to store the resulting clusters
 	 @return 			uids of clusters	
 	 */
-	array<string> clusterEntities(array<FL_Entity> entities, string contextId, string sessionId);
+	array<string> clusterEntities(array<FL_Entity> entities, array<FL_Cluster> clusters, string sourceContextId, string targetContextId);
 	
 }

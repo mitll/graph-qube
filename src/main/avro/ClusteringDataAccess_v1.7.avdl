@@ -28,14 +28,14 @@
  Data Access for clusters
 */
 protocol FL_ClusteringDataAccess {
-	import idl "DataTypes_v1.5.avdl";
+	import idl "DataTypes_v1.7.avdl";
 
 	/**
-	 Sort type for transactionts
+	 Sort type for transactions
 	 */
 	enum FL_SortBy {
-		DATE,
-		AMOUNT
+		DATE, // date, in ascending order
+		AMOUNT // amount, in descending order
 	}
 
 	/**
@@ -48,75 +48,98 @@ protocol FL_ClusteringDataAccess {
 	}
 
 	/**
-	 Returns a set of entities by uid.
+	 Returns a set of clusters by uid.
+	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
 	 
 	 Service URL: /cluster/list
 	 HTTP Method: POST and GET
 	 
-	 @param entities 	uids of entities to retrieve
+	 @param entities 	uids of clusters to retrieve
 	 @param contextId	the context to retrieve the clusters from
-	 @param sessionId	the user session the clusters are associated with
 	 @return 			cluster entities	
 	 */
-	array<FL_Cluster> getEntities(array<string> entities, string contextId, string sessionId);
+	array<FL_Cluster> getClusters(array<string> entities, string contextId);
+	
+	/**
+	 Returns a set of cluster summaries by uid.
+	 
+	 Service URL: /clustersummary/list
+	 HTTP Method: POST and GET
+	 
+	 @param entities 	uids of clusters to retrieve
+	 @return 			cluster entities
+	 */
+	array<FL_Cluster> getClusterSummary(array<string> entities);
+	
+	
+	/**
+	 Returns a set of account owners by uid.
+	 
+	 ADDED in 1.7
+	 
+	 Service URL: /accountowners/list
+	 HTTP Method: POST and GET
+	 
+	 @param owners 	uids of account owners to retrieve
+	 @return 		entity clusters representing account owners
+	 */
+	array<FL_Cluster> getAccountOwners(array<string> owners);
 	
 	/**
 	 Removes entities from a cluster
 	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
+	   
 	 Service URL: /cluster/remove
 	 HTTP Method: POST and GET
 	 
 	 @param entities 	uids of entities to remove
 	 @param contextId	the context of the cluster to remove entities from
-	 @param sessionId	the user session the clusters are associated with
 	 @return 			number of entities removed
 	 */
-	long removeMembers(array<string> entities, string contextId, string sessionId);
+	long removeMembers(array<string> entities, string contextId);
 	
 	
 	/**
 	 Returns all clusters in a context.
 	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
+	   - Removed unused computeSummaries
+	   
 	 Service URL: /cluster/context
 	 HTTP Method: POST and GET
 	 
 	 @param contextId			the context to retrieve the clusters fr	om
-	 @param computeSummaries 	specifies whether to calculate summary properties for each cluster
-	 @param sessionId	the user session the clusters are associated with
 	 @return 					cluster entities	
 	 */
-	array<FL_Cluster> getContext(string contextId, string sessionId, boolean computeSummaries);
+	array<FL_Cluster> getContext(string contextId);
 	
 	/**
 	 Deletes all clusters in a context.
 	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
+	   
 	 Service URL: /cluster/context/remove
 	 HTTP Method: POST or GET
 	 
 	 @param contextId	the context to retrieve the clusters from
-	 @param sessionId	the user session the clusters are associated with
 	 @return 			boolean indicating if any clusters were deleted	
 	 */
-	boolean clearContext(string contextId, string sessionId);
-	
-	/**
-	 Returns a set of accounts for each given entity.
-	 
-	 Service URL: /cluster/accounts
-	 HTTP Method: POST and GET
-	 
-	 @param entities 		uids of entities to retrieve
-	 @param contextId		the context to retrieve the clusters from
-	 @param sessionId	the user session the clusters are associated with
-	 @return 				map of input entity IDs to an array of the accounts for that cluster entity	
-	 */
-	map<array<FL_Cluster>> getAccounts(array<string> entities, string contextId, string sessionId);
+	boolean clearContext(string contextId);
 		
 	/**
 	 Returns links to other entities related to specify entities. Each Link returned should
 	 represent multiple records, used for displaying flow.
 	 
 	 See the specification for the Flow Data View.
+	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
 	 
 	 @param entities 			uids of entities to retrieve links for
 	 @param focusEntities 		uids of focus entities (may be null)
@@ -125,7 +148,6 @@ protocol FL_ClusteringDataAccess {
 	 @param date 				in the given date range
 	 @param entitiesContextId	the context to compute flow from entities
 	 @param focusContextId		the context to compute flow from focus entities (if null a new context is created for dst)
-	 @param sessionId			the user session the clusters are associated with
 	 @return 					map of input entity IDs to an array of the links for that cluster entity	
 	 */
 	map<array<FL_Link>> getFlowAggregation(
@@ -135,14 +157,16 @@ protocol FL_ClusteringDataAccess {
 		union {FL_LinkTag, null} tag,
 		union {FL_DateRange, null} date,
 		string entitiesContextId,
-		union {string, null} focusContextId,
-		string sessionId);
+		union {string, null} focusContextId);
 	
 	/**
 	 Returns links to other entities related to specify entities.  Each Link returned should
 	 represent multiple records, used for displaying time series.
 	 
 	 See the specification for the Time Series Data View.
+	 
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
 	 
 	 Service URL: /cluster/link/series
 	 HTTP Method: POST and GET
@@ -153,7 +177,6 @@ protocol FL_ClusteringDataAccess {
 	 @param date 				in the given date range
 	 @param entitiesContextId	the context to compute flow between clusters from
 	 @param focusContextId		the context to compute flow between clusters from (if null a new context is created for dst)
-	 @param sessionId	the user session the clusters are associated with
 	 @return 					map of input entity IDs to an array of the links for that cluster entity	
 	 */
 	map<array<FL_Link>> getTimeSeriesAggregation(
@@ -162,15 +185,15 @@ protocol FL_ClusteringDataAccess {
 		union {FL_LinkTag, null} tag,
 		FL_DateRange date,
 		string entitiesContextId,
-		union {string, null} focusContextId,
-		string sessionId);
+		union {string, null} focusContextId);
 	
 	/**
 	 Returns links to other entities related to specify entities. Each link returned should
 	 represent one raw transaction.  For financial data, these transactions will form a ledger.
 	 For communications or social data, these are un-aggregated links for drill down by the user.
 	 
-	 CHANGED IN 1.4
+	 CHANGED IN 1.7
+	   - Removed unused sessionId
 	 
 	 Service URL: /link/transactions
 	 HTTP Method: POST and GET
@@ -182,7 +205,6 @@ protocol FL_ClusteringDataAccess {
 	 @param order			Sort order for transactions
 	 @param max				Trim the number of results this this value.
 	 @param contextId		the context to retrieve the clusters from
-	 @param sessionId		the user session the clusters are associated with
 	 @return 				map of input entity IDs to an array of the transactions for that cluster entity	
 	 */
 	map<array<FL_Link>> getAllTransactions(

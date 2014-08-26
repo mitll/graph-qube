@@ -27,7 +27,7 @@
 /**
  */
 protocol FL_EntitySearch {
-	import idl "Search_v1.5.avdl";
+	import idl "Search_v1.7.avdl";
 	
 	/**
 	 Used to add constraints for entity searches. The key indicates the property to make the constraint on, while the
@@ -68,7 +68,7 @@ protocol FL_EntitySearch {
 	The set of results from a single search call. Each item also has a score.
 	 */
 	record FL_SearchResults {
-		/** total number of results found */
+		/** total number of results FOUND, which may be more than the number returned. */
 		long total = 0;
 		
 		/** array of Items (Entities or Links) with scores */
