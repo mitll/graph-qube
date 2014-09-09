@@ -4,11 +4,13 @@ import influent.idl.*;
 import mitll.xdata.AvroUtils;
 import mitll.xdata.NodeSimilaritySearch;
 import mitll.xdata.binding.Binding;
+import mitll.xdata.binding.TopKSubgraphShortlist;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.hmm.VectorObservation;
 import mitll.xdata.scoring.Transaction;
+
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -29,22 +31,35 @@ import java.util.Map.Entry;
 public class BitcoinBinding extends Binding {
   private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
 
-  public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
   public static final String DATASET_ID = "bitcoin_small";
+  public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
+
   private static final String BITCOIN_FEATURES = BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
   public static final String TRANSACTIONS = "transactions";
-  public static final int SHORTLISTING_D = 2;
-  public static final String USER_FEATURES_TABLE = "users";
+  
+  
+  
   private static final int BUCKET_SIZE = 2;
  // private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
   private static final String TRANSID = "transid";
-  private static final String TYPE_COLUMN = "type";
+ 
 
   private NodeSimilaritySearch userIndex;
 
   private PreparedStatement pairConnectedStatement;
   private PreparedStatement edgeMetadataKeyStatement;
   private boolean useFastBitcoinConnectedTest = true;
+  
+  // TopKSubgraphShortlist Parameters
+  public static final int DEFAULT_SHORTLIST_SIZE = 500;
+  public static final int SHORTLISTING_D = 2;
+  
+  public static final String USER_FEATURES_TABLE = "users";
+  public static final String USERID_COLUMN = "user";
+  public static final String TYPE_COLUMN = "type";
+  
+  public static final String GRAPH_TABLE = "MARGINAL_GRAPH";
+  public static final String PAIRID_COLUMN = "sorted_pair";
 
   /**
    * @see mitll.xdata.GraphQuBEServer#main(String[])
@@ -64,7 +79,33 @@ public class BitcoinBinding extends Binding {
    */
   private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
     super(connection);
+    
+    datasetId = DATASET_ID;
+    datasetResourceDir = BITCOIN_FEATS_TSV;
+
+    /* 
+     * Setup Shortlist-er
+     */
+    shortlist = new TopKSubgraphShortlist(this);
+
+    // Set and update all TopKSubgraphShortlist specific parameters
+    if (shortlist instanceof TopKSubgraphShortlist) {
+    	((TopKSubgraphShortlist)shortlist).setK(DEFAULT_SHORTLIST_SIZE);
+    	((TopKSubgraphShortlist)shortlist).setD(SHORTLISTING_D);
+    	((TopKSubgraphShortlist)shortlist).refreshQueryExecutorParameters();
+    	((TopKSubgraphShortlist)shortlist).setUsersTable(USER_FEATURES_TABLE);
+    	((TopKSubgraphShortlist)shortlist).setUserIdColumn(USERID_COLUMN);
+    	((TopKSubgraphShortlist)shortlist).setTypeColumn(TYPE_COLUMN);
+    	((TopKSubgraphShortlist)shortlist).setGraphTable(GRAPH_TABLE);
+    	((TopKSubgraphShortlist)shortlist).setPairIDColumn(PAIRID_COLUMN);
+    	
+    	//load types and indices
+    	((TopKSubgraphShortlist)shortlist).loadTypesAndIndices();
+    }
+    
+    
     this.useFastBitcoinConnectedTest = useFastBitcoinConnectedTest;
+    
     prefixToTable.put("t", TRANSACTIONS);
     tableToPrimaryKey.put(TRANSACTIONS, "SOURCE");
 
@@ -87,7 +128,8 @@ public class BitcoinBinding extends Binding {
       logger.debug("indexing node features");
       long then = System.currentTimeMillis();
       logger.debug(File.separator + resourceDir + File.separator +BITCOIN_FEATURES);
-      userIndex = new NodeSimilaritySearch("/" +resourceDir + "/" +BITCOIN_FEATURES);
+      //userIndex = new NodeSimilaritySearch("/" +resourceDir + "/" +BITCOIN_FEATURES);
+      userIndex = new NodeSimilaritySearch(resourceDir + "/" +BITCOIN_FEATURES);
       long now = System.currentTimeMillis();
 
       logger.debug("done indexing node features in " +(now-then) + " millis");

@@ -144,13 +144,14 @@ public class BitcoinSubGraphIngest {
 
 		windowsPathnamePortabilityCheck();
 		
+		
 		//String pattern = Pattern.quote(System.getProperty("file.separator"));
-		String pattern = "/";
-		String[] splitGraphFile = QueryExecutor.graphFile.split(pattern);
-		QueryExecutor.graphFileBasename = splitGraphFile[splitGraphFile.length-1];
+		//String pattern = "/";
+		//String[] splitGraphFile = QueryExecutor.graphFile.split(pattern);
+		//QueryExecutor.graphFileBasename = splitGraphFile[splitGraphFile.length-1];
 		
 		
-		/**
+		/*
 		 * Load-in types, and count how many there are
 		 */
 		executor.loadTypesFromDatabase(connection,USERS,USERID_COLUMN,TYPE_COLUMN);

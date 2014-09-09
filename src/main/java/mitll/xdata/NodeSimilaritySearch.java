@@ -50,10 +50,12 @@ public class NodeSimilaritySearch {
      */
   public NodeSimilaritySearch(String featureResource) throws Exception {
 	  logger.debug("trying to use "+  featureResource);
-    InputStream userFeatures = this.getClass().getResourceAsStream(featureResource);
+    //InputStream userFeatures = this.getClass().getResourceAsStream(featureResource);
+    InputStream userFeatures = this.getClass().getClassLoader().getResourceAsStream(featureResource);
     if (userFeatures == null) {
     	if (featureResource.startsWith(File.separator)) featureResource = featureResource.substring(1); 
-    	userFeatures = this.getClass().getResourceAsStream(featureResource);
+    	//userFeatures = this.getClass().getResourceAsStream(featureResource);
+    	userFeatures = this.getClass().getClassLoader().getResourceAsStream(featureResource);
     }
     if (userFeatures == null) {
   	  logger.error("can't find "+  featureResource);
@@ -62,7 +64,8 @@ public class NodeSimilaritySearch {
     loadIds(userFeatures);
     userFeatures.close();
 
-    userFeatures = this.getClass().getResourceAsStream(featureResource);
+    //userFeatures = this.getClass().getResourceAsStream(featureResource);
+    userFeatures = this.getClass().getClassLoader().getResourceAsStream(featureResource);
 
     load(userFeatures);
   }

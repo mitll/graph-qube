@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Array;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -469,7 +470,17 @@ public class Graph {
 	 * @param dbConnection
 	 * @throws Throwable
 	 */
-	public void loadGraph(DBConnection dbConnection, String tableName, String edgeName) throws Throwable
+	public void loadGraph(DBConnection dbConnection, String tableName, String edgeName) throws SQLException
+	{
+		loadGraph(dbConnection.getConnection(), tableName, edgeName);
+	}
+	
+	/**
+	 * Loads the graph from an h2 database
+	 * @param connection
+	 * @throws Throwable
+	 */
+	public void loadGraph(Connection connection, String tableName, String edgeName) throws SQLException
 	{
 		int nodeCount=node2NodeIdMap.size();
 		numNodes = 0;
@@ -478,7 +489,7 @@ public class Graph {
 		/*
 		 * Do database query
 		 */
-		Connection connection = dbConnection.getConnection();
+		//Connection connection = dbConnection.getConnection();
 		
 		String sqlQuery = "select * from "+tableName+";";
 		

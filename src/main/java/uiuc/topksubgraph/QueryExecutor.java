@@ -1278,7 +1278,7 @@ public class QueryExecutor {
 		in.close();
 	}
 	
-	
+
 	/**
 	 * Load types info from database
 	 * 
@@ -1289,10 +1289,25 @@ public class QueryExecutor {
 	public void loadTypesFromDatabase(DBConnection dbConnection, String tableName, String uidColumn, String typeColumn)
 			throws Exception {
 		
+		Connection connection = dbConnection.getConnection();
+		
+		loadTypesFromDatabase(connection, tableName, uidColumn, typeColumn);
+		
+	}
+	
+	/**
+	 * Load types info from database
+	 * 
+	 * @param dbConnection
+	 * @return
+	 * @throws Exception
+	 */
+	public void loadTypesFromDatabase(Connection connection, String tableName, String uidColumn, String typeColumn)
+			throws Exception {
+		
 		/*
 		 * Do query
 		 */
-		Connection connection = dbConnection.getConnection();
 
 		String sqlQuery = "select "+uidColumn+", "+typeColumn+" from "+tableName+";";
 
@@ -1319,7 +1334,7 @@ public class QueryExecutor {
 
 		rs.close();
 		queryStatement.close();
-		connection.close();		
+		//connection.close();		
 	}
 	
 	

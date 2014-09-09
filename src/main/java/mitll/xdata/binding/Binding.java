@@ -22,12 +22,17 @@ import java.util.*;
  */
 public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	private static final Logger logger = Logger.getLogger(Binding.class);
-
+	
+	protected String datasetId = "";
+	protected String datasetResourceDir = "";
+	
 	// private static final boolean REVERSE_DIRECTION = false;
 	private static final int DEFAULT_SHORT_LIST_SIZE = 100;
 	private static final long MB = 1024 * 1024;
 	private static final int FULL_SEARCH_LIST_SIZE = 200;
 	// private static final double HMM_KDE_BANDWIDTH = 0.25;
+	
+	
 	/**
 	 * Scales distance between result probability and query probability when
 	 * converting to score. Lower makes scores look higher.
@@ -38,8 +43,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	// be skipped in hmm rescore
 	private static final boolean WARN_ABOUT_NOT_ENOUGH_DATA = false;
 
-	protected Connection connection;
 	private final Map<String, Collection<String>> tableToColumns = new HashMap<String, Collection<String>>();
+	protected Connection connection;
+	protected Shortlist shortlist;
 	private final Map<String, Collection<String>> columnToTables = new HashMap<String, Collection<String>>();
 	protected final Map<String, String> tableToPrimaryKey = new HashMap<String, String>();
 
@@ -63,7 +69,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		}
 	}
 
-	protected Binding() {}
+  protected Binding() {}
 
   /**
    * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
@@ -703,7 +709,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
 	public String toString() {
-		return prefixToTable.toString();
+		return datasetId;
+		//return prefixToTable.toString();
 	}
 
 	public static class Triple {
@@ -1365,7 +1372,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * Retrieves promising (somewhat) connected subgraphs based on node similarity.
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+	 * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
 	 */
 	private List<FL_PatternSearchResult> getShortlist(FL_PatternDescriptor example, long max) {
 		// (2a) retrieve list of nodes for each query node ranked by similarity
@@ -1373,15 +1380,20 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// (2c) filter by activity (i.e., subgraph must be connected)
 
 		List<String> exemplarIDs = getExemplarIDs(example);
-    List<FL_EntityMatchDescriptor> objects = Collections.emptyList();
-    List<FL_EntityMatchDescriptor> entities1 = example != null ? example.getEntities() : objects;
-    logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
+		List<FL_EntityMatchDescriptor> objects = Collections.emptyList();
+		List<FL_EntityMatchDescriptor> entities1 = example != null ? example.getEntities() : objects;
+		logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
 
 
-   // return getShortlist(entities1, exemplarIDs, max);
-    //return new CartesianShortlist(this).getShortlist(entities1, exemplarIDs, max);
-    return new BreadthFirstShortlist(this).getShortlist(entities1, exemplarIDs, max);
-  }
+		// return getShortlist(entities1, exemplarIDs, max);
+		//return new CartesianShortlist(this).getShortlist(entities1, exemplarIDs, max);
+		//return new BreadthFirstShortlist(this).getShortlist(entities1, exemplarIDs, max);
+		//return new TopKSubgraphShortlist(this).getShortlist(entities1, exemplarIDs, max);
+		shortlist.numQueries += 1;
+		logger.info("-------------------ALERT--------------------------------");
+		logger.info("This is pattern query number "+shortlist.numQueries+" of this session.");
+		return shortlist.getShortlist(entities1, exemplarIDs, max);
+	}
 
   protected void logMemory() {
     Runtime rt = Runtime.getRuntime();
