@@ -505,4 +505,11 @@ public class TestBinding extends Binding {
 		logger.debug("resultWithState.getPhaseLinks().get(0) = " + resultWithState.getPhaseLinks().get(0));
 		logger.debug("resultWithState.getPhaseLinks().get(1) = " + resultWithState.getPhaseLinks().get(1));
 	}
+
+	@Override
+	protected HashMap<String, String> getEdgeAttributes(String src,
+			String dest, Set<String> columnNames) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

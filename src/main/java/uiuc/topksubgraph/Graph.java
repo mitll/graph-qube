@@ -48,6 +48,7 @@ public class Graph {
 	 * Maps node id to the number of times it appears in the changed edges
 	 */
 	public HashMap<Integer, Integer> nodeFreqInNewEdges = new HashMap<Integer, Integer>();
+	
 	/**
 	 * Constructor
 	 */
@@ -475,10 +476,14 @@ public class Graph {
 		loadGraph(dbConnection.getConnection(), tableName, edgeName);
 	}
 	
+
 	/**
 	 * Loads the graph from an h2 database
+	 * 
 	 * @param connection
-	 * @throws Throwable
+	 * @param tableName
+	 * @param edgeName
+	 * @throws SQLException
 	 */
 	public void loadGraph(Connection connection, String tableName, String edgeName) throws SQLException
 	{
@@ -561,7 +566,63 @@ public class Graph {
 	}
 	
 	/**
-	 * Loads the graph from the file
+	 * Loads the graph from a HashSet of edges
+	 * 
+	 * @param edges
+	 */
+	public void loadGraph(HashSet<Edge> edges) 
+	{
+		int nodeCount=node2NodeIdMap.size();
+		numNodes = 0;
+		numEdges = 0;
+		
+		/*
+		 * Loop through edges...
+		 */
+		int c = 0;
+		for (Edge edg:edges) {
+			c++;
+			if (c % 100000 == 0) logger.debug("read  " +c);	
+			
+			//get edge information
+			int from = edg.src;
+			int to = edg.dst;
+			double weight = edg.weight;
+
+			//logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
+			
+			if(node2NodeIdMap.containsKey(from))
+				from=node2NodeIdMap.get(from);
+			else
+			{
+				node2NodeIdMap.put(from, nodeCount);
+				nodeId2NodeMap.put(nodeCount, from);
+				from=nodeCount;
+				nodeCount++;
+			}
+			if(node2NodeIdMap.containsKey(to))
+				to=node2NodeIdMap.get(to);
+			else
+			{
+				node2NodeIdMap.put(to, nodeCount);
+				nodeId2NodeMap.put(nodeCount, to);
+				to=nodeCount;
+				nodeCount++;
+			}
+
+			this.addEdge(from, to, weight);
+			this.addEdge(to, from, weight);
+		}
+	
+		numNodes = nodeCount;
+		numEdges = c;
+		
+		logger.info("numNodes: "+numNodes);
+		logger.info("numEdges: "+numEdges);
+	}
+	
+	/**
+	 * Loads the graph from a file
 	 * @param f
 	 * @throws Throwable
 	 */

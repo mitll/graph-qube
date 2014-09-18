@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Pattern;
@@ -38,7 +40,7 @@ import org.apache.log4j.BasicConfigurator;
  * MIT Lincoln Laboratory
  */
 public class QueryExecutor {
-	private static Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
+	private static Logger logger = Logger.getLogger(QueryExecutor.class);
 	
 	public static String datasetId;
 	public static String baseDir;
@@ -86,7 +88,7 @@ public class QueryExecutor {
 	private ArrayList<String> actualQueryEdges;
 	
 	private HashMap<String, Integer> queryEdgetoIndex;
-	
+
 	private HashMap<String, String> queryEdge2EdgeType;
 	
 	private HashMap<String, Integer> pointers;
@@ -276,7 +278,6 @@ public class QueryExecutor {
 			}
 			if(end==1)
 				break;
-			
 			//get edge with max score to be processed.
 			String max="";
 			double maxScore=-1;
@@ -289,7 +290,14 @@ public class QueryExecutor {
 					max=s;
 				}
 			}
+			logger.info("Edge-type with the largest score: "+max);
+			logger.info("Edge at the current index max is pointing to: "+sortedEdgeLists.get(max).get(pointers.get(max)));
+			logger.info("queryEdgetoIndex: "+ queryEdgetoIndex);
 			//max is the type. How to get appropriate query edge/edges for this type?
+			
+			/*
+			 * Get query edges corresponding to edge-type of the largest unprocessed weighted-edge in sortedEdgeLists 
+			 */
 			ArrayList<String> edgesOfMaxType = queryEdgeType2Edges.get(max);
 			if(edgesOfMaxType==null)
 			{
@@ -302,25 +310,50 @@ public class QueryExecutor {
 				edgesOfMaxType2.add(edgesOfMaxType.get(0));
 				edgesOfMaxType=edgesOfMaxType2;
 			}
+			logger.info("edgesOfMaxType:"+edgesOfMaxType);
+			
+			
+			/*
+			 * Loop-through query edges of edge-type "max" 
+			 */
 			for(String queryEdge:edgesOfMaxType)
 			{
+				logger.info("Here comes the queryEdge: "+queryEdge);
+				
+				// setup containers for candidate edges
+				HashSet<ArrayList<String>> currCandidates = new HashSet<ArrayList<String>>();
+				HashSet<ArrayList<String>> pcCurr = new HashSet<ArrayList<String>>();
+
+				//which query edge are we working with
+				int index=queryEdgetoIndex.get(queryEdge);
+				
+				// keep track of the query edges (and indices) we're currently considering...
 				HashSet<String> consideredEdges = new HashSet<String>();
 				HashSet<Integer> consideredEdgeIndices = new HashSet<Integer>();
 				consideredEdges.add(queryEdge);
-				int index=queryEdgetoIndex.get(queryEdge);
 				consideredEdgeIndices.add(index);
-				HashSet<ArrayList<String>> currCandidates = new HashSet<ArrayList<String>>();
-				HashSet<ArrayList<String>> pcCurr = new HashSet<ArrayList<String>>();
+				logger.info("ConsideredEdges: "+consideredEdges);
+				logger.info("consideredEdgeIndices"+consideredEdgeIndices);
+				
+				// get candidate edge, "e", flip around , if necessary, to match
+				// edge-type "polarity" of queryEdge
 				String e=sortedEdgeLists.get(max).get(pointers.get(max));
 				int q1=queryNode2Type.get(Integer.parseInt(queryEdge.split("#")[0]));
 				int e1=Integer.parseInt(e.split("#")[0]);
+				
 				if(!graphType2IDSet.get(q1).contains(e1))
 					e=e.split("#")[1]+"#"+e.split("#")[0]+"#"+e.split("#")[2];
+				
+				// place candidate-edge under consideration in it's hypothesized position 
+				// in a possible matching sub-graph ("list"). Add list to pcCurr
 				ArrayList<String> list = new ArrayList<String>();
 				for(int i=0;i<queryEdgetoIndex.size();i++)
 					list.add("");
 				list.set(index, e);
 				pcCurr.add(list);
+				
+				// if homogeneous edge-type (i.e. i#i or j#j) and query graph not a clique
+				// track edge twice because itself and it's reflection are valid candidates
 				if(max.split("#")[0].equals(max.split("#")[1])&&isClique==0)
 				{
 					ArrayList<String> list1 = new ArrayList<String>();
@@ -329,64 +362,81 @@ public class QueryExecutor {
 					list1.set(index, e.split("#")[1]+"#"+e.split("#")[0]+"#"+e.split("#")[2]);
 					pcCurr.add(list1);
 				}
-				//compute upper bound score of currCandidates
-				//compute possible upper bound score of all non-considered edges.
+				
+				//compute possible upper bound score of all non-considered query edges.
 				double ubScoreOfNonConsideredEdges1=0.;
 				for(String edge:queryEdgetoIndex.keySet())
 				{
 					if(!consideredEdgeIndices.contains(queryEdgetoIndex.get(edge)))
 					{
-						String tmp=queryEdge2EdgeType.get(edge);
-						if(!pointers.containsKey(tmp))
+						String tmp=queryEdge2EdgeType.get(edge); //get edge-type
+						if(!pointers.containsKey(tmp)) //order edge-type if necessary
 							tmp=tmp.split("#")[1]+"#"+tmp.split("#")[0];
+						// use highest score of that edge-type as upper-bound ("dumb" or "naive" upper bound)
 						ubScoreOfNonConsideredEdges1+=Double.parseDouble(sortedEdgeLists.get(tmp).get(pointers.get(tmp)).split("#")[2]);
 					}
-				}			
+				}
+				logger.info("pcCurr: "+pcCurr);
+				
+				/*
+				 * compute scores for current partial candidates 
+				 * add partial candidates to currCandidates if heap says they're worth considering 
+				 */
 				for(ArrayList<String> pc:pcCurr)
 				{
 					//compute actualScore of candidate
 					double actualScore=0.;
 					for(int i:consideredEdgeIndices)
 						actualScore+=Double.parseDouble(pc.get(i).split("#")[2]);
+					
 					//compute personalized upper bound score of non-considered edges for this candidate
 					double ubScoreOfNonConsideredEdges2=Double.MAX_VALUE;
 					ubScoreOfNonConsideredEdges2=getUpperbound(consideredEdgeIndices, pc);
-					//check which upper bound is tight.
+					
+					//check to see which upper bound is tighter.
 					double ubScoreOfNonConsideredEdges=0;
 					if(ubScoreOfNonConsideredEdges2<ubScoreOfNonConsideredEdges1)
 					{
 						ubScoreOfNonConsideredEdges=ubScoreOfNonConsideredEdges2;
-//						System.err.println("Helps "+consideredEdgeIndices.size());
+						//System.err.println("Helps "+consideredEdgeIndices.size());
 					}
 					else
 					{
 						ubScoreOfNonConsideredEdges=ubScoreOfNonConsideredEdges1;
-//						System.err.println("No Help!"+consideredEdgeIndices.size());
+						//System.err.println("No Help!"+consideredEdgeIndices.size());
 					}
 					//compute upper bound score of candidate
 					double upperBoundScore=actualScore+ubScoreOfNonConsideredEdges;
+					
 					//check with heap and then add it to newCandidate
-
 					if(heap.size()>=topK)
 					{
 						FibonacciHeapNode<ArrayList<String>> fhn = heap.min();
-//						System.out.println("Check:"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
+						//System.out.println("Check:"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
+						
+						// add partial candidate pc if there's room in the heap for it
 						if(upperBoundScore>fhn.getKey())
 							currCandidates.add(pc);
 						else
 						{
+							//gather some statistics about which upper-bounding strategy is better
 							if(ubScoreOfNonConsideredEdges2>ubScoreOfNonConsideredEdges1)
 								prunedEdgeListsSize1++;
 							else
 								prunedMPWSize1++;
 							if(ubScoreOfNonConsideredEdges2<ubScoreOfNonConsideredEdges1 && ubScoreOfNonConsideredEdges1+actualScore>fhn.getKey())
 								pruningByMPWBetterThanThatByEdgeListsSize1++;
-//							System.out.println("TopK pruned!"+"\t"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
+							//System.out.println("TopK pruned!"+"\t"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
 						}
 					}
 					else
+						// if heap is not yet full, pc gets added by default
 						currCandidates.add(pc);
 				}
+				
+				/*
+				 * 
+				 */
 				if(currCandidates.size()==0)
 					continue;
 				while(consideredEdges.size()!=queryEdgetoIndex.size())
@@ -451,6 +501,7 @@ public class QueryExecutor {
 					int edgeIndex=queryEdgetoIndex.get(nextEdge);
 					consideredEdges.add(nextEdge);
 					consideredEdgeIndices.add(edgeIndex);
+					logger.info("currCandidates: "+currCandidates);
 					for(ArrayList<String> c:currCandidates)
 					{
 						//Find matching edges from useful edge list of T_{e'} and extend candidate c to candidate c'.
@@ -646,6 +697,9 @@ public class QueryExecutor {
 					}
 				}
 			}
+			
+			
+			
 			//Move pointer to next position in useful edge list of e.
 			ArrayList<String> list = sortedEdgeLists.get(max);
 			ArrayList<String> arr1 = queryEdgeType2Edges.get(max);
@@ -874,8 +928,12 @@ public class QueryExecutor {
 	public int loadQuery() throws Throwable, FileNotFoundException,
 			IOException, NumberFormatException {
 		
-		//read query graph
+		//initialize (or re-initialize if loading new query)
 		query = new Graph();
+		queryNodeID2Type = new HashMap<Integer, Integer>();
+		queryNode2Type = new HashMap<Integer, Integer>();
+		
+		//read query graph
 		query.loadGraph(new File(baseDir, queryFile));
 		
 		int isClique=0;
@@ -896,6 +954,79 @@ public class QueryExecutor {
 		}
 		in.close();
 		return isClique;
+	}
+	
+
+	/**
+	 * Load-in the query graph from HashSet of edges
+	 * 
+	 * @param queryEdges
+	 * @param connection
+	 * @param tableName
+	 * @param uidColumn
+	 * @param typeColumn
+	 * @return
+	 */
+	public int loadQuery(HashSet<Edge> queryEdges, Connection connection, String tableName,
+			String uidColumn, String typeColumn)	{
+		
+		//initialize (or re-initialize if loading new query)
+		initQuery();
+		
+		//read query graph
+		query.loadGraph(queryEdges);
+		
+		int isClique=0;
+		if(query.numEdges==(query.numNodes*(query.numNodes-1)/2))
+		{
+			System.err.println("Query is Clique");
+			isClique=1;
+		}
+		
+		/*
+		 * Read query types
+		 */
+		Set<Integer> queryNodes = query.node2NodeIdMap.keySet();
+		
+		for (int node:queryNodes) {
+			String sqlQuery = "select "+typeColumn+" from "+tableName+" where "+uidColumn+"="+node+";";
+
+			int type = 0;
+			try {
+				PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
+				ResultSet rs = queryStatement.executeQuery();
+				rs.next();
+				
+				type = rs.getInt(typeColumn);
+
+				rs.close();
+				queryStatement.close();
+			} catch (SQLException e) {logger.info("Got e: "+e);}
+			
+			queryNodeID2Type.put(query.node2NodeIdMap.get(node), type);
+			queryNode2Type.put(node, type);
+		}
+		
+		return isClique;
+	}
+	
+	
+	
+	/**
+	 * Re-initialize all variables changed by Query Execution
+	 */
+	public void initQuery() {
+		query = new Graph();
+		queryNodeID2Type = new HashMap<Integer, Integer>();
+		queryNode2Type = new HashMap<Integer, Integer>();
+		//querySign always gets re-initialized in getQuerySignatures()
+		candidates = new HashMap<Integer, ArrayList<Integer>>();
+		actualQueryEdges= new ArrayList<String>();
+		queryEdgetoIndex = new HashMap<String, Integer>();
+		queryEdge2EdgeType = new HashMap<String, String>();
+		pointers = new HashMap<String, Integer>();
+		heap = new FibonacciHeap<ArrayList<String>>();
+		heapSet = new HashSet<ArrayList<String>>();
 	}
 	
 	
@@ -938,6 +1069,27 @@ public class QueryExecutor {
 		}
 		System.out.println("============================================================================");
 //		System.exit(0);
+	}
+	
+	public void logHeap() {
+		logger.info("============================================================================");
+		while(!heap.isEmpty())
+		{
+			FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
+			ArrayList<String> list = fhn.getData();
+			String line = "";
+			for(int i=0;i<list.size();i++) {
+				String[] edgeSplit = list.get(i).split("#");
+				String src = edgeSplit[0];
+				String dest = edgeSplit[1];
+				double weight = Double.parseDouble(edgeSplit[2]);
+				
+				line = "src: "+src+" dest: "+dest+" weight: "+weight+"\t";
+				
+			}
+			logger.info(line);
+		}
+		logger.info("============================================================================");
 	}
 	
 	/**
@@ -1295,11 +1447,14 @@ public class QueryExecutor {
 		
 	}
 	
+
 	/**
 	 * Load types info from database
 	 * 
-	 * @param dbConnection
-	 * @return
+	 * @param connection
+	 * @param tableName
+	 * @param uidColumn
+	 * @param typeColumn
 	 * @throws Exception
 	 */
 	public void loadTypesFromDatabase(Connection connection, String tableName, String uidColumn, String typeColumn)
@@ -1308,7 +1463,6 @@ public class QueryExecutor {
 		/*
 		 * Do query
 		 */
-
 		String sqlQuery = "select "+uidColumn+", "+typeColumn+" from "+tableName+";";
 
 		PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
@@ -1336,7 +1490,6 @@ public class QueryExecutor {
 		queryStatement.close();
 		//connection.close();		
 	}
-	
 	
 	/**
 	 * Figure out how many types there are (in the case where we're not loading everything from file)
@@ -1383,6 +1536,15 @@ public class QueryExecutor {
 	
 	public int getTotalTypes() {
 		return totalTypes;
+	}
+	
+	/**
+	 * Getter for queryEdgetoIndex
+	 * 
+	 * @return
+	 */
+	public HashMap<String, Integer> getQueryEdgetoIndex() {
+		return queryEdgetoIndex;
 	}
 }
 

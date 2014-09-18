@@ -1,3 +1,17 @@
+// Copyright 2014 MIT Lincoln Laboratory, Massachusetts Institute of Technology 
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package mitll.xdata.binding;
 
 import influent.idl.*;
@@ -6,8 +20,11 @@ import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 
 import org.apache.log4j.Logger;
+import org.jgrapht.util.FibonacciHeap;
+import org.jgrapht.util.FibonacciHeapNode;
 
 import uiuc.topksubgraph.Graph;
+import uiuc.topksubgraph.Edge;
 import uiuc.topksubgraph.QueryExecutor;
 
 import java.io.File;
@@ -46,7 +63,8 @@ public class TopKSubgraphShortlist extends Shortlist {
 	
 	private String graphTable = "MARGINAL_GRAPHH";
 	private String pairIDColumn = "sorted_pairr";
-
+	private HashMap<String,String> edgeAttributeName2Type;
+	 
 	private QueryExecutor executor;
 
 	//private static Connection connection;
@@ -83,6 +101,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 		QueryExecutor.resultDir="results";
 
 		windowsPathnamePortabilityCheck();
+
 	}
 	
 	
@@ -123,6 +142,9 @@ public class TopKSubgraphShortlist extends Shortlist {
 		catch (IOException e) {logger.info("Got IOException: "+e);} 
 		catch (Exception e) {logger.info("Got Exception: "+e);} 
 		catch (Throwable e) {logger.info("Got Throwable: "+e);}
+		
+		// Get name and type of edge attributes in graph
+		edgeAttributeName2Type = getGraphEdgeAttributeName2Type();
 	}
 	
 
@@ -133,90 +155,8 @@ public class TopKSubgraphShortlist extends Shortlist {
 		// which binding are we bound to?
 		logger.info(this.binding.toString());
 		logger.info(this.binding.connection);
-
-
-		/*
-		 * try out shortlist from query file... should work most likely...
-		 */
-		String[] queries = new String[]{"FanOut" , "FOFI"};
-		for (int i=0; i<queries.length; i++) {
-			
-			/*
-			 * Setup and read-in query
-			 */
-			QueryExecutor.queryFile="queries/queryGraph."+queries[i]+".txt";
-			QueryExecutor.queryTypesFile="queries/queryTypes."+queries[i]+".txt";
-			
-			//set system out to out-file...
-			try {
-				System.setOut(new PrintStream(new File(QueryExecutor.baseDir+QueryExecutor.resultDir+
-						"/QueryExecutor.topK="+QueryExecutor.topK+
-						"_K0="+QueryExecutor.k0+
-						"_"+QueryExecutor.datasetId+
-						"_"+QueryExecutor.queryFile.split("/")[1])));
-			} catch (FileNotFoundException e) {
-				logger.info("got: "+e);
-			}
-			
-			
-			int isClique=0;
-			try {
-				isClique = executor.loadQuery();
-			} 
-			catch (NumberFormatException e) {logger.info("got NumberFormatException: "+e);} 
-			catch (FileNotFoundException e) {logger.info("got FileNotFoundException: "+e);}
-			catch (IOException e) {logger.info("got IOException: "+e);}
-			catch (Throwable e) {logger.info("got Throwable: "+e);}
-
-			/**
-			 * Get query signatures
-			 */
-			executor.getQuerySignatures(); //fills in querySign
-
-			/**
-			 * NS Containment Check and Candidate Generation
-			 */
-			long time1=new Date().getTime();
-
-			int prunedCandidateFiltering = executor.generateCandidates();
-			//if (prunedCandidateFiltering < 0) {
-			//	return;
-			//}
-
-			long timeA = new Date().getTime();
-			System.out.println("Candidate Generation Time: " + (timeA - time1));
-
-
-			/**
-			 * Populate all required HashMaps relating edges to edge-types 
-			 */
-			// compute edge types for all edges in query
-			HashSet<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
-
-			//compute queryEdgetoIndex
-			executor.computeQueryEdge2Index();
-
-			//compute queryEdgeType2Edges
-			HashMap<String, ArrayList<String>> queryEdgeType2Edges = executor.computeQueryEdgeType2Edges();
-
-
-			//Maintain pointers and topk heap
-			executor.computePointers(queryEdgeTypes, queryEdgeType2Edges);
-
-			/**
-			 * The secret sauce... Execute the query...
-			 */
-			executor.executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
-
-			long time2=new Date().getTime();
-			System.out.println("Overall Time: "+(time2-time1));
-
-
-			//FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();
-			executor.printHeap();
-		}
 		
-
+		
 		//check to see if we can connect to anything....
 		if (existsTable(graphTable)) {
 			logger.info("we can connect to the right database...");
@@ -224,10 +164,13 @@ public class TopKSubgraphShortlist extends Shortlist {
 			logger.info("table "+graphTable+" does not yet exist.");
 		}
 
+		
 		/*
 		 * Get all pairs of query nodes...
 		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
 		 */
+		HashSet<Edge> queryEdges = new HashSet<Edge>();
+		Edge edg;
 		int e1, e2;
 		String pair;
 		if (exemplarIDs.size() > 1) {
@@ -237,49 +180,124 @@ public class TopKSubgraphShortlist extends Shortlist {
 					e2 = Integer.parseInt(exemplarIDs.get(j));
 					if (Integer.parseInt(exemplarIDs.get(i)) <= Integer.parseInt(exemplarIDs.get(j))) {
 						pair = "("+e1+","+e2+")";
+						edg = new Edge(e1,e2, 1.0);  //put in here something to get weight if wanted...
 					} else {
 						pair = "("+e2+","+e1+")";
+						edg = new Edge(e2,e1, 1.0);  //put in here something to get weight if wanted...
 					}
 
-					if (existsPair(graphTable,pairIDColumn,pair)) {
-						logger.info("pair: "+pair);
-						// do some loading of the query...
-					}
+					if (existsPair(graphTable,pairIDColumn,pair))
+						queryEdges.add(edg);			
 				}  
 			}	  
 		}
 
-		int k = (int) (max/1);
-		boolean skipSelf = SKIP_SELF_AS_NEIGHBOR;
-
-		long then = System.currentTimeMillis();
-		SortedSet<CandidateGraph> candidates = new TreeSet<CandidateGraph>();
-		String firstExemplar = null;
-		if (!exemplarIDs.isEmpty()) {
-			firstExemplar = exemplarIDs.iterator().next();
-			candidates = getCandidateGraphs(exemplarIDs, k, skipSelf, firstExemplar);
+		for(Edge qe:queryEdges) {
+			logger.info("qe: "+qe);
+		}
+		int isClique = executor.loadQuery(queryEdges,binding.connection,usersTable,userIdColumn,typeColumn);
+		logger.info("isClique: "+isClique);
+		
+		//set system out to out-file...
+		QueryExecutor.queryFile="queries/queryGraph.FanOutService.txt";
+		try {
+			System.setOut(new PrintStream(new File(QueryExecutor.baseDir+QueryExecutor.resultDir+
+					"/QueryExecutor.topK="+QueryExecutor.topK+
+					"_K0="+QueryExecutor.k0+
+					"_"+QueryExecutor.datasetId+
+					"_servicetest"+
+					"_"+QueryExecutor.queryFile.split("/")[1])));
+		} catch (FileNotFoundException e) {
+			logger.info("got: "+e);
 		}
 
-		if (!candidates.isEmpty()) {
-			logger.debug("getShortlistFast : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-		}
+		/**
+		 * Get query signatures
+		 */
+		executor.getQuerySignatures(); //fills in querySign
 
-		int count = 0;
-		CandidateGraph queryGraph = new CandidateGraph(binding, exemplarIDs, firstExemplar, 10).makeDefault();
-		boolean found = false;
-		for (CandidateGraph graph : candidates) {
-			if (graph.equals(queryGraph)) {
-				found = true;
-				break;
-			}
-		}
-		if (!found) candidates.add(queryGraph);
+		/**
+		 * NS Containment Check and Candidate Generation
+		 */
+		long time1=new Date().getTime();
 
-		List<FL_PatternSearchResult> results = getPatternSearchResults(entities1, exemplarIDs, candidates, queryGraph);
+		int prunedCandidateFiltering = executor.generateCandidates();
+		//if (prunedCandidateFiltering < 0) {
+		//	return;
+		//}
 
-		long now = System.currentTimeMillis();
-		logger.debug("getShortlistFast took " + (now - then) + " millis to get " + results.size() + " candidates");
+		long timeA = new Date().getTime();
+		System.out.println("Candidate Generation Time: " + (timeA - time1));
 
+
+		/**
+		 * Populate all required HashMaps relating edges to edge-types 
+		 */
+		// compute edge types for all edges in query
+		HashSet<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
+
+		//compute queryEdgetoIndex
+		executor.computeQueryEdge2Index();
+
+		//compute queryEdgeType2Edges
+		HashMap<String, ArrayList<String>> queryEdgeType2Edges = executor.computeQueryEdgeType2Edges();
+
+
+		//Maintain pointers and topk heap
+		executor.computePointers(queryEdgeTypes, queryEdgeType2Edges);
+
+		/**
+		 * The secret sauce... Execute the query...
+		 */
+		executor.executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
+
+		long time2=new Date().getTime();
+		System.out.println("Overall Time: "+(time2-time1));
+
+
+		//FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();
+		//executor.printHeap();
+		//executor.logHeap();
+		
+		// Format results to influent API
+		List<FL_PatternSearchResult> results = getPatternSearchResults(queryEdges);
+		
+
+		/*
+		 * Breadth-first code (from Gordon)
+		 */
+//		int k = (int) (max/1);
+//		boolean skipSelf = SKIP_SELF_AS_NEIGHBOR;
+//
+//		long then = System.currentTimeMillis();
+//		SortedSet<CandidateGraph> candidates = new TreeSet<CandidateGraph>();
+//		String firstExemplar = null;
+//		if (!exemplarIDs.isEmpty()) {
+//			firstExemplar = exemplarIDs.iterator().next();
+//			candidates = getCandidateGraphs(exemplarIDs, k, skipSelf, firstExemplar);
+//		}
+//
+//		if (!candidates.isEmpty()) {
+//			logger.debug("getShortlistFast : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
+//		}
+//
+//		int count = 0;
+//		CandidateGraph queryGraph = new CandidateGraph(binding, exemplarIDs, firstExemplar, 10).makeDefault();
+//		boolean found = false;
+//		for (CandidateGraph graph : candidates) {
+//			if (graph.equals(queryGraph)) {
+//				found = true;
+//				break;
+//			}
+//		}
+//		if (!found) candidates.add(queryGraph);
+//
+//		List<FL_PatternSearchResult> results = getPatternSearchResults(entities1, exemplarIDs, candidates, queryGraph);
+//
+//		long now = System.currentTimeMillis();
+//		logger.debug("getShortlistFast took " + (now - then) + " millis to get " + results.size() + " candidates");
+
+		
 		return results;
 	}
 
@@ -408,6 +426,246 @@ public class TopKSubgraphShortlist extends Shortlist {
 
 	/**
 	 * Convert candidate graphs into pattern search results.
+	 * 
+	 * @param queryEdges
+	 * @return
+	 */
+	private List<FL_PatternSearchResult> getPatternSearchResults(HashSet<Edge> queryEdges) {
+
+		// Heap of results from uiuc.topksubgraph
+		FibonacciHeap<ArrayList<String>> heap = executor.getHeap();
+		
+		// List of type FL_PatternSearchResult to hold all matching sub-graph contained in heap
+		List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
+				
+		/*
+		 * Map between influent and uiuc.topksubraph index structure for query edges 
+		 */
+		HashMap<String, Integer> uiucQueryEdgetoIndex =  executor.getQueryEdgetoIndex();
+		HashMap<Integer,Integer> uiucInd2InfluentInd = new HashMap<Integer,Integer>();
+		
+		int i=0;
+		for (Edge qe: queryEdges) {
+			//assuming here qe.src and qe.dst are ordered properly (i.e. src < dst)
+			String edgeString = qe.src+"#"+qe.dst;
+			int uiucInd = uiucQueryEdgetoIndex.get(edgeString);
+			uiucInd2InfluentInd.put(uiucInd, i);
+			i++;
+		}
+
+		// Loop-through resultant sub-graphs
+		while(!heap.isEmpty())
+		{
+			// HashSet for entities involved in this sub-graph
+			HashSet<String> nodes = new HashSet<String>();
+			
+			// List of type FL_EntityMatchResult for entities involved in this sub-graph
+			List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
+			
+			// Get matching sub-graph
+			FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
+			ArrayList<String> list = fhn.getData();
+			
+			// Sub-graph score
+			double subgraphScore = fhn.getKey();
+			
+			/*
+			 *  Loop through all edges
+			 */
+
+			// List of type FL_LinkMatchResult to store all edge information from subgraph
+			ArrayList<FL_LinkMatchResult> links = new ArrayList<FL_LinkMatchResult>();
+			for (i=0;i<list.size();i++)
+				links.add(new FL_LinkMatchResult());
+			
+			for (i=0;i<list.size();i++) {
+				
+				/*
+				 * Process the edge to build FL_Link
+				 */
+				
+				// Container to hold FL_Link (has other metadata involved)
+				FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
+
+				// Actual FL_Link
+				FL_Link link = new FL_Link();
+				
+				// Get parts of link
+				String[] edgeSplit = list.get(i).split("#");
+				String src = edgeSplit[0];
+				String dest = edgeSplit[1];
+				double edge_weight = Double.parseDouble(edgeSplit[2]);
+				
+				link.setSource(src);
+				link.setTarget(dest);
+				link.setTags(new ArrayList<FL_LinkTag>());
+				//code for getting properties... 
+				List<FL_Property> linkProperties = getLinkProperties(src,dest);
+				link.setProperties(linkProperties);
+				linkMatchResult.setScore(edge_weight);
+				linkMatchResult.setUid("");
+				linkMatchResult.setLink(link);
+				//links.add(linkMatchResult);
+				
+				links.add(uiucInd2InfluentInd.get(i),linkMatchResult);
+				links.remove(uiucInd2InfluentInd.get(i)+1); //a bit hokey...
+				
+				/*
+				 * Track nodes
+				 */
+				if(!nodes.contains(src))
+					nodes.add(src);
+				if(!nodes.contains(dest))
+					nodes.add(dest);				
+
+			}
+			//logger.info("links: "+links);
+
+			/*
+			 * Loop through all nodes
+			 */
+			int cnt = 0;
+			Iterator<String> iter = nodes.iterator();
+			while (iter.hasNext()) {
+				String node = iter.next();
+				
+				FL_EntityMatchResult entityMatchResult = new FL_EntityMatchResult();
+				
+				entityMatchResult.setScore(1.0);
+				entityMatchResult.setUid("E"+cnt);
+				
+				//= binding.makeEntityMatchResult(exemplarQueryID, similarID, similarity);
+				FL_Entity entity = new FL_Entity();
+				entity.setUid(node);
+				entity.setTags(new ArrayList<FL_EntityTag>());
+				
+				List<FL_Property> entityProperties = new ArrayList<FL_Property>();
+				// node_id
+				FL_Property property = new FL_Property();
+				property.setKey("node_id");
+				property.setFriendlyText(node);		
+				property.setRange(new FL_SingletonRange(node,FL_PropertyType.STRING));
+				property.setTags(new ArrayList<FL_PropertyTag>());
+				entityProperties.add(property);
+				// TYPE
+				property = new FL_Property();
+				property.setKey("TYPE");
+				property.setFriendlyText("null");		
+				property.setRange(new FL_SingletonRange("null",FL_PropertyType.STRING));
+				property.setTags(new ArrayList<FL_PropertyTag>());
+				entityProperties.add(property);
+				
+				entity.setProperties(entityProperties);
+				
+				// entity
+				entityMatchResult.setEntity(entity);
+				if (entityMatchResult != null) {
+					entities.add(entityMatchResult);
+				}		
+				cnt += 1;
+			}
+			//logger.info(entities);
+			
+			/*
+			 * Set score,entities,links to result
+			 */
+			FL_PatternSearchResult result = new FL_PatternSearchResult();
+			result.setScore(subgraphScore);
+			result.setEntities(entities);
+			result.setLinks(links);
+			//logger.info(result);
+			
+			results.add(result);
+		}
+		
+		return results;
+	}
+	
+	
+	private List<FL_Property> getLinkProperties(String src, String dest) {
+
+		List<FL_Property> linkProperties = new ArrayList<FL_Property>();
+
+		//get edge attributes
+		HashMap<String,String> edgeAttributes = binding.getEdgeAttributes(src, dest, edgeAttributeName2Type.keySet());	
+		HashMap<String,FL_PropertyType> h2Type2InfluentType = binding.getH2Type2InfluentType();
+
+		for (String key: edgeAttributeName2Type.keySet()) {
+			
+			String keyType = edgeAttributeName2Type.get(key);
+			FL_Property property = new FL_Property();
+			
+			String val = edgeAttributes.get(key);
+			
+			property.setKey(key);
+			property.setFriendlyText(val);			
+			
+			/*
+			 * Cast to appropriate type
+			 */
+			if (keyType.equals("INTEGER")) {
+				int castVal = Integer.parseInt(val);
+				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
+			} else if (keyType.equals("BIGINT")) {
+				long castVal = Long.parseLong(val,10); //assuming base10
+				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
+			} else if (keyType.equals("DOUBLE") || keyType.equals("DECIMAL")){
+				double castVal = Double.parseDouble(val);
+				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
+			} else {
+				//if "VARCHAR", "ARRAY", "OTHER" or anything else, keep as String
+				String castVal = val;
+				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
+			}
+			
+			property.setTags(new ArrayList<FL_PropertyTag>());
+			
+			//{TOT_OUT=DECIMAL, TOT_IN=DECIMAL, TOT_USD=DECIMAL, NUM_TRANS=BIGINT}
+			//binding.h2Type2InfluentType.get()
+
+			linkProperties.add(property);
+		}
+		
+
+		
+		
+		return linkProperties;
+	}
+
+
+	private HashMap<String,String> getGraphEdgeAttributeName2Type() {
+		
+		HashMap<String,String> graphEdgeAttributeName2Type = new HashMap<String,String>();
+		
+		String sql = "";
+	    sql += "select column_name, type_name from INFORMATION_SCHEMA.columns";
+	    sql += " where table_name = '"+graphTable+"' and COLUMN_NAME <> '"+pairIDColumn+"'";
+
+	    try {
+			queryStatement = binding.connection.prepareStatement(sql);
+			//queryStatement.setString(1, graphTable);
+			//queryStatement.setString(2, pairIDColumn);
+			ResultSet rs = queryStatement.executeQuery();
+		    
+			while (rs.next()) {
+				graphEdgeAttributeName2Type.put(rs.getString("COLUMN_NAME"),rs.getString("TYPE_NAME"));
+			}
+			
+			rs.close();
+		    queryStatement.close();
+			
+		} catch (SQLException e) {
+			logger.info("Got e: "+e);
+		}
+		
+		return graphEdgeAttributeName2Type;
+	}
+
+
+	
+
+	/**
+	 * Convert candidate graphs into pattern search results.
 	 * @param entities1
 	 * @param exemplarIDs
 	 * @param candidates
@@ -419,7 +677,10 @@ public class TopKSubgraphShortlist extends Shortlist {
 			Collection<CandidateGraph> candidates, CandidateGraph queryGraph) {
 		List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
 
+		int cnt=0;
 		for (CandidateGraph graph : candidates) {
+			cnt++;
+			//logger.info("result graph: "+cnt);
 			List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
 
 			List<String> nodes = graph.getNodes();
@@ -430,6 +691,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 				if (queryGraph.getScore() > ((float) exemplarIDs.size()) - 0.1) {
 					logger.debug("\t graph " + graph + " got " + similarID + " and " + exemplarIDs.get(i));
 				}
+				//logger.info("exemplarQueryID: "+exemplarQueryID+" similarID: "+similarID+" similarity: "+similarity);
 				FL_EntityMatchResult entityMatchResult = binding.makeEntityMatchResult(exemplarQueryID, similarID, similarity);
 				if (entityMatchResult != null) {
 					entities.add(entityMatchResult);

@@ -209,9 +209,10 @@ public class BitcoinSubGraphIngest {
 			System.out.println("Candidate Generation Time: " + (timeA - time1));
 
 
-			/**
+			/*
 			 * Populate all required HashMaps relating edges to edge-types 
 			 */
+			
 			// compute edge types for all edges in query
 			HashSet<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
 
@@ -225,7 +226,7 @@ public class BitcoinSubGraphIngest {
 			//Maintain pointers and topk heap
 			executor.computePointers(queryEdgeTypes, queryEdgeType2Edges);
 
-			/**
+			/*
 			 * The secret sauce... Execute the query...
 			 */
 			executor.executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);

@@ -6,6 +6,7 @@ import mitll.xdata.binding.Binding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.hmm.VectorObservation;
 import mitll.xdata.scoring.Transaction;
+
 import org.apache.log4j.Logger;
 
 import java.io.InputStream;
@@ -292,5 +293,12 @@ public class KivaBinding extends Binding {
   protected List<FL_LinkMatchResult> createAggregateLinks(FL_PatternDescriptor example, FL_PatternSearchResult result, List<Edge> edges) {
     return null;
   }
+
+@Override
+protected HashMap<String, String> getEdgeAttributes(String src, String dest,
+		Set<String> columnNames) {
+	// TODO Auto-generated method stub
+	return null;
+}
 
 }

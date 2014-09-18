@@ -59,7 +59,7 @@ public class BitcoinBinding extends Binding {
   public static final String TYPE_COLUMN = "type";
   
   public static final String GRAPH_TABLE = "MARGINAL_GRAPH";
-  public static final String PAIRID_COLUMN = "sorted_pair";
+  public static final String PAIRID_COLUMN = "SORTED_PAIR";
 
   /**
    * @see mitll.xdata.GraphQuBEServer#main(String[])
@@ -143,9 +143,66 @@ public class BitcoinBinding extends Binding {
       }
       makeEdgeMetadataStatement(connection);
     } catch (Exception e) {
-      logger.error("got " + e, e);
+    	logger.error("got " + e, e);
     }
   }
+
+  @Override
+  public HashMap<String,String> getEdgeAttributes(String src, String dest, Set<String> columnNames) {
+
+	  HashMap<String,String> attributes = new HashMap<String,String>();
+
+	  String sql = "select ";
+	  int count = 0;
+	  for (String columnName : columnNames) {
+		  if (count == 0) {
+			  sql += columnName;
+		  } else {
+			  sql += ", "+columnName;
+		  }
+		  count += 1;
+	  }
+	  sql += " from "+GRAPH_TABLE+" where "+PAIRID_COLUMN+" = ("+src+","+dest+");";
+	  
+	  PreparedStatement queryStatement;
+	  
+	  try {
+		  queryStatement = connection.prepareStatement(sql);
+		  ResultSet rs = queryStatement.executeQuery(); rs.next();
+		  
+		  for (String columnName : columnNames) {
+			  
+			  // retrieve from rs as appropriate type
+			  //String attributeType = edgeAttributeName2Type.get(columnName);
+			
+//			  if (attributeType == "INTEGER") {
+//				  attributes.put(columnName, rs.getInt(columnName));
+//			  } else if (attributeType == "BIGINT") {
+//				  attributes.put(columnName, rs.getLong(columnName));
+//			  }
+				   
+				  
+//					h2Type2InfluentType.put("INTEGER", FL_PropertyType.LONG);
+//				h2Type2InfluentType.put("BIGINT", FL_PropertyType.LONG);
+//				h2Type2InfluentType.put("DOUBLE", FL_PropertyType.DOUBLE);
+//				h2Type2InfluentType.put("DECIMAL", FL_PropertyType.DOUBLE);
+//				h2Type2InfluentType.put("VARCHAR", FL_PropertyType.STRING);
+//				h2Type2InfluentType.put("ARRAY", FL_PropertyType.OTHER);				  
+				  
+			  
+			  attributes.put(columnName, rs.getString(columnName));
+		  }
+
+		  rs.close();
+		  queryStatement.close();
+
+	  } catch (SQLException e) {
+		  logger.info("Got e: "+e);
+	  }
+
+	  return attributes;
+  }
+
 
   private void makeEdgeMetadataStatement(DBConnection connection) throws SQLException {
     StringBuilder  sql = new StringBuilder();
@@ -945,7 +1002,7 @@ public class BitcoinBinding extends Binding {
     // List<String> ids = Arrays.asList(new String[] { "505134", "137750", "146073", "28946", "11" });
     // List<Edge> edges = binding.getAllLinks(ids);
 
-    // List<FL_PatternSearchResult> results = binding.getShortlistAptima(0);
+    // List<FL_PatternSearchResult> results = binding.Aptima(0);
     // logger.debug("results.size() = " + results.size());
     // logger.debug(results.get(0));
 

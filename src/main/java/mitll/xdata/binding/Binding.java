@@ -22,17 +22,17 @@ import java.util.*;
  */
 public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	private static final Logger logger = Logger.getLogger(Binding.class);
-	
+
 	protected String datasetId = "";
 	protected String datasetResourceDir = "";
-	
+
 	// private static final boolean REVERSE_DIRECTION = false;
 	private static final int DEFAULT_SHORT_LIST_SIZE = 100;
 	private static final long MB = 1024 * 1024;
 	private static final int FULL_SEARCH_LIST_SIZE = 200;
 	// private static final double HMM_KDE_BANDWIDTH = 0.25;
-	
-	
+
+
 	/**
 	 * Scales distance between result probability and query probability when
 	 * converting to score. Lower makes scores look higher.
@@ -61,7 +61,22 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	protected final Map<String, Set<String>> stot = new HashMap<String, Set<String>>();
 	protected final Set<String> validTargets = new HashSet<String>();
 
-  public Binding(DBConnection connection) {
+	//map H2 data-types to Influent IDL data-types
+	private HashMap<String,FL_PropertyType> h2Type2InfluentType = new HashMap<String,FL_PropertyType>();
+
+
+	protected Binding() {
+		//set H2 data-types to Influent IDL data-types HashMap
+		h2Type2InfluentType.put("INTEGER", FL_PropertyType.LONG);
+		h2Type2InfluentType.put("BIGINT", FL_PropertyType.LONG);
+		h2Type2InfluentType.put("DOUBLE", FL_PropertyType.DOUBLE);
+		h2Type2InfluentType.put("DECIMAL", FL_PropertyType.DOUBLE);
+		h2Type2InfluentType.put("VARCHAR", FL_PropertyType.STRING);
+		h2Type2InfluentType.put("ARRAY", FL_PropertyType.OTHER);
+	}
+
+	public Binding(DBConnection connection) {
+		this();
 		try {
 			this.connection = connection.getConnection();
 		} catch (Exception e) {
@@ -69,11 +84,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		}
 	}
 
-  protected Binding() {}
 
-  /**
-   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
-   */
+	/**
+	 * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
+	 */
 	protected void populateColumnToTables() {
 		for (Map.Entry<String, Collection<String>> kv : tableToColumns.entrySet()) {
 			for (String col : kv.getValue()) {
@@ -123,14 +137,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return row;
 	}
 
-  /**
-   * @see #getEntities(String, java.util.List)
-   * @param table
-   * @param constraint
-   * @param limit
-   * @return
-   * @throws Exception
-   */
+	/**
+	 * @see #getEntities(String, java.util.List)
+	 * @param table
+	 * @param constraint
+	 * @param limit
+	 * @return
+	 * @throws Exception
+	 */
 	private ResultInfo getEntitiesWhere(String table, String constraint, long limit) throws Exception {
 		String sql = "SELECT * FROM " + table + " where " +
 
@@ -146,7 +160,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	private ResultInfo getMatchingRows(String sql) throws Exception {
 		if (showSQL) {
 			logger.debug("getMatchingRows : doing " + sql);
-    }
+		}
 		PreparedStatement statement = connection.prepareStatement(sql);
 		ResultSet rs = null;
 		try {
@@ -167,9 +181,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			for (Map<String, String> row : rows)
 				logger.debug(row);
 		}
-    //logger.debug("getMatchingRows : Got " + rows.size() + " ");
+		//logger.debug("getMatchingRows : Got " + rows.size() + " ");
 
-    rs.close();
+		rs.close();
 		statement.close();
 		return new ResultInfo(nameToType, rows);
 	}
@@ -192,11 +206,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			String column = tableToPrimaryKey.get(table);
 			String constraint = column + " in (" + list.substring(0, list.length() - 2) + ") ";
 
-      ResultInfo entitiesWhere = getEntitiesWhere(table, constraint, ids.size());
-      if (entitiesWhere.rows.isEmpty()) {
-        logger.error("huh? can't find " + ids + " entities in " +table + " under col " + column);
-      }
-      return entitiesWhere;
+			ResultInfo entitiesWhere = getEntitiesWhere(table, constraint, ids.size());
+			if (entitiesWhere.rows.isEmpty()) {
+				logger.error("huh? can't find " + ids + " entities in " +table + " under col " + column);
+			}
+			return entitiesWhere;
 		} catch (Exception ee) {
 			logger.error("looking for " + ids + " got error " + ee, ee);
 		}
@@ -209,7 +223,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param limit
 	 * @return
 	 */
-  private Collection<ResultInfo> getEntitiesMatchingProperties(List<FL_PropertyMatchDescriptor> properties,
+	private Collection<ResultInfo> getEntitiesMatchingProperties(List<FL_PropertyMatchDescriptor> properties,
 			long limit) {
 		List<Triple> triples = getTriples(properties);
 		return getEntities(triples, limit);
@@ -383,7 +397,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param id
 	 * @return
 	 */
-  private String getTableForID(String id) {
+	private String getTableForID(String id) {
 		String table = "";
 		for (String pre : prefixToTable.keySet()) {
 			if (id.startsWith(pre))
@@ -401,7 +415,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param descriptor
 	 * @return
 	 */
-  private ResultInfo getEntitiesByID(FL_EntityMatchDescriptor descriptor) {
+	private ResultInfo getEntitiesByID(FL_EntityMatchDescriptor descriptor) {
 		List<String> entityIDs = descriptor.getEntities();
 		if (entityIDs != null && !entityIDs.isEmpty()) {
 			String id = entityIDs.iterator().next();
@@ -421,14 +435,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return new ResultInfo();
 	}
 
-  protected ResultInfo createDummyEntity(String id) {
+	protected ResultInfo createDummyEntity(String id) {
 		Map<String, String> nameToType = new HashMap<String, String>();
 		nameToType.put("node_id", "BIGINT");
 		List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
 		Map<String, String> row = new HashMap<String, String>();
 		row.put("node_id", id);
 		rows.add(row);
-    return new ResultInfo(nameToType, rows);
+		return new ResultInfo(nameToType, rows);
 	}
 
 	/**
@@ -483,7 +497,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * Assume for the moment that you can either ask for an entity by id or by some set of properties
 	 *
 	 * @see mitll.xdata.dataset.kiva.binding.KivaBinding#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
-   * @see #simpleSearch(java.util.List, long, long)
+	 * @see #simpleSearch(java.util.List, long, long)
 	 * @param properties
 	 * @param max
 	 * @return
@@ -539,7 +553,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 				for (Map<String, String> entityMap : entity.rows) {
 					FL_EntityMatchResult entityMatchResult = makeEntityMatchResult(descriptor, entity,
-					// primaryKeyCol,
+							// primaryKeyCol,
 							entityMap);
 					patternSearchResult.getEntities().add(entityMatchResult);
 				}
@@ -564,7 +578,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param entityMap
 	 * @return equivalent to entityMap
 	 */
-  private FL_EntityMatchResult makeEntityMatchResult(FL_EntityMatchDescriptor descriptor, ResultInfo entities,
+	private FL_EntityMatchResult makeEntityMatchResult(FL_EntityMatchDescriptor descriptor, ResultInfo entities,
 			Map<String, String> entityMap) {
 
 		String primaryKeyCol = tableToPrimaryKey.get(entities.getTable());
@@ -608,7 +622,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param entityMap
 	 * @return
 	 */
-  private FL_Entity makeEntity(Map<String, String> colToType, String primaryKeyCol, Map<String, String> entityMap) {
+	private FL_Entity makeEntity(Map<String, String> colToType, String primaryKeyCol, Map<String, String> entityMap) {
 		FL_Entity entity = new FL_Entity();
 		entity.setTags(new ArrayList<FL_EntityTag>()); // none for now...
 
@@ -630,7 +644,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param entityMap
 	 * @return entity id from entity map
 	 */
-  private String setProperties(List<FL_Property> properties, Map<String, String> colToType, String primaryKeyCol,
+	private String setProperties(List<FL_Property> properties, Map<String, String> colToType, String primaryKeyCol,
 			Map<String, String> entityMap) {
 		String entityID = null;
 		for (Map.Entry<String, String> kv : entityMap.entrySet()) {
@@ -715,8 +729,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	public static class Triple {
 		final String key;
-    final String value;
-    String operator;
+		final String value;
+		String operator;
 
 		public Triple(FL_PropertyMatchDescriptor prop) {
 			// TODO : handle non-singleton ranges?
@@ -777,7 +791,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param limit
 	 * @return
 	 */
-  private ResultInfo getEntities(String table, Collection<Triple> triples, long limit) {
+	private ResultInfo getEntities(String table, Collection<Triple> triples, long limit) {
 		return getEntities(table, Collections.EMPTY_LIST, triples, limit);
 	}
 
@@ -790,8 +804,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @return
 	 */
 	private ResultInfo getOrEntities(String table, Collection<Triple> triples, long limit) {
-    List<Triple> objects = Collections.emptyList();
-    return getEntities(table, triples, objects, limit);
+		List<Triple> objects = Collections.emptyList();
+		return getEntities(table, triples, objects, limit);
 	}
 
 	/**
@@ -802,7 +816,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param limit
 	 * @return
 	 */
-  private ResultInfo getEntities(String table, Collection<Triple> orTriples, Collection<Triple> andTriples,
+	private ResultInfo getEntities(String table, Collection<Triple> orTriples, Collection<Triple> andTriples,
 			long limit) {
 		try {
 			String constraint = "";
@@ -837,7 +851,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * @return k nearest neighbors to node
-   * @see mitll.xdata.binding.BreadthFirstShortlist#getShortlist(java.util.List, java.util.List, long)
+	 * @see mitll.xdata.binding.BreadthFirstShortlist#getShortlist(java.util.List, java.util.List, long)
 	 */
 	protected abstract List<String> getNearestNeighbors(String id, int k, boolean skipSelf);
 
@@ -881,213 +895,213 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 */
 	public Object searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max) {
 		// original service
-    long endTime = (60000l * 60l * 24l * 365l * 30l) + System.currentTimeMillis();
+		long endTime = (60000l * 60l * 24l * 365l * 30l) + System.currentTimeMillis();
 
-    logger.debug("end is  " + endTime +" or " + new Date(endTime));
-    return searchByExample(example, start, max, true,0, endTime);
+		logger.debug("end is  " + endTime +" or " + new Date(endTime));
+		return searchByExample(example, start, max, true,0, endTime);
 	}
 
-  private static final int MAX_TEXT_LENGTH = 15;
+	private static final int MAX_TEXT_LENGTH = 15;
 
-  /**
-   * Return json with nodes and links, suitable for a sankey display
-   *
-   * @param ids
-   * @param start
-   * @param max
-   * @param startTime
-   * @param endTime
-   * @return
-   */
-  public String searchByExampleJson(List<String> ids,long start, long max, long startTime, long endTime) {
-    FL_PatternSearchResults fl_patternSearchResults = searchByExample(ids, start, FULL_SEARCH_LIST_SIZE, startTime, endTime);
-     logger.debug("searchByExampleJson : got " + fl_patternSearchResults.getResults().size() + " results");
-     Set<String> querySet = new HashSet<String>(ids);
+	/**
+	 * Return json with nodes and links, suitable for a sankey display
+	 *
+	 * @param ids
+	 * @param start
+	 * @param max
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 */
+	public String searchByExampleJson(List<String> ids,long start, long max, long startTime, long endTime) {
+		FL_PatternSearchResults fl_patternSearchResults = searchByExample(ids, start, FULL_SEARCH_LIST_SIZE, startTime, endTime);
+		logger.debug("searchByExampleJson : got " + fl_patternSearchResults.getResults().size() + " results");
+		Set<String> querySet = new HashSet<String>(ids);
 
-    FL_PatternSearchResult queryResult = null;
-    for (FL_PatternSearchResult result : fl_patternSearchResults.getResults()) {
+		FL_PatternSearchResult queryResult = null;
+		for (FL_PatternSearchResult result : fl_patternSearchResults.getResults()) {
 
-      Set<String> resultSet = new HashSet<String>();
+			Set<String> resultSet = new HashSet<String>();
 
-      for (FL_EntityMatchResult entity : result.getEntities()) {
-         FL_Entity entity1 = entity.getEntity();
-          boolean found = false;
-         for (FL_Property prop : entity1.getProperties()) {
-           // logger.debug("got " + prop.getKey() + " : " + prop.getValue());
-           if (prop.getKey().equalsIgnoreCase("name") || prop.getKey().equalsIgnoreCase("node_id")) {
-             // keyValue.put(prop.getKey(),prop.getFriendlyText());
-             String friendlyText = prop.getFriendlyText();
-            // if (friendlyText.length() > MAX_TEXT_LENGTH) friendlyText = friendlyText.substring(0, MAX_TEXT_LENGTH) + "...";
-             resultSet.add(friendlyText);
-             found =true;
-           }
-           if (!found) resultSet.add(entity1.getUid());
-           //if (prop.getKey().equals("uid")) uidValue = ((FL_SingletonRange) prop.getRange()).getValue().toString();
-         }
-       }
-      if (resultSet.size() == querySet.size() && resultSet.equals(querySet)) {
-        logger.debug("\n\n\n\n found query set ");
-        queryResult = result;
-      }
-      else {
-        //logger.debug("looking for " + querySet + " but not this one "+ resultSet);
-      }
-    }
+			for (FL_EntityMatchResult entity : result.getEntities()) {
+				FL_Entity entity1 = entity.getEntity();
+				boolean found = false;
+				for (FL_Property prop : entity1.getProperties()) {
+					// logger.debug("got " + prop.getKey() + " : " + prop.getValue());
+					if (prop.getKey().equalsIgnoreCase("name") || prop.getKey().equalsIgnoreCase("node_id")) {
+						// keyValue.put(prop.getKey(),prop.getFriendlyText());
+						String friendlyText = prop.getFriendlyText();
+						// if (friendlyText.length() > MAX_TEXT_LENGTH) friendlyText = friendlyText.substring(0, MAX_TEXT_LENGTH) + "...";
+						resultSet.add(friendlyText);
+						found =true;
+					}
+					if (!found) resultSet.add(entity1.getUid());
+					//if (prop.getKey().equals("uid")) uidValue = ((FL_SingletonRange) prop.getRange()).getValue().toString();
+				}
+			}
+			if (resultSet.size() == querySet.size() && resultSet.equals(querySet)) {
+				logger.debug("\n\n\n\n found query set ");
+				queryResult = result;
+			}
+			else {
+				//logger.debug("looking for " + querySet + " but not this one "+ resultSet);
+			}
+		}
 
-    if (queryResult == null) {
-      logger.error("\n\n\ncouldn't find the query result!\n\n\n");
-    }
+		if (queryResult == null) {
+			logger.error("\n\n\ncouldn't find the query result!\n\n\n");
+		}
 
-    String json = "{\"query\" :\n"+getJsonForResult(queryResult);
-                       json += ",\n\"results\":[\n";
-    int count = 0;
-    for (FL_PatternSearchResult result : fl_patternSearchResults.getResults()) {
-      if (result != queryResult) {
-      json += getJsonForResult(result) +",\n";
-        count++;
-      }
-      if (count == max) break;
-    }
-    json = json.substring(0,json.length()-2);
+		String json = "{\"query\" :\n"+getJsonForResult(queryResult);
+		json += ",\n\"results\":[\n";
+		int count = 0;
+		for (FL_PatternSearchResult result : fl_patternSearchResults.getResults()) {
+			if (result != queryResult) {
+				json += getJsonForResult(result) +",\n";
+				count++;
+			}
+			if (count == max) break;
+		}
+		json = json.substring(0,json.length()-2);
 
-    json += "]}";
-    return json;
-  }
+		json += "]}";
+		return json;
+	}
 
-  private String getJsonForResult(FL_PatternSearchResult result) {
-    StringBuilder builder = new StringBuilder();
+	private String getJsonForResult(FL_PatternSearchResult result) {
+		StringBuilder builder = new StringBuilder();
 
-    builder.append("{\"nodes\":[\n");
-    List<String> names = new ArrayList<String>();
-    if (result != null) {
-      List<FL_EntityMatchResult> entities = result.getEntities();
-      for (FL_EntityMatchResult entity : entities) {
-        FL_Entity entity1 = entity.getEntity();
-        // String uidValue = entity1.getUid();
-        boolean found = false;
-        for (FL_Property prop : entity1.getProperties()) {
-          // logger.debug("got " + prop.getKey() + " : " + prop.getValue());
-          if (prop.getKey().equalsIgnoreCase("name") || prop.getKey().equalsIgnoreCase("node_id")) {
-            // keyValue.put(prop.getKey(),prop.getFriendlyText());
-            String friendlyText = prop.getFriendlyText();
-            if (friendlyText.length() > MAX_TEXT_LENGTH)
-              friendlyText = friendlyText.substring(0, MAX_TEXT_LENGTH) + "...";
-            builder.append("    {\"name\":\"" + friendlyText + "\"},\n");
-            names.add(friendlyText);
-            found = true;
-          }
-          //if (prop.getKey().equals("uid")) uidValue = ((FL_SingletonRange) prop.getRange()).getValue().toString();
-        }
-        if (!found) {
-          builder.append("    {\"name\":\"" + entity1.getUid() + "\"},\n");
-          names.add(entity1.getUid());
-        }
+		builder.append("{\"nodes\":[\n");
+		List<String> names = new ArrayList<String>();
+		if (result != null) {
+			List<FL_EntityMatchResult> entities = result.getEntities();
+			for (FL_EntityMatchResult entity : entities) {
+				FL_Entity entity1 = entity.getEntity();
+				// String uidValue = entity1.getUid();
+				boolean found = false;
+				for (FL_Property prop : entity1.getProperties()) {
+					// logger.debug("got " + prop.getKey() + " : " + prop.getValue());
+					if (prop.getKey().equalsIgnoreCase("name") || prop.getKey().equalsIgnoreCase("node_id")) {
+						// keyValue.put(prop.getKey(),prop.getFriendlyText());
+						String friendlyText = prop.getFriendlyText();
+						if (friendlyText.length() > MAX_TEXT_LENGTH)
+							friendlyText = friendlyText.substring(0, MAX_TEXT_LENGTH) + "...";
+						builder.append("    {\"name\":\"" + friendlyText + "\"},\n");
+						names.add(friendlyText);
+						found = true;
+					}
+					//if (prop.getKey().equals("uid")) uidValue = ((FL_SingletonRange) prop.getRange()).getValue().toString();
+				}
+				if (!found) {
+					builder.append("    {\"name\":\"" + entity1.getUid() + "\"},\n");
+					names.add(entity1.getUid());
+				}
 
-      }
-      trimLast(builder);
-    }
+			}
+			trimLast(builder);
+		}
 
 
-    builder.append("],\n\"links\":[\n");
+		builder.append("],\n\"links\":[\n");
 
-    // dump overall links
-    PatternSearchResultWithState searchResultWithState = (PatternSearchResultWithState) result;
-    List<FL_LinkMatchResult> objects = Collections.emptyList();
-    List<FL_LinkMatchResult> links = searchResultWithState == null ? objects : searchResultWithState.getLinks();
-    Map<String, Integer> objectObjectMap = Collections.emptyMap();
-    Map<String, Integer> pairToID = dumpLinks(builder, names, links, objectObjectMap);
+		// dump overall links
+		PatternSearchResultWithState searchResultWithState = (PatternSearchResultWithState) result;
+		List<FL_LinkMatchResult> objects = Collections.emptyList();
+		List<FL_LinkMatchResult> links = searchResultWithState == null ? objects : searchResultWithState.getLinks();
+		Map<String, Integer> objectObjectMap = Collections.emptyMap();
+		Map<String, Integer> pairToID = dumpLinks(builder, names, links, objectObjectMap);
 
-    if (searchResultWithState != null) {
-      for (List<FL_LinkMatchResult> linksForPhase : searchResultWithState.getPhaseLinks()) {
-        dumpLinks(builder, names, linksForPhase, pairToID);
-      }
-      builder.replace(builder.length() - 1, builder.length(), "\n");
-    }
+		if (searchResultWithState != null) {
+			for (List<FL_LinkMatchResult> linksForPhase : searchResultWithState.getPhaseLinks()) {
+				dumpLinks(builder, names, linksForPhase, pairToID);
+			}
+			builder.replace(builder.length() - 1, builder.length(), "\n");
+		}
 
-    builder.append("]}\n");
+		builder.append("]}\n");
 
-    return builder.toString();
-  }
+		return builder.toString();
+	}
 
-  private void trimLast(StringBuilder builder) {
-    builder.replace(builder.length()-2,builder.length(),"\n");
-  }
+	private void trimLast(StringBuilder builder) {
+		builder.replace(builder.length()-2,builder.length(),"\n");
+	}
 
-  private Map<String,Integer> dumpLinks(StringBuilder builder, List<String> names, List<FL_LinkMatchResult> links,
-                                        Map<String,Integer> inPairToID) {
-    int id = 0;
-    Map<String,Integer> pairToID = new HashMap<String, Integer>();
-    inPairToID = new HashMap<String, Integer>(inPairToID);
-    builder.append(" [\n");  // TODO !!!! just for testing -- need one set of links for each phase
-    for (FL_LinkMatchResult link : links) {
-      FL_Link link1 = link.getLink();
-      String source = link1.getSource();
-      int sindex = names.indexOf(source);
-      String target = link1.getTarget();
-      int tindex = names.indexOf(target);
+	private Map<String,Integer> dumpLinks(StringBuilder builder, List<String> names, List<FL_LinkMatchResult> links,
+			Map<String,Integer> inPairToID) {
+		int id = 0;
+		Map<String,Integer> pairToID = new HashMap<String, Integer>();
+		inPairToID = new HashMap<String, Integer>(inPairToID);
+		builder.append(" [\n");  // TODO !!!! just for testing -- need one set of links for each phase
+		for (FL_LinkMatchResult link : links) {
+			FL_Link link1 = link.getLink();
+			String source = link1.getSource();
+			int sindex = names.indexOf(source);
+			String target = link1.getTarget();
+			int tindex = names.indexOf(target);
 
-      String value = "";
-      for (FL_Property property : link1.getProperties()) {
-        if (property.getKey().equals("netFlow")) value = property.getFriendlyText();
-      }
+			String value = "";
+			for (FL_Property property : link1.getProperties()) {
+				if (property.getKey().equals("netFlow")) value = property.getFriendlyText();
+			}
 
-      boolean b = value.startsWith("-");// && REVERSE_DIRECTION;
-      String key = source + "-" + target;
-   //   if (b) logger.info("reverse direction of " +key);
-      int idToUse = id++;
-      if (!inPairToID.isEmpty()) {
-        if (!inPairToID.containsKey(key)) logger.error("huh? can't find source-target pair " +key);
-        else {
-          idToUse = inPairToID.remove(key);
-        }
-      }
-      else {
-        pairToID.put(key,idToUse);
-      }
-      writeOneLink(builder, sindex, tindex, value, b, idToUse);
-    }
-    for (Map.Entry<String, Integer> zeroLinks : inPairToID.entrySet()) {
-      String[] split = zeroLinks.getKey().split("-");
+			boolean b = value.startsWith("-");// && REVERSE_DIRECTION;
+			String key = source + "-" + target;
+			//   if (b) logger.info("reverse direction of " +key);
+			int idToUse = id++;
+			if (!inPairToID.isEmpty()) {
+				if (!inPairToID.containsKey(key)) logger.error("huh? can't find source-target pair " +key);
+				else {
+					idToUse = inPairToID.remove(key);
+				}
+			}
+			else {
+				pairToID.put(key,idToUse);
+			}
+			writeOneLink(builder, sindex, tindex, value, b, idToUse);
+		}
+		for (Map.Entry<String, Integer> zeroLinks : inPairToID.entrySet()) {
+			String[] split = zeroLinks.getKey().split("-");
 
-      int sindex = names.indexOf(split[0]);
-      int tindex = names.indexOf(split[1]);
-      writeOneLink(builder, sindex, tindex, "0", false, zeroLinks.getValue());
+			int sindex = names.indexOf(split[0]);
+			int tindex = names.indexOf(split[1]);
+			writeOneLink(builder, sindex, tindex, "0", false, zeroLinks.getValue());
 
-    }
-    trimLast(builder);
-    builder.append("\n],");  // TODO !!!! just for testing -- need one set of links for each phase
-    return pairToID;
-  }
+		}
+		trimLast(builder);
+		builder.append("\n],");  // TODO !!!! just for testing -- need one set of links for each phase
+		return pairToID;
+	}
 
-  private void writeOneLink(StringBuilder builder, int sindex, int tindex, String value, boolean b, int idToUse) {
-    builder.append("  {\"id\":" +
-        idToUse +
-        ",\"source\":" +
-        (b ? tindex : sindex) +
-        ",\"target\":" +
-        (b ? sindex : tindex) +
-        ",\"value\":" +
-        (b ? value.substring(1) : value) +
-        "},\n");
-  }
+	private void writeOneLink(StringBuilder builder, int sindex, int tindex, String value, boolean b, int idToUse) {
+		builder.append("  {\"id\":" +
+				idToUse +
+				",\"source\":" +
+				(b ? tindex : sindex) +
+				",\"target\":" +
+				(b ? sindex : tindex) +
+				",\"value\":" +
+				(b ? value.substring(1) : value) +
+				"},\n");
+	}
 
-  /**
-   * @see #searchByExampleJson(java.util.List, long, long, long, long)
-   * @param ids
-   * @param start
-   * @param max
-   * @param startTime
-   * @param endTime
-   * @return
-   */
-  private FL_PatternSearchResults searchByExample(List<String> ids,long start, long max, long startTime, long endTime) {
-    FL_PatternDescriptor descriptor = AvroUtils.createExemplarQuery(ids);
-    return searchByExample(descriptor, start,max, true,startTime,endTime);
-  }
+	/**
+	 * @see #searchByExampleJson(java.util.List, long, long, long, long)
+	 * @param ids
+	 * @param start
+	 * @param max
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 */
+	private FL_PatternSearchResults searchByExample(List<String> ids,long start, long max, long startTime, long endTime) {
+		FL_PatternDescriptor descriptor = AvroUtils.createExemplarQuery(ids);
+		return searchByExample(descriptor, start,max, true,startTime,endTime);
+	}
 
 	/**
 	 * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean)
-   * @see #searchByExample(java.util.List, long, long, long, long)
+	 * @see #searchByExample(java.util.List, long, long, long, long)
 	 * @param example
 	 * @param start ignored for now
 	 * @param max items to return
@@ -1095,26 +1109,26 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @return
 	 */
 	public FL_PatternSearchResults searchByExample(FL_PatternDescriptor example, long start, long max,
-                                                 boolean rescoreWithHMM, long startTime, long endTime) {
+			boolean rescoreWithHMM, long startTime, long endTime) {
 		long then = System.currentTimeMillis();
 		logger.debug("ENTER searchByExample() got " + example + " rescore " + rescoreWithHMM);
 
-    logger.debug("ENTER " + new Date(startTime) + " to " + new Date(endTime));
+		logger.debug("ENTER " + new Date(startTime) + " to " + new Date(endTime));
 
 
-    long future = (60000l * 60l * 24l * 365l * 30l) + System.currentTimeMillis();
-    if (endTime > future) {
-      endTime = future;
-      logger.debug("end is  " + endTime +" or " + new Date(endTime));
+		long future = (60000l * 60l * 24l * 365l * 30l) + System.currentTimeMillis();
+		if (endTime > future) {
+			endTime = future;
+			logger.debug("end is  " + endTime +" or " + new Date(endTime));
 
-    }
+		}
 
-    //if (startTime > System.currentTimeMillis()) {
-      startTime = 0;
-      logger.debug("startTime is  " + startTime +" or " + new Date(startTime));
+		//if (startTime > System.currentTimeMillis()) {
+		startTime = 0;
+		logger.debug("startTime is  " + startTime +" or " + new Date(startTime));
 
-    //}
-    logger.debug("end is  " + endTime +" or " + new Date(endTime));
+		//}
+		logger.debug("end is  " + endTime +" or " + new Date(endTime));
 
 
 		if (max == 0) {
@@ -1132,13 +1146,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// (2) shortlist (find promising connected subgraphs)
 		// (3) score based on transactions
 
-    logger.debug("found "+example);
-//    logger.debug("found "+example.getEntities().size());
+		logger.debug("found "+example);
+		//    logger.debug("found "+example.getEntities().size());
+		logger.info("running from Binding.java");
 		List<FL_PatternSearchResult> results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
-    if (results == null) {
-      logger.error("huh? couldn't get results for " + example);
-      return null;
-    }
+		if (results == null) {
+			logger.error("huh? couldn't get results for " + example);
+			return null;
+		}
 		logger.debug("shortlist size = " + results.size());
 
 		// get edges (to use in a couple places)
@@ -1150,30 +1165,31 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		}
 
 		List<List<Edge>> resultEdges = new ArrayList<List<Edge>>();
-    List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
+		List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
 
-    logMemory();
+		logMemory();
 
 		// re-score results
 		if (rescoreWithHMM) {
-      List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
+			List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
 
-      if (!queryEdges.isEmpty()) {
-        List<FL_PatternSearchResult> tempResults = rescoreWithHMM1(example, results, exemplarIDs, resultEdges, resultIDs, startTime, endTime);
-        logger.debug("Got " + tempResults.size() + " rescored results.");
-		   	results = tempResults;
-      }
-      else {
-        logger.warn("exemplars are not connected for time period " + exemplarIDs + " start " + new Date(startTime) + " end " + new Date(endTime));
-      }
-		} else {
-			// add all edges
-			// replace links in each subgraph with aggregate links
-			for (int i = 0; i < results.size(); i++) {
-				List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, results.get(i), resultEdges.get(i));
-				results.get(i).setLinks(linkMatchResults);
+			if (!queryEdges.isEmpty()) {
+				List<FL_PatternSearchResult> tempResults = rescoreWithHMM1(example, results, exemplarIDs, resultEdges, resultIDs, startTime, endTime);
+				logger.debug("Got " + tempResults.size() + " rescored results.");
+				results = tempResults;
 			}
-		}
+			else {
+				logger.warn("exemplars are not connected for time period " + exemplarIDs + " start " + new Date(startTime) + " end " + new Date(endTime));
+			}
+		} 
+//		else {
+//			// add all edges
+//			// replace links in each subgraph with aggregate links
+//			for (int i = 0; i < results.size(); i++) {
+//				List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, results.get(i), resultEdges.get(i));
+//				results.get(i).setLinks(linkMatchResults);
+//			}
+//		}
 
 		// save mapping from results to edges
 		// Map<FL_PatternSearchResult, List<Edge>> resultToEdges = new HashMap<FL_PatternSearchResult, List<Edge>>();
@@ -1190,152 +1206,152 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// }
 
 		logger.debug(results.size() + " results, took " + (System.currentTimeMillis() - then) + " millis");
-    logMemory();
+		logMemory();
 
-    return patternSearchResults;
+		return patternSearchResults;
 	}
 
-  /**
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
-   * @param example
-   * @param results
-   * @param exemplarIDs
-   * @param resultEdges
-   * @return
-   */
-  private List<List<String>> getResultIDsWithEdges(FL_PatternDescriptor example,
-                                                   List<FL_PatternSearchResult> results,
-                                                   List<String> exemplarIDs,
-                                                   List<List<Edge>> resultEdges) {
-    // need to get nodes ids for each result in same order as associated query nodes
-    List<List<String>> resultIDs = new ArrayList<List<String>>();
+	/**
+	 * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+	 * @param example
+	 * @param results
+	 * @param exemplarIDs
+	 * @param resultEdges
+	 * @return
+	 */
+	private List<List<String>> getResultIDsWithEdges(FL_PatternDescriptor example,
+			List<FL_PatternSearchResult> results,
+			List<String> exemplarIDs,
+			List<List<Edge>> resultEdges) {
+		// need to get nodes ids for each result in same order as associated query nodes
+		List<List<String>> resultIDs = new ArrayList<List<String>>();
 
-    logger.debug("searchByExample : exemplarIDs = " + exemplarIDs);
-    for (FL_PatternSearchResult result : results) {
-      try {
-        resultEdges.add(getEdgesForResult(result));
-        List<String> ids = getOrderedIDsForResult(result, example, exemplarIDs);
-      //  logger.debug("result ids = " + ids + " for " + result);
-        resultIDs.add(ids);
-      } catch (Exception e) {
-        e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
-      }
-    }
-    return resultIDs;
-  }
+		logger.debug("searchByExample : exemplarIDs = " + exemplarIDs);
+		for (FL_PatternSearchResult result : results) {
+			try {
+				resultEdges.add(getEdgesForResult(result));
+				List<String> ids = getOrderedIDsForResult(result, example, exemplarIDs);
+				//  logger.debug("result ids = " + ids + " for " + result);
+				resultIDs.add(ids);
+			} catch (Exception e) {
+				e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
+			}
+		}
+		return resultIDs;
+	}
 
-  /**
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
-   * @param example
-   * @param results
-   * @param exemplarIDs
-   * @param resultEdges
-   * @param resultIDs
-   * @param startTime
-   * @param endTime
-   * @return
-   */
-  private List<FL_PatternSearchResult> rescoreWithHMM1(FL_PatternDescriptor example,
-                                                       List<FL_PatternSearchResult> results,
-                                                       List<String> exemplarIDs,
-                                                       List<List<Edge>> resultEdges,
-                                                       List<List<String>> resultIDs, long startTime, long endTime) {
-    List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
-    if (logger.isDebugEnabled()) {
-      logger.debug("queryEdges = "+ queryEdges.size());
-    /*  for (Edge edge : queryEdges) {
+	/**
+	 * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+	 * @param example
+	 * @param results
+	 * @param exemplarIDs
+	 * @param resultEdges
+	 * @param resultIDs
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 */
+	private List<FL_PatternSearchResult> rescoreWithHMM1(FL_PatternDescriptor example,
+			List<FL_PatternSearchResult> results,
+			List<String> exemplarIDs,
+			List<List<Edge>> resultEdges,
+			List<List<String>> resultIDs, long startTime, long endTime) {
+		List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
+		if (logger.isDebugEnabled()) {
+			logger.debug("queryEdges = "+ queryEdges.size());
+			/*  for (Edge edge : queryEdges) {
         logger.debug(edge);
       }*/
-    }
+		}
 
-    List<List<VectorObservation>> relevantObservations = rescoreWithHMM(results, exemplarIDs, queryEdges, resultEdges, resultIDs);
-    // add only relevant edges and remove results that don't have any...
-    List<FL_PatternSearchResult> tempResults = new ArrayList<FL_PatternSearchResult>();
-    int notEnoughData = 0;
-    for (int i = 0; i < results.size(); i++) {
-      List<VectorObservation> observations = relevantObservations.get(i);
-      if (!observations.isEmpty()) {
-        // replace links in each subgraph (subsequence) with aggregate links (but only ones in relevant observations)
-        List<Edge> relevantEdges = new ArrayList<Edge>();
+		List<List<VectorObservation>> relevantObservations = rescoreWithHMM(results, exemplarIDs, queryEdges, resultEdges, resultIDs);
+		// add only relevant edges and remove results that don't have any...
+		List<FL_PatternSearchResult> tempResults = new ArrayList<FL_PatternSearchResult>();
+		int notEnoughData = 0;
+		for (int i = 0; i < results.size(); i++) {
+			List<VectorObservation> observations = relevantObservations.get(i);
+			if (!observations.isEmpty()) {
+				// replace links in each subgraph (subsequence) with aggregate links (but only ones in relevant observations)
+				List<Edge> relevantEdges = new ArrayList<Edge>();
 
-        for (VectorObservation observation : observations) {
-          relevantEdges.addAll(observation.getEdges());
-        }
-        FL_PatternSearchResult result = results.get(i);
+				for (VectorObservation observation : observations) {
+					relevantEdges.addAll(observation.getEdges());
+				}
+				FL_PatternSearchResult result = results.get(i);
 
-        // aggregate links across all states
-        List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, result, relevantEdges);
-        result.setLinks(linkMatchResults);
+				// aggregate links across all states
+				List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, result, relevantEdges);
+				result.setLinks(linkMatchResults);
 
-        // aggregate links in individual states, e.g., [1], [2, 2], [3]
-        // group all edges from observations in current state (and next state(s) if same state)
-        int index = 0;
-        String currentState = observations.get(0).getState();
-        List<Edge> edges = new ArrayList<Edge>();
-        while (index < observations.size()) {
-          VectorObservation observation = observations.get(index);
-          if (observation.getState().equalsIgnoreCase(currentState)) {
-            // add more edges for current state
-            edges.addAll(observation.getEdges());
-          } else {
-            // save edges for last state
-            linkMatchResults = createAggregateLinks(example, result, edges);
-            ((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
-            ((PatternSearchResultWithState) result).getStates().add(currentState);
+				// aggregate links in individual states, e.g., [1], [2, 2], [3]
+				// group all edges from observations in current state (and next state(s) if same state)
+				int index = 0;
+				String currentState = observations.get(0).getState();
+				List<Edge> edges = new ArrayList<Edge>();
+				while (index < observations.size()) {
+					VectorObservation observation = observations.get(index);
+					if (observation.getState().equalsIgnoreCase(currentState)) {
+						// add more edges for current state
+						edges.addAll(observation.getEdges());
+					} else {
+						// save edges for last state
+						linkMatchResults = createAggregateLinks(example, result, edges);
+						((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
+						((PatternSearchResultWithState) result).getStates().add(currentState);
 
-            // update to new state
-            currentState = observation.getState();
-            edges.clear();
-            edges.addAll(observation.getEdges());
-          }
-          index++;
-        }
+						// update to new state
+						currentState = observation.getState();
+						edges.clear();
+						edges.addAll(observation.getEdges());
+					}
+					index++;
+				}
 
-        if (!edges.isEmpty()) {
-          // save last state
-          linkMatchResults = createAggregateLinks(example, result, edges);
-          ((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
-          ((PatternSearchResultWithState) result).getStates().add(currentState);
-        }
+				if (!edges.isEmpty()) {
+					// save last state
+					linkMatchResults = createAggregateLinks(example, result, edges);
+					((PatternSearchResultWithState) result).getPhaseLinks().add(linkMatchResults);
+					((PatternSearchResultWithState) result).getStates().add(currentState);
+				}
 
-        tempResults.add(result);
-      }
-      else {
-       // logger.debug("no observations for " + i);
-        notEnoughData++;
-      }
-    }
+				tempResults.add(result);
+			}
+			else {
+				// logger.debug("no observations for " + i);
+				notEnoughData++;
+			}
+		}
 
-    if (notEnoughData > 0) {
-      logger.debug("returning = "+ tempResults.size() + " from " + results.size() + " initial candidates, " +
-          notEnoughData + " were rejected b/c there were too few observations.");
-    }
-    return tempResults;
-  }
+		if (notEnoughData > 0) {
+			logger.debug("returning = "+ tempResults.size() + " from " + results.size() + " initial candidates, " +
+					notEnoughData + " were rejected b/c there were too few observations.");
+		}
+		return tempResults;
+	}
 
-  /**
-   * We should only find instances of two entities having no links between them on the
-   * initial query pair -- all candidate graphs should have links
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
-   * @param result
-   * @return
-   */
+	/**
+	 * We should only find instances of two entities having no links between them on the
+	 * initial query pair -- all candidate graphs should have links
+	 * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+	 * @param result
+	 * @return
+	 */
 	public List<Edge> getEdgesForResult(FL_PatternSearchResult result) {
 		List<FL_EntityMatchResult> entities = result.getEntities();
 		List<String> entityIDs = getEntityIDs(entities);
-    List<Edge> allLinks = getAllLinks(entityIDs);
+		List<Edge> allLinks = getAllLinks(entityIDs);
 
-    if (allLinks.isEmpty()) {
-      logger.warn("no links between " +entityIDs);
-    }
-    return allLinks;
+		if (allLinks.isEmpty()) {
+			logger.warn("no links between " +entityIDs);
+		}
+		return allLinks;
 
-  }
+	}
 
 	/**
 	 * @return Result node IDs in same order as associated exemplar (query) node IDs.
 	 */
-  private List<String> getOrderedIDsForResult(FL_PatternSearchResult result, FL_PatternDescriptor example,
+	private List<String> getOrderedIDsForResult(FL_PatternSearchResult result, FL_PatternDescriptor example,
 			List<String> exemplarIDs) {
 		// Note: just put exemplarIDs in there to get it to be correct size
 		List<String> ids = new ArrayList<String>(exemplarIDs);
@@ -1395,25 +1411,25 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return shortlist.getShortlist(entities1, exemplarIDs, max);
 	}
 
-  protected void logMemory() {
-    Runtime rt = Runtime.getRuntime();
-    long free = rt.freeMemory();
-    long used = rt.totalMemory() - free;
-    long max = rt.maxMemory();
-    logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
-  }
+	protected void logMemory() {
+		Runtime rt = Runtime.getRuntime();
+		long free = rt.freeMemory();
+		long used = rt.totalMemory() - free;
+		long max = rt.maxMemory();
+		logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
+	}
 
-  public boolean isNodeId(String id) { return stot.containsKey(id); }
-  public int getNumSourceNodes() { return stot.size(); }
+	public boolean isNodeId(String id) { return stot.containsKey(id); }
+	public int getNumSourceNodes() { return stot.size(); }
 
-  public FL_EntityMatchResult makeEntityMatchResult(String queryID, String resultID, double score) {
+	public FL_EntityMatchResult makeEntityMatchResult(String queryID, String resultID, double score) {
 		FL_EntityMatchDescriptor descriptor = new FL_EntityMatchDescriptor();
 		// reuse Uid from query
 		descriptor.setUid(queryID);
 		descriptor.setEntities(Arrays.asList(resultID));
 		ResultInfo resultInfo = getEntitiesByID(descriptor);
 
-    if (resultInfo.rows.isEmpty()) return null;
+		if (resultInfo.rows.isEmpty()) return null;
 		// should only get 1!
 		Map<String, String> entityMap = resultInfo.rows.get(0);
 
@@ -1444,7 +1460,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	/**
 	 * Rescores results by comparing result subgraph's transactions to query graph's transactions.
-   * @see #rescoreWithHMM1(influent.idl.FL_PatternDescriptor, java.util.List, java.util.List, java.util.List, java.util.List, long, long)
+	 * @see #rescoreWithHMM1(influent.idl.FL_PatternDescriptor, java.util.List, java.util.List, java.util.List, java.util.List, long, long)
 	 */
 	private List<List<VectorObservation>> rescoreWithHMM(List<FL_PatternSearchResult> results,
 			List<String> exemplarIDs, List<Edge> queryEdges, List<List<Edge>> resultEdges, List<List<String>> resultIDs) {
@@ -1452,7 +1468,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// get edges and features for query subgraph and result subgraphs
 		//
 
-    logger.debug("rescoreWithHMM got " + results.size() + " initial results to rescore");
+		logger.debug("rescoreWithHMM got " + results.size() + " initial results to rescore");
 
 
 		//
@@ -1460,16 +1476,16 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		//
 
 		// pack features from query and results
-    List<VectorObservation> queryObservations = createObservationVectors(queryEdges, exemplarIDs);
+		List<VectorObservation> queryObservations = createObservationVectors(queryEdges, exemplarIDs);
 		int numSamples = queryObservations.size();
-    List<List<VectorObservation>> resultObservations = getResultObservations(resultEdges, resultIDs, exemplarIDs);
+		List<List<VectorObservation>> resultObservations = getResultObservations(resultEdges, resultIDs, exemplarIDs);
 		for (List<VectorObservation> observations : resultObservations) {
 			numSamples += observations.size();
 		}
-    int numDimensions = queryObservations.get(0).getValues().length;
-    logger.debug("query observations " + queryObservations.size() + " samples " + numSamples + " num dim " + numDimensions);
-    double[][] rawFeatures = getRawFeatures(resultObservations, queryObservations, numSamples, numDimensions);
-    int index;
+		int numDimensions = queryObservations.get(0).getValues().length;
+		logger.debug("query observations " + queryObservations.size() + " samples " + numSamples + " num dim " + numDimensions);
+		double[][] rawFeatures = getRawFeatures(resultObservations, queryObservations, numSamples, numDimensions);
+		int index;
 
 		// logger.debug("pre-normalized features");
 		// for (List<VectorObservation> observations : resultObservations) {
@@ -1479,7 +1495,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// }
 		// }
 
-    double[][] stdFeatures = getStandardFeatures(numSamples, numDimensions, rawFeatures);
+		double[][] stdFeatures = getStandardFeatures(numSamples, numDimensions, rawFeatures);
 
 		// unpack features
 		index = 0;
@@ -1504,7 +1520,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// logger.debug("   " + Arrays.toString(observation.getValues()));
 		// }
 		// }
-		
+
 		//
 		// "train" HMM
 		//
@@ -1517,7 +1533,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 		// TODO: assign buckets to phases/states through query parameters or infer them?
 		// assumption: 1 phase per bucket?
-    Hmm<VectorObservation> hmm = makeHMM(queryObservations);
+		Hmm<VectorObservation> hmm = makeHMM(queryObservations);
 
 		//
 		// score result subgraphs
@@ -1533,48 +1549,48 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// return the relevant observations given optimal subsequences
 		List<List<VectorObservation>> relevantObservations = new ArrayList<List<VectorObservation>>();
 
-    double bestSoFar = 0;
-    int skipped = 0;
-    for (int i = 0; i < results.size(); i++) {
-      List<VectorObservation> vectorObservations = resultObservations.get(i);
-      List<String> obj = resultIDs.get(i);
-      if (vectorObservations.isEmpty()) {
-        //if (exemplarIDs.equals(obj)) {
-          logger.debug("NO OBSERVATIONS for result i = " + i + "(" + obj + "): num edges = " + resultEdges.get(i).size());
-        //}
+		double bestSoFar = 0;
+		int skipped = 0;
+		for (int i = 0; i < results.size(); i++) {
+			List<VectorObservation> vectorObservations = resultObservations.get(i);
+			List<String> obj = resultIDs.get(i);
+			if (vectorObservations.isEmpty()) {
+				//if (exemplarIDs.equals(obj)) {
+				logger.debug("NO OBSERVATIONS for result i = " + i + "(" + obj + "): num edges = " + resultEdges.get(i).size());
+				//}
 
-        results.get(i).setScore(Double.NEGATIVE_INFINITY);
-        relevantObservations.add(new ArrayList<VectorObservation>());
-        skipped++;
-        continue;
-      }
-      sequences = hmm.decodeTopKLog(vectorObservations, 3);
-      if (sequences.isEmpty()) {
-        if (exemplarIDs.equals(obj))
-          logger.warn("----> not enough data for result i = " + i + " (" + obj +
-              "): num edges = " + resultEdges.get(i).size() + ", num observations = " + vectorObservations.size());
-        else if (WARN_ABOUT_NOT_ENOUGH_DATA) {
-          logger.debug("not enough data for result i = " + i + " (" + resultIDs.get(i) +
-              "): num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
-        }
-        results.get(i).setScore(Double.NEGATIVE_INFINITY);
-        relevantObservations.add(new ArrayList<VectorObservation>());
-        continue;
-      }
-      sequence = sequences.get(0);
-      double score = sequence.getScore();
-      logger.debug("Result #" + i+ " ids = " + obj + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
-      //logger.debug("other scores:");
-      for (StateSequence other : sequences.subList(1, sequences.size())) {
-        logger.debug("   raw score = " + other.getScore() + "; start index = " + other.getStartIndex() + "; states = " + other.getStates());
-      }
-      // NOTE: this also penalizes scores that are "better" than the queryScore
-      double distance = Math.abs(score - queryScore);
-      double similarity = 1.0 / (1.0 + HMM_SCALE_DISTANCE * distance);
-      if (similarity > bestSoFar) {
-        bestSoFar = similarity;
-			  logger.debug("similarity = " + similarity);
-      }
+				results.get(i).setScore(Double.NEGATIVE_INFINITY);
+				relevantObservations.add(new ArrayList<VectorObservation>());
+				skipped++;
+				continue;
+			}
+			sequences = hmm.decodeTopKLog(vectorObservations, 3);
+			if (sequences.isEmpty()) {
+				if (exemplarIDs.equals(obj))
+					logger.warn("----> not enough data for result i = " + i + " (" + obj +
+							"): num edges = " + resultEdges.get(i).size() + ", num observations = " + vectorObservations.size());
+				else if (WARN_ABOUT_NOT_ENOUGH_DATA) {
+					logger.debug("not enough data for result i = " + i + " (" + resultIDs.get(i) +
+							"): num edges = " + resultEdges.get(i).size() + ", num observations = " + resultObservations.get(i).size());
+				}
+				results.get(i).setScore(Double.NEGATIVE_INFINITY);
+				relevantObservations.add(new ArrayList<VectorObservation>());
+				continue;
+			}
+			sequence = sequences.get(0);
+			double score = sequence.getScore();
+			logger.debug("Result #" + i+ " ids = " + obj + ", raw score = " + score + "; start index = " + sequence.getStartIndex() + "; states = " + sequence.getStates());
+			//logger.debug("other scores:");
+			for (StateSequence other : sequences.subList(1, sequences.size())) {
+				logger.debug("   raw score = " + other.getScore() + "; start index = " + other.getStartIndex() + "; states = " + other.getStates());
+			}
+			// NOTE: this also penalizes scores that are "better" than the queryScore
+			double distance = Math.abs(score - queryScore);
+			double similarity = 1.0 / (1.0 + HMM_SCALE_DISTANCE * distance);
+			if (similarity > bestSoFar) {
+				bestSoFar = similarity;
+				logger.debug("similarity = " + similarity);
+			}
 			results.get(i).setScore(similarity);
 			// TODO: pack states into VectorObservation objects (so caller has access to associations)
 			int start = sequence.getStartIndex();
@@ -1587,94 +1603,94 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			relevantObservations.add(temp);
 		}
 
-    if (skipped > 0)logger.debug("rescoreWithHMM skipped " + skipped + " num observations " + relevantObservations.size());
+		if (skipped > 0)logger.debug("rescoreWithHMM skipped " + skipped + " num observations " + relevantObservations.size());
 
 		return relevantObservations;
 	}
 
-  private double[][] getStandardFeatures(int numSamples, int numDimensions, double[][] rawFeatures) {
-    double lowerPercentile = 0.025;
-    double upperPercentile = 0.975;
-    FeatureNormalizer normalizer = new FeatureNormalizer(rawFeatures, lowerPercentile, upperPercentile);
-    double[][] stdFeatures = normalizer.normalizeFeatures(rawFeatures);
+	private double[][] getStandardFeatures(int numSamples, int numDimensions, double[][] rawFeatures) {
+		double lowerPercentile = 0.025;
+		double upperPercentile = 0.975;
+		FeatureNormalizer normalizer = new FeatureNormalizer(rawFeatures, lowerPercentile, upperPercentile);
+		double[][] stdFeatures = normalizer.normalizeFeatures(rawFeatures);
 
-    // replace NaN's with zeros?
-    double replacement = 0.0;
-    for (int i = 0; i < numSamples; i++) {
-      for (int j = 0; j < numDimensions; j++) {
-        if (Double.isNaN(stdFeatures[i][j])) {
-          stdFeatures[i][j] = replacement;
-        }
-      }
-    }
-    return stdFeatures;
-  }
+		// replace NaN's with zeros?
+		double replacement = 0.0;
+		for (int i = 0; i < numSamples; i++) {
+			for (int j = 0; j < numDimensions; j++) {
+				if (Double.isNaN(stdFeatures[i][j])) {
+					stdFeatures[i][j] = replacement;
+				}
+			}
+		}
+		return stdFeatures;
+	}
 
-  private double[][] getRawFeatures(List<List<VectorObservation>> resultObservations, List<VectorObservation> queryObservations, int numSamples, int numDimensions) {
-    double[][] rawFeatures = new double[numSamples][numDimensions];
-    int index = 0;
-    for (VectorObservation observation : queryObservations) {
-      rawFeatures[index++] = observation.getValues();
-    }
-    for (List<VectorObservation> observations : resultObservations) {
-      for (VectorObservation observation : observations) {
-        rawFeatures[index++] = observation.getValues();
-      }
-    }
-    return rawFeatures;
-  }
+	private double[][] getRawFeatures(List<List<VectorObservation>> resultObservations, List<VectorObservation> queryObservations, int numSamples, int numDimensions) {
+		double[][] rawFeatures = new double[numSamples][numDimensions];
+		int index = 0;
+		for (VectorObservation observation : queryObservations) {
+			rawFeatures[index++] = observation.getValues();
+		}
+		for (List<VectorObservation> observations : resultObservations) {
+			for (VectorObservation observation : observations) {
+				rawFeatures[index++] = observation.getValues();
+			}
+		}
+		return rawFeatures;
+	}
 
-  private Hmm<VectorObservation> makeHMM(List<VectorObservation> queryObservations) {
-    int numPhases = queryObservations.size();
-    double selfLoop = 0.5;
-    double[][] A = new double[numPhases + 2][];
-    A[0] = new double[numPhases + 2];
-    A[0][1] = 1.0; // always go from q_0 to state 1
-    for (int i = 1; i <= numPhases; i++) {
-      A[i] = new double[numPhases + 2];
-      A[i][i] = selfLoop;
-      A[i][i + 1] = 1.0 - selfLoop;
-    }
-    A[numPhases + 1] = new double[numPhases + 2];
-    logger.debug("numPhases = " + numPhases);
-    logger.debug("A = " + Arrays.deepToString(A));
+	private Hmm<VectorObservation> makeHMM(List<VectorObservation> queryObservations) {
+		int numPhases = queryObservations.size();
+		double selfLoop = 0.5;
+		double[][] A = new double[numPhases + 2][];
+		A[0] = new double[numPhases + 2];
+		A[0][1] = 1.0; // always go from q_0 to state 1
+		for (int i = 1; i <= numPhases; i++) {
+			A[i] = new double[numPhases + 2];
+			A[i][i] = selfLoop;
+			A[i][i + 1] = 1.0 - selfLoop;
+		}
+		A[numPhases + 1] = new double[numPhases + 2];
+		logger.debug("numPhases = " + numPhases);
+		logger.debug("A = " + Arrays.deepToString(A));
 
-    List<ObservationLikelihood<VectorObservation>> b = new ArrayList<ObservationLikelihood<VectorObservation>>();
-    for (int i = 0; i < numPhases; i++) {
-      // b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), HMM_KDE_BANDWIDTH));
-      b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), 0.75));
-    }
+		List<ObservationLikelihood<VectorObservation>> b = new ArrayList<ObservationLikelihood<VectorObservation>>();
+		for (int i = 0; i < numPhases; i++) {
+			// b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), HMM_KDE_BANDWIDTH));
+			b.add(new KernelDensityLikelihood(queryObservations.subList(i, i + 1), 0.75));
+		}
 
-    return new Hmm<VectorObservation>(A, b);
-  }
+		return new Hmm<VectorObservation>(A, b);
+	}
 
-  /**
-   * @see #rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
-   * @param resultEdges
-   * @param resultIDs
-   * @param exemplarIDs
-   * @return
-   */
-  private List<List<VectorObservation>> getResultObservations(List<List<Edge>> resultEdges, List<List<String>> resultIDs, List<String> exemplarIDs) {
-    List<List<VectorObservation>> resultObservations = new ArrayList<List<VectorObservation>>();
-    for (int i = 0; i < resultEdges.size(); i++) {
-      List<Edge> edges = resultEdges.get(i);
-      if (!edges.isEmpty()) {
-        List<VectorObservation> observationVectors = createObservationVectors(edges, resultIDs.get(i));
-        resultObservations.add(observationVectors);
-         if (resultIDs.get(i).equals(exemplarIDs)) {
-           logger.debug("\n\n result observations for exemplar " + observationVectors.size() + " at " + i);
-         }
-      } else {
-        List<VectorObservation> objects = Collections.emptyList();
-        resultObservations.add(objects);
-      }
-    }
-    return resultObservations;
-  }
+	/**
+	 * @see #rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
+	 * @param resultEdges
+	 * @param resultIDs
+	 * @param exemplarIDs
+	 * @return
+	 */
+	private List<List<VectorObservation>> getResultObservations(List<List<Edge>> resultEdges, List<List<String>> resultIDs, List<String> exemplarIDs) {
+		List<List<VectorObservation>> resultObservations = new ArrayList<List<VectorObservation>>();
+		for (int i = 0; i < resultEdges.size(); i++) {
+			List<Edge> edges = resultEdges.get(i);
+			if (!edges.isEmpty()) {
+				List<VectorObservation> observationVectors = createObservationVectors(edges, resultIDs.get(i));
+				resultObservations.add(observationVectors);
+				if (resultIDs.get(i).equals(exemplarIDs)) {
+					logger.debug("\n\n result observations for exemplar " + observationVectors.size() + " at " + i);
+				}
+			} else {
+				List<VectorObservation> objects = Collections.emptyList();
+				resultObservations.add(objects);
+			}
+		}
+		return resultObservations;
+	}
 
-  /**
-   * Sorts scores and packages into FL_PatternSearchResults.
+	/**
+	 * Sorts scores and packages into FL_PatternSearchResults.
 	 */
 	private FL_PatternSearchResults makePatternSearchResults(List<FL_PatternSearchResult> results, long max) {
 		//logger.debug("ENTER makePatternSearchResults()");
@@ -1695,9 +1711,18 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		patternSearchResults.setResults(results);
 		patternSearchResults.setTotal((long) results.size());
 
-	//	logger.debug("EXIT makePatternSearchResults()");
+		//	logger.debug("EXIT makePatternSearchResults()");
 		return patternSearchResults;
 	}
+
+
+	/**
+	 * @param src
+	 * @param dest
+	 * @param columnNames
+	 * @return edgeAttributes HashMap; abstract because the way src and dest are used may depend on dataset
+	 */
+	protected abstract HashMap<String,String> getEdgeAttributes(String src, String dest, Set<String> columnNames);
 
 	/**
 	 * @return true if pair of nodes are connected
@@ -1800,7 +1825,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
 	protected static class LocalToForeignKeyJoin {
 		private final String entityKey;
-    private final String foreignKey;
+		private final String foreignKey;
 
 		public LocalToForeignKeyJoin(String commonKey) {
 			this(commonKey, commonKey);
@@ -1818,5 +1843,14 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		T getTarget();
 
 		long getTime();
+	}
+
+	public HashMap<String, FL_PropertyType> getH2Type2InfluentType() {
+		return h2Type2InfluentType;
+	}
+
+	public void setH2Type2InfluentType(
+			HashMap<String, FL_PropertyType> h2Type2InfluentType) {
+		h2Type2InfluentType = h2Type2InfluentType;
 	}
 }
