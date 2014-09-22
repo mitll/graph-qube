@@ -1164,13 +1164,13 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
 		}
 
-		List<List<Edge>> resultEdges = new ArrayList<List<Edge>>();
-		List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
-
 		logMemory();
 
 		// re-score results
 		if (rescoreWithHMM) {
+			List<List<Edge>> resultEdges = new ArrayList<List<Edge>>();
+			List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
+			
 			List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
 
 			if (!queryEdges.isEmpty()) {
@@ -1714,7 +1714,15 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		//	logger.debug("EXIT makePatternSearchResults()");
 		return patternSearchResults;
 	}
+	
+	
 
+	/**
+	 * @param e1
+	 * @param e2
+	 * @return whether e1 <= e2 or e1 > e2
+	 */
+	protected abstract int compareEntities(String e1, String e2);
 
 	/**
 	 * @param src

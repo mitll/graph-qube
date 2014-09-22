@@ -290,9 +290,9 @@ public class QueryExecutor {
 					max=s;
 				}
 			}
-			logger.info("Edge-type with the largest score: "+max);
-			logger.info("Edge at the current index max is pointing to: "+sortedEdgeLists.get(max).get(pointers.get(max)));
-			logger.info("queryEdgetoIndex: "+ queryEdgetoIndex);
+//			logger.info("Edge-type with the largest score: "+max);
+//			logger.info("Edge at the current index max is pointing to: "+sortedEdgeLists.get(max).get(pointers.get(max)));
+//			logger.info("queryEdgetoIndex: "+ queryEdgetoIndex);
 			//max is the type. How to get appropriate query edge/edges for this type?
 			
 			/*
@@ -310,7 +310,7 @@ public class QueryExecutor {
 				edgesOfMaxType2.add(edgesOfMaxType.get(0));
 				edgesOfMaxType=edgesOfMaxType2;
 			}
-			logger.info("edgesOfMaxType:"+edgesOfMaxType);
+//			logger.info("edgesOfMaxType:"+edgesOfMaxType);
 			
 			
 			/*
@@ -318,7 +318,7 @@ public class QueryExecutor {
 			 */
 			for(String queryEdge:edgesOfMaxType)
 			{
-				logger.info("Here comes the queryEdge: "+queryEdge);
+//				logger.info("Here comes the queryEdge: "+queryEdge);
 				
 				// setup containers for candidate edges
 				HashSet<ArrayList<String>> currCandidates = new HashSet<ArrayList<String>>();
@@ -332,8 +332,8 @@ public class QueryExecutor {
 				HashSet<Integer> consideredEdgeIndices = new HashSet<Integer>();
 				consideredEdges.add(queryEdge);
 				consideredEdgeIndices.add(index);
-				logger.info("ConsideredEdges: "+consideredEdges);
-				logger.info("consideredEdgeIndices"+consideredEdgeIndices);
+//				logger.info("ConsideredEdges: "+consideredEdges);
+//				logger.info("consideredEdgeIndices"+consideredEdgeIndices);
 				
 				// get candidate edge, "e", flip around , if necessary, to match
 				// edge-type "polarity" of queryEdge
@@ -376,7 +376,7 @@ public class QueryExecutor {
 						ubScoreOfNonConsideredEdges1+=Double.parseDouble(sortedEdgeLists.get(tmp).get(pointers.get(tmp)).split("#")[2]);
 					}
 				}
-				logger.info("pcCurr: "+pcCurr);
+//				logger.info("pcCurr: "+pcCurr);
 				
 				/*
 				 * compute scores for current partial candidates 
@@ -501,7 +501,7 @@ public class QueryExecutor {
 					int edgeIndex=queryEdgetoIndex.get(nextEdge);
 					consideredEdges.add(nextEdge);
 					consideredEdgeIndices.add(edgeIndex);
-					logger.info("currCandidates: "+currCandidates);
+//					logger.info("currCandidates: "+currCandidates);
 					for(ArrayList<String> c:currCandidates)
 					{
 						//Find matching edges from useful edge list of T_{e'} and extend candidate c to candidate c'.

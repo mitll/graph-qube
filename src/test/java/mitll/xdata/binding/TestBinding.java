@@ -507,6 +507,11 @@ public class TestBinding extends Binding {
 	}
 
 	@Override
+	public int compareEntities(String e1, String e2) {
+		return 0;
+	}
+	
+	@Override
 	protected HashMap<String, String> getEdgeAttributes(String src,
 			String dest, Set<String> columnNames) {
 		// TODO Auto-generated method stub

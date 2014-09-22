@@ -15,9 +15,8 @@
 package mitll.xdata.binding;
 
 import influent.idl.*;
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
-import mitll.xdata.db.DBConnection;
-import mitll.xdata.db.H2Connection;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding.BitcoinEdge;
+import mitll.xdata.scoring.Transaction;
 
 import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
@@ -31,7 +30,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,12 +46,6 @@ import java.util.regex.Pattern;
 public class TopKSubgraphShortlist extends Shortlist {
 	private static final Logger logger = Logger.getLogger(TopKSubgraphShortlist.class);
 
-	private static final int DEFAULT_SHORT_LIST_SIZE = 100;
-	private static final int MAX_CANDIDATES = 100;
-	private static final long MB = 1024*1024;
-	private static final int FULL_SEARCH_LIST_SIZE = 200;
-	private static final int MAX_TRIES = 1000000;
-
 	private int K = 500;
 	private int D = 2;
 	
@@ -66,10 +58,8 @@ public class TopKSubgraphShortlist extends Shortlist {
 	private HashMap<String,String> edgeAttributeName2Type;
 	 
 	private QueryExecutor executor;
-
-	//private static Connection connection;
+	
 	private static PreparedStatement queryStatement;
-
 
 
 
@@ -262,42 +252,6 @@ public class TopKSubgraphShortlist extends Shortlist {
 		// Format results to influent API
 		List<FL_PatternSearchResult> results = getPatternSearchResults(queryEdges);
 		
-
-		/*
-		 * Breadth-first code (from Gordon)
-		 */
-//		int k = (int) (max/1);
-//		boolean skipSelf = SKIP_SELF_AS_NEIGHBOR;
-//
-//		long then = System.currentTimeMillis();
-//		SortedSet<CandidateGraph> candidates = new TreeSet<CandidateGraph>();
-//		String firstExemplar = null;
-//		if (!exemplarIDs.isEmpty()) {
-//			firstExemplar = exemplarIDs.iterator().next();
-//			candidates = getCandidateGraphs(exemplarIDs, k, skipSelf, firstExemplar);
-//		}
-//
-//		if (!candidates.isEmpty()) {
-//			logger.debug("getShortlistFast : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-//		}
-//
-//		int count = 0;
-//		CandidateGraph queryGraph = new CandidateGraph(binding, exemplarIDs, firstExemplar, 10).makeDefault();
-//		boolean found = false;
-//		for (CandidateGraph graph : candidates) {
-//			if (graph.equals(queryGraph)) {
-//				found = true;
-//				break;
-//			}
-//		}
-//		if (!found) candidates.add(queryGraph);
-//
-//		List<FL_PatternSearchResult> results = getPatternSearchResults(entities1, exemplarIDs, candidates, queryGraph);
-//
-//		long now = System.currentTimeMillis();
-//		logger.debug("getShortlistFast took " + (now - then) + " millis to get " + results.size() + " candidates");
-
-		
 		return results;
 	}
 
@@ -343,18 +297,6 @@ public class TopKSubgraphShortlist extends Shortlist {
 		}
 	}
 	
-	/**
-	 * Do SQL, update something, return nothing
-	 * 
-	 * @param createSQL
-	 * @throws SQLException
-	 */
-	private void doSQLUpdate(String sql) throws SQLException {
-		//PreparedStatement statement = connection.prepareStatement(sql);
-		PreparedStatement statement = this.binding.connection.prepareStatement(sql);
-		statement.executeUpdate();
-		statement.close();
-	}
 
 	/**
 	 * Do SQL, query something, return that something
@@ -405,7 +347,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 	 * @param userIdColumn
 	 */
 	public void setUserIdColumn(String userIdColumn) {
-		userIdColumn = userIdColumn;
+		this.userIdColumn = userIdColumn;
 	}
 	
 	/**
@@ -434,16 +376,16 @@ public class TopKSubgraphShortlist extends Shortlist {
 
 		// Heap of results from uiuc.topksubgraph
 		FibonacciHeap<ArrayList<String>> heap = executor.getHeap();
-		
+
 		// List of type FL_PatternSearchResult to hold all matching sub-graph contained in heap
 		List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
-				
+
 		/*
 		 * Map between influent and uiuc.topksubraph index structure for query edges 
 		 */
 		HashMap<String, Integer> uiucQueryEdgetoIndex =  executor.getQueryEdgetoIndex();
 		HashMap<Integer,Integer> uiucInd2InfluentInd = new HashMap<Integer,Integer>();
-		
+
 		int i=0;
 		for (Edge qe: queryEdges) {
 			//assuming here qe.src and qe.dst are ordered properly (i.e. src < dst)
@@ -453,132 +395,184 @@ public class TopKSubgraphShortlist extends Shortlist {
 			i++;
 		}
 
+		// Set of unique subgraphs found
+		HashSet<String> uniqueSubgraphGuids = new HashSet<String>();
+
+		logger.info("Starting with: "+heap.size()+" matching sub-graphs...");
+		
 		// Loop-through resultant sub-graphs
 		while(!heap.isEmpty())
 		{
-			// HashSet for entities involved in this sub-graph
-			HashSet<String> nodes = new HashSet<String>();
-			
 			// List of type FL_EntityMatchResult for entities involved in this sub-graph
 			List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
-			
+
 			// Get matching sub-graph
 			FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
 			ArrayList<String> list = fhn.getData();
-			
+
 			// Sub-graph score
 			double subgraphScore = fhn.getKey();
-			
-			/*
-			 *  Loop through all edges
-			 */
 
-			// List of type FL_LinkMatchResult to store all edge information from subgraph
-			ArrayList<FL_LinkMatchResult> links = new ArrayList<FL_LinkMatchResult>();
-			for (i=0;i<list.size();i++)
-				links.add(new FL_LinkMatchResult());
-			
-			for (i=0;i<list.size();i++) {
+			// HashSet for entities involved in this sub-graph
+			HashSet<String> nodes = getSubgraphNodes(list);
+
+			// make subgraph guid
+			String subgraphGuid = getSubgraphGuid(nodes);
+		
+			// Proceed only if we've not seen this graph previously...
+			if (!uniqueSubgraphGuids.contains(subgraphGuid)) 
+			{
+				// add this subgraph
+				uniqueSubgraphGuids.add(subgraphGuid);
+				logger.info(subgraphGuid);			
 				
 				/*
-				 * Process the edge to build FL_Link
+				 *  Loop through all edges
 				 */
-				
-				// Container to hold FL_Link (has other metadata involved)
-				FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
+				// List of type FL_LinkMatchResult to store all edge information from subgraph
+				ArrayList<FL_LinkMatchResult> links = new ArrayList<FL_LinkMatchResult>();
+				for (i=0;i<list.size();i++)
+					links.add(new FL_LinkMatchResult());
 
-				// Actual FL_Link
-				FL_Link link = new FL_Link();
-				
-				// Get parts of link
-				String[] edgeSplit = list.get(i).split("#");
-				String src = edgeSplit[0];
-				String dest = edgeSplit[1];
-				double edge_weight = Double.parseDouble(edgeSplit[2]);
-				
-				link.setSource(src);
-				link.setTarget(dest);
-				link.setTags(new ArrayList<FL_LinkTag>());
-				//code for getting properties... 
-				List<FL_Property> linkProperties = getLinkProperties(src,dest);
-				link.setProperties(linkProperties);
-				linkMatchResult.setScore(edge_weight);
-				linkMatchResult.setUid("");
-				linkMatchResult.setLink(link);
-				//links.add(linkMatchResult);
-				
-				links.add(uiucInd2InfluentInd.get(i),linkMatchResult);
-				links.remove(uiucInd2InfluentInd.get(i)+1); //a bit hokey...
-				
+
+				for (i=0;i<list.size();i++) {
+
+					/*
+					 * Process the edge to build FL_Link
+					 */
+
+					// Container to hold FL_Link (has other metadata involved)
+					FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
+
+					// Actual FL_Link
+					FL_Link link = new FL_Link();
+
+					// Get parts of link
+					String[] edgeSplit = list.get(i).split("#");
+					String src = edgeSplit[0];
+					String dest = edgeSplit[1];
+					double edge_weight = Double.parseDouble(edgeSplit[2]);
+
+					link.setSource(src);
+					link.setTarget(dest);
+					link.setTags(new ArrayList<FL_LinkTag>());
+
+					List<FL_Property> linkProperties;
+					if (binding.compareEntities(src, dest) == 1) {
+						linkProperties = getLinkProperties(dest,src);
+					} else {
+						linkProperties = getLinkProperties(src,dest);
+					}
+					link.setProperties(linkProperties);
+
+					linkMatchResult.setScore(edge_weight);
+					linkMatchResult.setUid("");
+					linkMatchResult.setLink(link);
+					//links.add(linkMatchResult);
+
+					links.add(uiucInd2InfluentInd.get(i),linkMatchResult);
+					links.remove(uiucInd2InfluentInd.get(i)+1); //a bit hokey...
+
+					/*
+					 * Track nodes
+					 */
+					if(!nodes.contains(src))
+						nodes.add(src);
+					if(!nodes.contains(dest))
+						nodes.add(dest);				
+
+				}
+				//logger.info("links: "+links);
+
+
 				/*
-				 * Track nodes
+				 * Loop through all nodes
 				 */
-				if(!nodes.contains(src))
-					nodes.add(src);
-				if(!nodes.contains(dest))
-					nodes.add(dest);				
+				int cnt = 0;
+				Iterator<String> iter = nodes.iterator();
+				while (iter.hasNext()) {
+					String node = iter.next();
 
-			}
-			//logger.info("links: "+links);
+					FL_EntityMatchResult entityMatchResult = new FL_EntityMatchResult();
 
-			/*
-			 * Loop through all nodes
-			 */
-			int cnt = 0;
-			Iterator<String> iter = nodes.iterator();
-			while (iter.hasNext()) {
-				String node = iter.next();
-				
-				FL_EntityMatchResult entityMatchResult = new FL_EntityMatchResult();
-				
-				entityMatchResult.setScore(1.0);
-				entityMatchResult.setUid("E"+cnt);
-				
-				//= binding.makeEntityMatchResult(exemplarQueryID, similarID, similarity);
-				FL_Entity entity = new FL_Entity();
-				entity.setUid(node);
-				entity.setTags(new ArrayList<FL_EntityTag>());
-				
-				List<FL_Property> entityProperties = new ArrayList<FL_Property>();
-				// node_id
-				FL_Property property = new FL_Property();
-				property.setKey("node_id");
-				property.setFriendlyText(node);		
-				property.setRange(new FL_SingletonRange(node,FL_PropertyType.STRING));
-				property.setTags(new ArrayList<FL_PropertyTag>());
-				entityProperties.add(property);
-				// TYPE
-				property = new FL_Property();
-				property.setKey("TYPE");
-				property.setFriendlyText("null");		
-				property.setRange(new FL_SingletonRange("null",FL_PropertyType.STRING));
-				property.setTags(new ArrayList<FL_PropertyTag>());
-				entityProperties.add(property);
-				
-				entity.setProperties(entityProperties);
-				
-				// entity
-				entityMatchResult.setEntity(entity);
-				if (entityMatchResult != null) {
-					entities.add(entityMatchResult);
-				}		
-				cnt += 1;
+					entityMatchResult.setScore(1.0);
+					entityMatchResult.setUid("E"+cnt);
+
+					//= binding.makeEntityMatchResult(exemplarQueryID, similarID, similarity);
+					FL_Entity entity = new FL_Entity();
+					entity.setUid(node);
+					entity.setTags(new ArrayList<FL_EntityTag>());
+
+					List<FL_Property> entityProperties = new ArrayList<FL_Property>();
+					// node_id
+					FL_Property property = new FL_Property();
+					property.setKey("node_id");
+					property.setFriendlyText(node);		
+					property.setRange(new FL_SingletonRange(node,FL_PropertyType.STRING));
+					property.setTags(new ArrayList<FL_PropertyTag>());
+					entityProperties.add(property);
+					// TYPE
+					property = new FL_Property();
+					property.setKey("TYPE");
+					property.setFriendlyText("null");		
+					property.setRange(new FL_SingletonRange("null",FL_PropertyType.STRING));
+					property.setTags(new ArrayList<FL_PropertyTag>());
+					entityProperties.add(property);
+
+					entity.setProperties(entityProperties);
+
+					// entity
+					entityMatchResult.setEntity(entity);
+					if (entityMatchResult != null) {
+						entities.add(entityMatchResult);
+					}		
+					cnt += 1;
+				}
+				//logger.info(entities);
+
+				/*
+				 * Set score,entities,links to result
+				 */
+				FL_PatternSearchResult result = new FL_PatternSearchResult();
+				result.setScore(subgraphScore);
+				result.setEntities(entities);
+				result.setLinks(links);
+				//logger.info(result);
+
+				results.add(result);
 			}
-			//logger.info(entities);
-			
-			/*
-			 * Set score,entities,links to result
-			 */
-			FL_PatternSearchResult result = new FL_PatternSearchResult();
-			result.setScore(subgraphScore);
-			result.setEntities(entities);
-			result.setLinks(links);
-			//logger.info(result);
-			
-			results.add(result);
 		}
 		
+		logger.info("Ending with: "+uniqueSubgraphGuids.size()+" unique matching sub-graphs...");
+
 		return results;
+	}
+
+
+	/**
+	 * Get nodes involved in subgraph from list of edges
+	 * 
+	 * @param nodes
+	 * @param list
+	 */
+	private HashSet<String> getSubgraphNodes(ArrayList<String> list) {
+		HashSet<String> nodes = new HashSet<String>();
+		
+		for (int i=0;i<list.size();i++) {
+			// Get parts of edge
+			String[] edgeSplit = list.get(i).split("#");
+			String src = edgeSplit[0];
+			String dest = edgeSplit[1];
+			/*
+			 * Track nodes
+			 */
+			if(!nodes.contains(src))
+				nodes.add(src);
+			if(!nodes.contains(dest))
+				nodes.add(dest);	
+		}
+		
+		return nodes;
 	}
 	
 	
@@ -604,17 +598,37 @@ public class TopKSubgraphShortlist extends Shortlist {
 			 * Cast to appropriate type
 			 */
 			if (keyType.equals("INTEGER")) {
-				int castVal = Integer.parseInt(val);
+				int castVal;
+				if (val != null) {
+					castVal = Integer.parseInt(val);
+				} else {
+					castVal = 0;
+				}
 				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
 			} else if (keyType.equals("BIGINT")) {
-				long castVal = Long.parseLong(val,10); //assuming base10
+				long castVal;
+				if (val != null) {
+					castVal = Long.parseLong(val,10); //assuming base10
+				} else {
+					castVal = 0;
+				}
 				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
 			} else if (keyType.equals("DOUBLE") || keyType.equals("DECIMAL")){
-				double castVal = Double.parseDouble(val);
+				double castVal;
+				if (val != null) {
+					castVal = Double.parseDouble(val);
+				} else {
+					castVal = 0.0;
+				}
 				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
 			} else {
 				//if "VARCHAR", "ARRAY", "OTHER" or anything else, keep as String
-				String castVal = val;
+				String castVal;
+				if (val != null) {
+					castVal = val; 
+				} else {
+					castVal = "";
+				}
 				property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
 			}
 			
@@ -627,7 +641,6 @@ public class TopKSubgraphShortlist extends Shortlist {
 		}
 		
 
-		
 		
 		return linkProperties;
 	}
@@ -662,108 +675,50 @@ public class TopKSubgraphShortlist extends Shortlist {
 	}
 
 
-	
-
 	/**
-	 * Convert candidate graphs into pattern search results.
-	 * @param entities1
-	 * @param exemplarIDs
-	 * @param candidates
-	 * @param queryGraph
-	 * @return
+	 * Get guid for subgraph defined by it's node set
+	 * 
+	 * @param nodes
+	 * @return 
 	 */
-	private List<FL_PatternSearchResult> getPatternSearchResults(List<FL_EntityMatchDescriptor> entities1,
-			List<String> exemplarIDs,
-			Collection<CandidateGraph> candidates, CandidateGraph queryGraph) {
-		List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
+	private String getSubgraphGuid(HashSet<String> nodes) {
 
-		int cnt=0;
-		for (CandidateGraph graph : candidates) {
-			cnt++;
-			//logger.info("result graph: "+cnt);
-			List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
+		List<String> nodeList = new ArrayList<String>(nodes);
 
-			List<String> nodes = graph.getNodes();
-			for (int i = 0; i < exemplarIDs.size(); i++) {
-				String similarID = nodes.get(i);
-				double similarity = binding.getSimilarity(exemplarIDs.get(i), similarID);
-				String exemplarQueryID = entities1.get(i).getUid();
-				if (queryGraph.getScore() > ((float) exemplarIDs.size()) - 0.1) {
-					logger.debug("\t graph " + graph + " got " + similarID + " and " + exemplarIDs.get(i));
-				}
-				//logger.info("exemplarQueryID: "+exemplarQueryID+" similarID: "+similarID+" similarity: "+similarity);
-				FL_EntityMatchResult entityMatchResult = binding.makeEntityMatchResult(exemplarQueryID, similarID, similarity);
-				if (entityMatchResult != null) {
-					entities.add(entityMatchResult);
-				}
+		// sort nodes
+		Collections.sort(nodeList, new Comparator<String>() {
+			@Override
+			public int compare(String n1, String n2) {
+				return binding.compareEntities(n1, n2);
 			}
+		});
 
-			// arithmetic mean
-			double score = getSimpleScore(entities);
-			boolean query = graph == queryGraph;
-			FL_PatternSearchResult result = makeResult(entities, score, query);
-			if (query) {
-				logger.debug("found query!!! " + result);
+		int count = 0;
+		String subgraphGuid = "";
+		for (String uid : nodeList) {
+			if (count == 0) {
+				subgraphGuid = uid;
 			}
-			results.add(result);
+			else {
+				subgraphGuid += "#"+uid;
+			}
+			count++;
 		}
-		return results;
+		
+		return subgraphGuid;
 	}
+		
+//		  @Override
+//		  public int compareEntities(String e1, String e2) {
+//			  if (Integer.parseInt(e1) < Integer.parseInt(e2)) {
+//				  return -1;
+//			  } else if (Integer.parseInt(e1) > Integer.parseInt(e2)){
+//				  return 1;
+//			  } else {
+//				  return 0;
+//			  }
+//		  }
 
-
-	/**
-	 * @see #getShortlist(java.util.List, java.util.List, long)
-	 * @param exemplarIDs
-	 * @param k
-	 * @param skipSelf
-	 * @param firstExemplar
-	 * @return
-	 */
-	private SortedSet<CandidateGraph> getCandidateGraphs(List<String> exemplarIDs, int k, boolean skipSelf, String firstExemplar) {
-		SortedSet<CandidateGraph> candidates;
-		candidates = new TreeSet<CandidateGraph>();
-
-		List<String> neighbors = binding.getNearestNeighbors(firstExemplar, k, skipSelf);
-		logger.debug("for " + firstExemplar + " found " + neighbors.size() + " neighbors with k " + k + " stot " +binding.getNumSourceNodes() + " exemplars " + exemplarIDs);
-		//  candidates.add(new CandidateGraph(exemplarIDs, firstExemplar, k));
-
-		// for each neighbor, make a one-node graph
-		for (String node : neighbors) {
-			if (binding.isNodeId(node)) {
-				candidates.add(new CandidateGraph(binding, exemplarIDs, node, k));
-			}
-		}
-
-		if (!candidates.isEmpty()) {
-			logger.debug("depth 1 : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-		} else {
-			logger.debug("depth 1 NO CANDIDATES");
-		}
-
-		// create candidate graphs with as many nodes as the exemplar ids
-		for (int i = 1; i < exemplarIDs.size(); i++) {
-			logger.debug("exemplar  #" + i);
-
-			SortedSet<CandidateGraph> nextCandidates = new TreeSet<CandidateGraph>();
-			for (CandidateGraph candidateGraph : candidates) {
-				candidateGraph.makeNextGraphs2(nextCandidates, MAX_CANDIDATES);
-
-				/*  if (!nextCandidates.isEmpty()) {
-          logger.debug("1 depth " + i +
-              " : " + nextCandidates.size() + " best " + nextCandidates.first() + " worst " + nextCandidates.last());
-        }*/
-			}
-
-			candidates = nextCandidates;
-			if (!candidates.isEmpty()) {
-				logger.debug("2 depth " + i +
-						" : " + candidates.size() + " best " + candidates.first() + " worst " + candidates.last());
-			}
-		}
-
-		logger.debug("returning " + candidates.size());
-		return candidates;
-	}
 
 
 	/**

@@ -51,7 +51,7 @@ public class BitcoinBinding extends Binding {
   private boolean useFastBitcoinConnectedTest = true;
   
   // TopKSubgraphShortlist Parameters
-  public static final int DEFAULT_SHORTLIST_SIZE = 500;
+  public static final int DEFAULT_SHORTLIST_SIZE = 1000;
   public static final int SHORTLISTING_D = 2;
   
   public static final String USER_FEATURES_TABLE = "users";
@@ -60,6 +60,13 @@ public class BitcoinBinding extends Binding {
   
   public static final String GRAPH_TABLE = "MARGINAL_GRAPH";
   public static final String PAIRID_COLUMN = "SORTED_PAIR";
+
+//  Comparator<String> entityComparator = new Comparator<String>() {
+//	  @Override
+//	  public int compare(String entity1, String entity2) {
+//		  return entityCompare(entity1, entity2);
+//	  }
+//  };
 
   /**
    * @see mitll.xdata.GraphQuBEServer#main(String[])
@@ -145,6 +152,17 @@ public class BitcoinBinding extends Binding {
     } catch (Exception e) {
     	logger.error("got " + e, e);
     }
+  }
+  
+  @Override
+  public int compareEntities(String e1, String e2) {
+	  if (Integer.parseInt(e1) < Integer.parseInt(e2)) {
+		  return -1;
+	  } else if (Integer.parseInt(e1) > Integer.parseInt(e2)){
+		  return 1;
+	  } else {
+		  return 0;
+	  }
   }
 
   @Override
