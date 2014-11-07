@@ -86,7 +86,7 @@ public class QueryExecutor {
 	private HashMap<Integer, ArrayList<Integer>> candidates;
 	
 	private ArrayList<String> actualQueryEdges;
-	
+
 	private HashMap<String, Integer> queryEdgetoIndex;
 
 	private HashMap<String, String> queryEdge2EdgeType;
@@ -863,7 +863,7 @@ public class QueryExecutor {
 	 */
 	public HashSet<String> computeQueryEdgeTypes() {
 		HashSet<Edge> queryEdgeSet= query.edges;
-		actualQueryEdges= new ArrayList<String>();
+		//actualQueryEdges= new ArrayList<String>();
 		HashSet<String> queryEdgeTypes= new HashSet<String>();
 		for(Edge e:queryEdgeSet)
 		{
@@ -1545,6 +1545,10 @@ public class QueryExecutor {
 	 */
 	public HashMap<String, Integer> getQueryEdgetoIndex() {
 		return queryEdgetoIndex;
+	}
+	
+	public ArrayList<String> getActualQueryEdges() {
+		return actualQueryEdges;
 	}
 }
 

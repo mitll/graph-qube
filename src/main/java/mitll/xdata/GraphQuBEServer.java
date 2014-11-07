@@ -17,7 +17,7 @@ package mitll.xdata;
 import static spark.Spark.get;
 import static spark.Spark.post;
 import static spark.Spark.staticFileLocation;
-
+import influent.idl.FL_EntityMatchDescriptor;
 import influent.idl.FL_Future;
 import influent.idl.FL_PatternDescriptor;
 import influent.idl.FL_PatternSearchResults;
@@ -299,9 +299,15 @@ public class GraphQuBEServer {
               FL_PatternSearchResults results = (FL_PatternSearchResults) result;
               if (svg != null) {
                 Binding binding = patternSearch.getBinding(example);
-                List<Binding.ResultInfo> entities = binding.getEntities(example);
+                //List<Binding.ResultInfo> entities = binding.getEntities(example);
+                List<FL_EntityMatchDescriptor> entities = example.getEntities();
                 response.type("text/html");
-
+                
+                logger.info("some unnecessary logging...");
+                logger.info("results: "+results);
+                logger.info("binding: "+binding);
+                logger.info("example: "+example);
+                logger.info("entities: "+entities);
                 return new SVGGraph().toSVG(entities, results, binding);
               } else {
                 json = AvroUtils.encodeJSON((FL_PatternSearchResults) result);

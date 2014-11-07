@@ -10,6 +10,12 @@ import mitll.xdata.sql.SqlUtilities;
 
 import org.apache.log4j.Logger;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -864,7 +870,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		List<String> ids = new ArrayList<String>();
 		if (patternDescriptor == null)
 			return ids;
-		List<FL_EntityMatchDescriptor> descriptors = patternDescriptor.getEntities();
+		List<FL_EntityMatchDescriptor> descriptors = patternDescriptor.getEntities();  //just the entities
 		if (descriptors == null)
 			return ids;
 
@@ -1170,9 +1176,224 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		if (rescoreWithHMM) {
 			List<List<Edge>> resultEdges = new ArrayList<List<Edge>>();
 			List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
-			
-			List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
 
+			logger.info("=====================");
+			logger.info(example);
+			//logger.info(exemplarIDs);
+			//logger.info(results);
+			logger.info("=====================");
+
+			logger.info("Here come some resultIDs");
+			logger.info(resultIDs);
+			logger.info("Here come some queryIDs");
+			logger.info(exemplarIDs);
+			logger.info("there were: "+resultIDs.size()+" things in resultIDs...");
+			logger.info("there were: "+resultEdges.size()+" things in resultEdges...");
+
+			List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);  //this method has an artificial limit on number of transactions
+			logger.info("Here come some queryEdges:");
+			logger.info(queryEdges);
+			logger.info("there were: "+queryEdges.size()+" things in queryEdges...");
+
+			boolean doFeatureTesting=false;
+			if (doFeatureTesting) {
+				//=============================== TESTING SOME STUFF OUT =================================
+				// pack features from query and results
+				List<VectorObservation> queryObservations = createObservationVectors(queryEdges, exemplarIDs);
+				int numSamples = queryObservations.size();
+				int numDimensions = queryObservations.get(0).getValues().length;
+
+				// turn queryObservations into raw matrix
+				double[][] rawFeatures = new double[numSamples][numDimensions];
+				int index = 0;
+				for (VectorObservation observation : queryObservations) {
+					rawFeatures[index++] = observation.getValues();
+				}
+				// turn raw matrix into standardized feature matrix
+				double lowerPercentile = 0.025;
+				double upperPercentile = 0.975;
+				FeatureNormalizer normalizer = new FeatureNormalizer(rawFeatures, lowerPercentile, upperPercentile,true);
+				double[][] stdFeatures = normalizer.normalizeFeatures(rawFeatures);
+
+				// Take care of remaining outliers...
+				for (int i = 0; i < numSamples; i++) {
+					for (int j = 0; j < numDimensions; j++) {
+
+						double nanReplacement = 0.0;
+						if (Double.isNaN(stdFeatures[i][j])) {
+							stdFeatures[i][j] = nanReplacement;
+						}
+
+						//test: replace 0.0 with 0.001 to see if it fixes STACS algorithm running...
+						double zeroReplacement = 0.001;
+						if (stdFeatures[i][j] == 0.0) {
+							stdFeatures[i][j] = zeroReplacement;
+						}
+
+						double largeValReplacement = 4.0;
+						if (stdFeatures[i][j] > largeValReplacement) {
+							stdFeatures[i][j] = largeValReplacement;
+						}
+						if (stdFeatures[i][j] < -largeValReplacement) {
+							stdFeatures[i][j] = -largeValReplacement;
+						}
+
+					}
+				}
+
+				BufferedWriter writer;
+				try {
+					writer = new BufferedWriter(new FileWriter(new File("src/main/resources/","bitcoin_small_train_query.dat")));
+					String header = "category";
+					for (int i=0; i<numDimensions; i++)
+						header += ",S"+i;
+					header += "\n\n";
+					writer.write(header);
+					//writer.write("category,S1,S2,S3,S4,S5,S6,S7,S8\n");
+					//writer.write("\n");
+
+					//print-out stdFeatures
+					for (int i=0; i<numSamples; i++) {
+						String line = "?";
+						for (int j=0; j<numDimensions; j++) {
+							line += ","+stdFeatures[i][j];
+							//line += ","+rawFeatures[i][j];
+						}
+						line += "\n";
+						writer.write(line);
+						//logger.info(line);
+					}
+					writer.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				//
+				// write-out results...
+				//
+				for (int c=0;c<resultIDs.size();c++) {
+					logger.info(resultIDs);
+					List<List<VectorObservation>> resultsObservations = getResultObservations(resultEdges, resultIDs, exemplarIDs);
+					//List<VectorObservation> resultObservations = resultsObservations.get(1);
+					//List<Edge> sampleResultEdges = resultEdges.get(resultEdges.size()-2);
+					//logger.info(resultIDs.get(resultIDs.size()-2));
+					List<VectorObservation> resultObservations = resultsObservations.get(c);
+					List<Edge> sampleResultEdges = resultEdges.get(c);
+					logger.info("shortlist index: "+c+"subgraph: "+resultIDs.get(c));
+
+					// pack features from query and results
+
+					numSamples = resultObservations.size();
+					numDimensions = resultObservations.get(0).getValues().length;
+
+					// turn queryObservations into raw matrix
+					rawFeatures = new double[numSamples][numDimensions];
+					index = 0;
+					for (VectorObservation observation : resultObservations) {
+						rawFeatures[index++] = observation.getValues();
+					}
+					// turn raw matrix into standardized feature matrix
+					lowerPercentile = 0.025;
+					upperPercentile = 0.975;
+					normalizer = new FeatureNormalizer(rawFeatures, lowerPercentile, upperPercentile,true);
+					stdFeatures = normalizer.normalizeFeatures(rawFeatures);
+
+					// Take care of remaining outliers...
+					for (int i = 0; i < numSamples; i++) {
+						for (int j = 0; j < numDimensions; j++) {
+
+							double nanReplacement = 0.0;
+							if (Double.isNaN(stdFeatures[i][j])) {
+								stdFeatures[i][j] = nanReplacement;
+							}
+
+							//test: replace 0.0 with 0.001 to see if it fixes STACS algorithm running...
+							double zeroReplacement = 0.001;
+							if (stdFeatures[i][j] == 0.0) {
+								stdFeatures[i][j] = zeroReplacement;
+							}
+
+							double largeValReplacement = 4.0;
+							if (stdFeatures[i][j] > largeValReplacement) {
+								stdFeatures[i][j] = largeValReplacement;
+							}
+							if (stdFeatures[i][j] < -largeValReplacement) {
+								stdFeatures[i][j] = -largeValReplacement;
+							}
+
+						}
+					}
+
+					try {
+						writer = new BufferedWriter(new FileWriter(new File("src/main/resources/","bitcoin_small_test_result_"+c+".dat")));
+
+						String header = "category";
+						for (int i=0; i<numDimensions; i++)
+							header += ",S"+i;
+						header += "\n\n";
+						writer.write(header);
+						//writer.write("category,S1,S2,S3,S4,S5,S6,S7,S8\n");
+						//writer.write("\n");
+
+						//print-out stdFeatures
+						for (int i=0; i<numSamples; i++) {
+							String line = "?";
+							for (int j=0; j<numDimensions; j++) {
+								line += ","+stdFeatures[i][j];
+								//line += ","+rawFeatures[i][j];
+							}
+							line += "\n";
+							writer.write(line);
+							//logger.info(line);
+						}
+						writer.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+
+
+				//List<List<VectorObservation>> resultObservations = getResultObservations(resultEdges, resultIDs, exemplarIDs);
+				//for (List<VectorObservation> observations : resultObservations) {
+				//	numSamples += observations.size();
+				//}
+				//int numDimensions = queryObservations.get(0).getValues().length;
+				//logger.debug("query observations " + queryObservations.size() + " samples " + numSamples + " num dim " + numDimensions);
+				//double[][] rawFeatures = getRawFeatures(resultObservations, queryObservations, numSamples, numDimensions);
+				//double[][] stdFeatures = getStandardFeatures(numSamples, numDimensions, rawFeatures);
+
+				//logger.info("size of query features... "+stdFeatures.length+" and "+stdFeatures[0].length);
+
+				//=============================== TESTING SOME STUFF OUT =================================
+			}
+
+			boolean doRescoringTesting = true;
+			if (doRescoringTesting) {
+				try {
+					File file = new File("src/main/resources/graphqube_vstacs_rescore.tsv");
+					BufferedReader reader = new BufferedReader(new FileReader(file));
+
+					String line;
+					while ((line = reader.readLine()) != null) {
+						String[] lineSplit = line.split("\t");
+						//logger.info("index: "+lineSplit[0]);
+						//logger.info("score: "+lineSplit[1]);
+
+						int index = Integer.parseInt(lineSplit[0]);
+						double newScore = Double.parseDouble(lineSplit[1]);
+
+						//reset score...
+						results.get(index+1).setScore(newScore);
+					}
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+			/*
 			if (!queryEdges.isEmpty()) {
 				List<FL_PatternSearchResult> tempResults = rescoreWithHMM1(example, results, exemplarIDs, resultEdges, resultIDs, startTime, endTime);
 				logger.debug("Got " + tempResults.size() + " rescored results.");
@@ -1181,15 +1402,17 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			else {
 				logger.warn("exemplars are not connected for time period " + exemplarIDs + " start " + new Date(startTime) + " end " + new Date(endTime));
 			}
+			 */
+
 		} 
-//		else {
-//			// add all edges
-//			// replace links in each subgraph with aggregate links
-//			for (int i = 0; i < results.size(); i++) {
-//				List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, results.get(i), resultEdges.get(i));
-//				results.get(i).setLinks(linkMatchResults);
-//			}
-//		}
+		//		else {
+		//			// add all edges
+		//			// replace links in each subgraph with aggregate links
+		//			for (int i = 0; i < results.size(); i++) {
+		//				List<FL_LinkMatchResult> linkMatchResults = createAggregateLinks(example, results.get(i), resultEdges.get(i));
+		//				results.get(i).setLinks(linkMatchResults);
+		//			}
+		//		}
 
 		// save mapping from results to edges
 		// Map<FL_PatternSearchResult, List<Edge>> resultToEdges = new HashMap<FL_PatternSearchResult, List<Edge>>();
@@ -1395,7 +1618,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		// (2b) form groups across lists from prioritized Cartesian product
 		// (2c) filter by activity (i.e., subgraph must be connected)
 
-		List<String> exemplarIDs = getExemplarIDs(example);
+		List<String> exemplarIDs = getExemplarIDs(example);  // these exemplarIDs are in the same order as in the pattern descriptor
 		List<FL_EntityMatchDescriptor> objects = Collections.emptyList();
 		List<FL_EntityMatchDescriptor> entities1 = example != null ? example.getEntities() : objects;
 		logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
@@ -1672,6 +1895,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @return
 	 */
 	private List<List<VectorObservation>> getResultObservations(List<List<Edge>> resultEdges, List<List<String>> resultIDs, List<String> exemplarIDs) {
+		logger.info("result ids: "+resultIDs);
 		List<List<VectorObservation>> resultObservations = new ArrayList<List<VectorObservation>>();
 		for (int i = 0; i < resultEdges.size(); i++) {
 			List<Edge> edges = resultEdges.get(i);
@@ -1701,7 +1925,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 				return result1.getScore().compareTo(result2.getScore());
 			}
 		};
-		Collections.sort(results, Collections.reverseOrder(comparator));
+		Collections.sort(results, Collections.reverseOrder(comparator));   //larger scores first...
 
 		if (results.size() > max) {
 			results = results.subList(0, (int) max);
@@ -1714,8 +1938,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		//	logger.debug("EXIT makePatternSearchResults()");
 		return patternSearchResults;
 	}
-	
-	
+
+
 
 	/**
 	 * @param e1
@@ -1752,7 +1976,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	/**
 	 * @return all links between entities along with their metadata
 	 */
-	protected abstract List<Edge> getAllLinks(List<String> ids);
+	public abstract List<Edge> getAllLinks(List<String> ids);
 
 	/**
 	 * @return all links between entities along with their metadata in [startTime, endTime]

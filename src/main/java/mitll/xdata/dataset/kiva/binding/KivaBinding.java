@@ -275,7 +275,7 @@ public class KivaBinding extends Binding {
 	}
 
 	@Override
-	protected List<Edge> getAllLinks(List<String> ids) {
+	public List<Edge> getAllLinks(List<String> ids) {
 		return null;
 	}
 

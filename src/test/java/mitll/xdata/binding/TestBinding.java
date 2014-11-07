@@ -252,7 +252,7 @@ public class TestBinding extends Binding {
 	}
 
 	@Override
-	protected List<Edge> getAllLinks(List<String> ids) {
+	public List<Edge> getAllLinks(List<String> ids) {
 		List<Edge> edges = new ArrayList<Edge>();
 		Set<String> set = new HashSet<String>(ids);
 		for (TestEdge edge : testEdges) {

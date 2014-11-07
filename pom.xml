@@ -259,6 +259,20 @@
 			<artifactId>jgrapht</artifactId>
 			<version>0.7.3</version>
 		</dependency>
+		<dependency>
+			<groupId>ajt</groupId>
+			<artifactId>ajt</artifactId>
+			<version>2.9</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/ajt-2.9.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>weka</groupId>
+			<artifactId>weka</artifactId>
+			<version>3-6-11</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/weka.jar</systemPath>
+		</dependency>
 	</dependencies>
 
 	<repositories>

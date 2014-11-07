@@ -1,6 +1,7 @@
 package mitll.xdata.viz;
 
 import influent.idl.FL_Entity;
+import influent.idl.FL_EntityMatchDescriptor;
 import influent.idl.FL_EntityMatchResult;
 import influent.idl.FL_Link;
 import influent.idl.FL_LinkMatchResult;
@@ -128,69 +129,90 @@ public class SVGGraph {
    * @param binding
    * @throws Exception
    */
-  private void toSVG2(FL_PatternSearchResults results, Writer writer, Binding binding) throws Exception {
-    int count = 0;
-    for (FL_PatternSearchResult result : results.getResults()) {
-      ProjectController pc = Lookup.getDefault().lookup(ProjectController.class);
-      pc.newProject();
-      GraphController lookup = Lookup.getDefault().lookup(GraphController.class);
-      GraphModel model = lookup.getModel();
-     // model.clear();
-      DirectedGraph dag = model.getDirectedGraph();
-     // dag.clear();
-      int edgeCount = dag.getEdgeCount();
+  private void toSVG2(List<FL_EntityMatchDescriptor> queryEntities, FL_PatternSearchResults results, Writer writer, Binding binding) throws Exception {
 
-      logger.debug("edges " + edgeCount);
-      logger.debug("nodes " + dag.getNodeCount());
+	  int count = 0;
+	  
 
-      int y = 1;
+	  /*
+	   * Write-out resultant subgraphs
+	   */
+	  for (FL_PatternSearchResult result : results.getResults()) {
+		  ProjectController pc = Lookup.getDefault().lookup(ProjectController.class);
+		  pc.newProject();
+		  GraphController lookup = Lookup.getDefault().lookup(GraphController.class);
+		  GraphModel model = lookup.getModel();
+		  // model.clear();
+		  DirectedGraph dag = model.getDirectedGraph();
+		  // dag.clear();
+		  int edgeCount = dag.getEdgeCount();
 
-      logger.debug("got  " + results.getResults().size() + " results");
+		  logger.debug("edges " + edgeCount);
+		  logger.debug("nodes " + dag.getNodeCount());
 
-      /*int maxY =*/
-      convertOneGraph(model, dag, y, result);
+		  int y = 1;
 
-      //writer.write(toSVG3(dag));
+		  logger.debug("got  " + results.getResults().size() + " results");
 
-      //  y = maxY;
-      //  y += 2 * Y_STEP;
-      //}
-      //createSampleData();
-      //doLayout(model);
-      if (count == 0)
-        writer.write("<h2>Query Subgraph</h2>\n");
-      else if (count == 1)
-        writer.write("<h2>Results</h2>\n");
+		  /*int maxY =*/
+		  convertOneGraph(model, dag, y, result); //lays out the graph...
 
-        writer.write("<div " +
-          //"width='50%'" +
-          " " +
-          (count++ % 2 == 0 ? "style='background-color:" +
-            //  "#b0c4de" +
-              "#cedcd7"+
-              ";'" : "") +
-          ">\n");
-      if (true) {
-        String newXML = getSVGForGraph();
-        //   String newXML = svgXML;
+		  //writer.write(toSVG3(dag));
 
-        writer.write(newXML + "\n");
-      }
-      writer.write("\n");
+		  //  y = maxY;
+		  //  y += 2 * Y_STEP;
+		  //}
+		  //createSampleData();
+		  //doLayout(model);
+		  if (count == 0)   //first result will be the query...
+			  writer.write("<h2>Query Subgraph</h2>\n");
+		  else if (count == 1)
+			  writer.write("<h2>Results</h2>\n");
 
+		  writer.write("<div " +
+				  //"width='50%'" +
+				  " " +
+				  (count++ % 2 == 0 ? "style='background-color:" +
+						  //  "#b0c4de" +
+						  //"#cedcd7"+
+						  "#f2f2f2" +
+						  ";'" : "") +
+				  ">\n");
+		  if (true) {
+			  String newXML = getSVGForGraph();
+			  //   String newXML = svgXML;
 
-      List<Binding.Edge> edgesForResult = binding.getEdgesForResult(result);
-      Collections.sort(edgesForResult);
-      writer.write(toTimePlot(edgesForResult));
-      writer.write("</div>");
+			  writer.write("score: "+result.getScore()+"\n");
+			  writer.write(newXML + "\n");
+		  }
+		  writer.write("\n");
 
-      try {
-        writer.write("<p></p>\n");
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      pc.closeCurrentProject();
-    }
+		  /*
+		   * Get list of entities where ORDER MATTERS...
+		   */
+		  List<FL_EntityMatchResult> entities = result.getEntities();
+		  List<String> idsList = new ArrayList<String>(entities.size());
+		  for (int i=0; i<entities.size(); i++) {
+			  idsList.add("");
+		  }
+		  for (FL_EntityMatchResult entity : entities) {
+			  int entityInd = Integer.parseInt(entity.getUid().split("E")[1]);
+			  String entityName = entity.getEntity().getUid();
+			  idsList.set(entityInd, entityName);
+		  }
+
+		  List<Binding.Edge> edgesForResult = binding.getEdgesForResult(result);
+		  Collections.sort(edgesForResult);
+		  writer.write(toTimePlot(edgesForResult,idsList));
+		  writer.write("</div>");
+
+		  try {
+			  writer.write("<p></p>\n");
+		  } catch (IOException e) {
+			  e.printStackTrace();
+		  }
+		  pc.closeCurrentProject();
+	  }
   }
 
   /**
@@ -337,7 +359,7 @@ public class SVGGraph {
    * @param edgeList
    * @return
    */
-  private String toTimePlot(Collection<Binding.Edge> edgeList) {
+  private String toTimePlot(Collection<Binding.Edge> edgeList,List<String> ids) {
     logger.debug("making time plot for " + edgeList.isEmpty() + " edges----->");
 
     String viewLeft = "-120";
@@ -437,6 +459,8 @@ public class SVGGraph {
 
     xml += header +marker+ leftAxis + bottomAxis;
 
+    inOrder = ids;
+    logger.info("ids: "+ids);
     for (String user : inOrder) {
        xml += "<text x='-100' y='"+((inOrder.indexOf(user)*hUsers) + 10)+
            "' font-size=\"20\"" +
@@ -628,7 +652,30 @@ public class SVGGraph {
     final Map<Node,Double> nodeToScore = new HashMap<Node, Double>();
     List<FL_EntityMatchResult> entities = result.getEntities();
 
-
+    // Order of the entities matters here...
+    List<String> idsList = new ArrayList<String>(entities.size());
+    for (int i=0; i<entities.size(); i++) {
+    	idsList.add("");
+    }
+    for (FL_EntityMatchResult entity : entities) {
+    	int entityInd = Integer.parseInt(entity.getUid().split("E")[1]);
+    	String entityName = entity.getEntity().getUid();
+    	idsList.set(entityInd, entityName);
+    }
+    logger.info(idsList);
+    
+//    List<String> ids = new ArrayList<String>();
+//    for (FL_EntityMatchResult entity : entities) {
+//      FL_Entity entity1 = entity.getEntity();
+//
+//
+//      // Map<String, String> keyValue = new TreeMap<String, String>();
+//      String uidValue = entity1.getUid();
+//      ids.add(uidValue);
+//    }
+//    logger.debug("-------- result for " + ids + " = " + result.getScore());
+    
+    
     Set<String> ids = new TreeSet<String>();
     for (FL_EntityMatchResult entity : entities) {
       FL_Entity entity1 = entity.getEntity();
@@ -639,12 +686,17 @@ public class SVGGraph {
       ids.add(uidValue);
     }
     logger.debug("-------- result for " + ids + " = " + result.getScore());
+    
+    
+
+    
     makeGraphNodes(model, dag, idToNode, nodeToScore, entities);
+    //idToNode maps node uid to node index in svg return page...
 
     List<Node> sources = new ArrayList<Node>();
     List<Node> targets = new ArrayList<Node>();
     addEdgesForLinks(model, dag, result, idToNode, sources, targets);
-
+    
     sortByScore(nodeToScore, sources);
     sortByScore(nodeToScore, targets);
 
@@ -670,6 +722,46 @@ public class SVGGraph {
     }
     return maxY;
   }
+  
+  /*
+  private int convertQueryGraph(GraphModel model, DirectedGraph dag, int y, List<String> idsList) {
+	    Map<String, Node> idToNode = new HashMap<String, Node>();
+	    final Map<Node,Double> nodeToScore = new HashMap<Node, Double>();
+	    List<FL_EntityMatchResult> entities = result.getEntities();
+	    
+	    makeGraphNodes(model, dag, idToNode, nodeToScore, entities);
+	    //idToNode maps node uid to node index in svg return page...
+
+	    List<Node> sources = new ArrayList<Node>();
+	    List<Node> targets = new ArrayList<Node>();
+	    addEdgesForLinks(model, dag, result, idToNode, sources, targets);
+	    
+	    sortByScore(nodeToScore, sources);
+	    sortByScore(nodeToScore, targets);
+
+	    int vertSpace = Y_STEP * Math.max(sources.size(), targets.size());
+	    int leftStep  = (int)Math.ceil(vertSpace/Math.max(1,sources.size()-1));
+	    int rightStep = (int)Math.ceil(vertSpace/Math.max(1,targets.size()-1));
+	    // logger.debug("vert " + vertSpace + " sources " + sources.size() + " targets " + targets.size() + "left " +leftStep + " right " + rightStep);
+	    int c = 0;
+	    int maxY = 0;
+	    for (Node source : sources) {
+	      float v = y + (c++ * leftStep);
+	      if (v > maxY) maxY = (int)v;
+	      source.getNodeData().setY(v);
+	    }
+
+	    c = 0;
+
+	    //   logger.debug("left y " + leftY + " y " +y + " vert height " + vertHeight + " step "+ystep);
+	    for (Node target : targets) {
+	      float v = y + (c++ * rightStep);
+	      if (v > maxY) maxY = (int)v;
+	      target.getNodeData().setY(v);
+	    }
+	    return maxY;
+	  }
+  */
 
   private void makeGraphNodes(GraphModel model, DirectedGraph dag, Map<String, Node> idToNode, Map<Node, Double> nodeToScore, List<FL_EntityMatchResult> entities) {
     for (FL_EntityMatchResult entity : entities) {
@@ -793,9 +885,7 @@ public class SVGGraph {
     return b;
   }
 
-  private void setNodeXPos(
-                                FL_PatternSearchResult result,
-                                Map<String, Node> idToNode) {
+  private void setNodeXPos(FL_PatternSearchResult result,Map<String, Node> idToNode) {
     Set<Node> currentLayer = new HashSet<Node>();
 
     List<FL_LinkMatchResult> links = result.getLinks();
@@ -1015,32 +1105,30 @@ public class SVGGraph {
   }
 
   private String toTable(List<Binding.ResultInfo> entities) {
-    String html = "";
-    html += "<table>";
-   // html += "<table>";
-    html += "<tr>";
-//    html += "<th>Score</th>";
-//    html += "<th>ID</th>";
-    List<Map<String, String>> rows = entities.get(0).rows;
-    for (String name : rows.get(0).keySet()) {
-      html += "<th>" + name + "</th>";
-    }
-    html += "</tr>";
+	  String html = "";
+	  html += "<table>";
+	  // html += "<table>";
+	  html += "<tr>";
+	  //    html += "<th>Score</th>";
+	  //    html += "<th>ID</th>";
+	  List<Map<String, String>> rows = entities.get(0).rows;
+	  for (String name : rows.get(0).keySet()) {
+		  html += "<th>" + name + "</th>";
+	  }
+	  html += "</tr>";
 
-    for (Binding.ResultInfo ent : entities) {
-    for (Map<String, String> row : ent.rows) {
-      html += "<tr>";
-      for (String value : row.values()) {
-        html += "<td>" + value + "</td>";
+	  for (Binding.ResultInfo ent : entities) {
+		  for (Map<String, String> row : ent.rows) {
+			  html += "<tr>";
+			  for (String value : row.values()) {
+				  html += "<td>" + value + "</td>";
+			  }
+			  html += "</tr>";
+		  }
+	  }
 
-
-      }
-      html += "</tr>";
-    }
-    }
-
-    html += "</table>";
-    return html;
+	  html += "</table>";
+	  return html;
   }
 
   /**
@@ -1049,8 +1137,8 @@ public class SVGGraph {
    * @param results
    * @return
    */
-  public String toSVG( List<Binding.ResultInfo> entities, FL_PatternSearchResults results, Binding binding ) {
-    logger.debug("making svg for " + entities.size() + " entities and " + results.getTotal() +  " results.");
+  public String toSVG(List<FL_EntityMatchDescriptor> queryEntities, FL_PatternSearchResults results, Binding binding ) {
+    logger.debug("making svg for " + queryEntities.size() + " entities and " + results.getTotal() +  " results.");
     StringWriter writer = new StringWriter();
 
     writer.write(
@@ -1059,10 +1147,10 @@ public class SVGGraph {
         "<html>\n" +
         "<head></head>\n<body>");
 
-    writeQueryToTable(entities, writer);
+    //writeQueryToTable(entities, writer);
     writer.write("<h2>Results with entity scores</h2>\n");
     try {
-      toSVG2(results, writer, binding);
+      toSVG2(queryEntities,results, writer, binding);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -1083,18 +1171,18 @@ public class SVGGraph {
    * @param writer
    */
   private void writeQueryToTable(List<Binding.ResultInfo> entities, StringWriter writer) {
-    Map<String,List<Binding.ResultInfo>> typeToEntities = new HashMap<String, List<Binding.ResultInfo>>();
-    logger.debug("query entities.size() = " + entities.size());
-    for ( Binding.ResultInfo entity : entities) {
-    	logger.debug("\tentity = " + entity);
-      List<Binding.ResultInfo> resultInfos = typeToEntities.get(entity.getTable());
-      if (resultInfos == null) typeToEntities.put (entity.getTable(), resultInfos = new ArrayList<Binding.ResultInfo>());
-      resultInfos.add(entity);
-    }
-    for (Map.Entry<String, List<Binding.ResultInfo>> entities2 : typeToEntities.entrySet()) {
-      List<Binding.ResultInfo> value = entities2.getValue();
-      writer.write("<h3>" + entities2.getKey() + "</h3>\n");
-      writer.write(toTable(value));
-    }
+	  Map<String,List<Binding.ResultInfo>> typeToEntities = new HashMap<String, List<Binding.ResultInfo>>();
+	  logger.debug("query entities.size() = " + entities.size());
+	  for ( Binding.ResultInfo entity : entities) {
+		  logger.debug("\tentity = " + entity);
+		  List<Binding.ResultInfo> resultInfos = typeToEntities.get(entity.getTable());
+		  if (resultInfos == null) typeToEntities.put (entity.getTable(), resultInfos = new ArrayList<Binding.ResultInfo>());
+		  resultInfos.add(entity);
+	  }
+	  for (Map.Entry<String, List<Binding.ResultInfo>> entities2 : typeToEntities.entrySet()) {
+		  List<Binding.ResultInfo> value = entities2.getValue();
+		  writer.write("<h3>" + entities2.getKey() + "</h3>\n");
+		  writer.write(toTable(value));
+	  }
   }
 }
