@@ -78,7 +78,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		h2Type2InfluentType.put("DOUBLE", FL_PropertyType.DOUBLE);
 		h2Type2InfluentType.put("DECIMAL", FL_PropertyType.DOUBLE);
 		h2Type2InfluentType.put("VARCHAR", FL_PropertyType.STRING);
-		h2Type2InfluentType.put("ARRAY", FL_PropertyType.OTHER);
+		//h2Type2InfluentType.put("ARRAY", FL_PropertyType.OTHER); //deprecated property type
 	}
 
 	public Binding(DBConnection connection) {

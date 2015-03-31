@@ -5,25 +5,33 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** Used to add constraints for entity searches. The key indicates the property to make the constraint on, while the
-	 value field is set to the desired value. The type field indicates how the constraint should be treated (ex,
-	 constrain results to those where the "count" property has a value of "LESS_THAN" "100").
-	 
-	 CHANGED IN 1.5 */
+/** * Used to describe data properties and their constraints
+	 *
+	 * The 'memberOf' parameter is a list of FL_TypeMapping that describes the property in the given types.
+	 *
+	 * ADDED IN 1.8 */
 @org.apache.avro.specific.AvroGenerated
 public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_PropertyDescriptor\",\"namespace\":\"influent.idl\",\"doc\":\"Used to add constraints for entity searches. The key indicates the property to make the constraint on, while the\\r\\n\\t value field is set to the desired value. The type field indicates how the constraint should be treated (ex,\\r\\n\\t constrain results to those where the \\\"count\\\" property has a value of \\\"LESS_THAN\\\" \\\"100\\\").\\r\\n\\t \\r\\n\\t CHANGED IN 1.5\",\"fields\":[{\"name\":\"key\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"key of the Property to search on\"},{\"name\":\"friendlyText\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"a human readable label to display if the key isn't friendly (optional)\",\"default\":null},{\"name\":\"type\",\"type\":{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"doc\":\"Allowed types for Property values.\\r\\n\\r\\n\\t CHANGED in 1.5\",\"symbols\":[\"DOUBLE\",\"LONG\",\"BOOLEAN\",\"STRING\",\"DATE\",\"GEO\",\"OTHER\"]},\"doc\":\"type of the Property to search on\"},{\"name\":\"range\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_RangeType\",\"doc\":\"Allowed types for Ranges of values.\\r\\n\\t\\r\\n\\tCHANGED IN 1.6\",\"symbols\":[\"SINGLETON\",\"LIST\",\"BOUNDED\",\"DISTRIBUTION\"]},\"null\"],\"doc\":\"range of the Property to search on\"},{\"name\":\"constraint\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"doc\":\"Property value matching constraints\\r\\n\\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]},\"null\"],\"doc\":\"MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_PropertyDescriptor\",\"namespace\":\"influent.idl\",\"doc\":\"* Used to describe data properties and their constraints\\r\\n\\t *\\r\\n\\t * The 'memberOf' parameter is a list of FL_TypeMapping that describes the property in the given types.\\r\\n\\t *\\r\\n\\t * ADDED IN 1.8\",\"fields\":[{\"name\":\"key\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"property descriptor unique key\"},{\"name\":\"friendlyText\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"a human readable property name to display if the key isn't friendly (optional)\",\"default\":null},{\"name\":\"propertyType\",\"type\":{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"doc\":\"* Allowed types for Property values.\\r\\n\\t *\\r\\n\\t * CHANGED in 1.9\",\"symbols\":[\"FLOAT\",\"DOUBLE\",\"INTEGER\",\"LONG\",\"BOOLEAN\",\"STRING\",\"IMAGE\",\"DATE\",\"GEO\"]},\"doc\":\"data type of the property\"},{\"name\":\"range\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_RangeType\",\"doc\":\"* Allowed types for Ranges of values.\\r\\n\\t *\\r\\n\\t * CHANGED IN 1.6\",\"symbols\":[\"SINGLETON\",\"LIST\",\"BOUNDED\",\"DISTRIBUTION\"]},\"null\"],\"doc\":\"range of the Property to search on\"},{\"name\":\"memberOf\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"FL_TypeMapping\",\"doc\":\"* Used to describe how an FL_PropertyDescriptor maps to given a type.\\r\\n\\t *\\r\\n\\t * ADDED IN 1.8\",\"fields\":[{\"name\":\"type\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"The type that the mapping applies to *\"},{\"name\":\"memberKey\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"field that the FL_Property maps to in the type *\"}]}},\"doc\":\"List of mappings against types to which this property belongs,  *\"},{\"name\":\"constraint\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"doc\":\"* Property value matching constraints\\r\\n\\t *\\r\\n\\t * ADDED IN 1.5\\r\\n\\t * MOVED IN 2.0\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]},\"null\"],\"doc\":\"REQUIRED_EQUALS, FUZZY_PARTIAL_OPTIONAL, NOT, OPTIONAL_EQUALS, FUZZY_REQUIRED\"},{\"name\":\"searchableBy\",\"type\":{\"type\":\"enum\",\"name\":\"FL_SearchableBy\",\"doc\":\"* Used to describe in which contexts a term can (or should) be searched. Free text searches\\r\\n\\t * do not describe properties to which they apply, and are often best restricted to\\r\\n\\t * identity fields like names.\\r\\n\\t *\\r\\n\\t * ADDED IN 1.8\\r\\n\\t * MOVED IN 2.0\",\"symbols\":[\"FREE_TEXT\",\"DESCRIPTOR\",\"NONE\"]},\"doc\":\"indicates whether this property is indexed for free text queries, or not at all *\",\"default\":\"DESCRIPTOR\"},{\"name\":\"levelOfDetail\",\"type\":{\"type\":\"enum\",\"name\":\"FL_LevelOfDetail\",\"doc\":\"* Amount of detail requested\\r\\n\\t *\\r\\n\\t * ADDED IN 1.6\\r\\n\\t *\\r\\n\\t * CHANGED in 2.0:\\r\\n\\t * - added KEY\",\"symbols\":[\"KEY\",\"SUMMARY\",\"FULL\",\"HIDDEN\"]},\"doc\":\"Minimum amount of detail that this property is included in *\",\"default\":\"FULL\"},{\"name\":\"tags\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"enum\",\"name\":\"FL_PropertyTag\",\"doc\":\"* Tags are defined by the application layer as a taxonomy of user and application concepts,\\r\\n\\t * independent of the data sources. This allows application semantics to be re-used with new\\r\\n\\t * data, with a minimum of new software design and development. Data layer entity types, link\\r\\n\\t * types and properties should be mapped into the list of tags. The application layer must be\\r\\n\\t * able to search by native field name or by tag interchangeably, and properties returned must\\r\\n\\t * contain both native field names as well as tags.\\r\\n\\t *\\r\\n\\t * The list of tags may change as application features evolve, though that will require\\r\\n\\t * collaboration with the data layer providers. Evolving the tag list should not change the\\r\\n\\t * Data Access or Search APIs.\\r\\n\\t *\\r\\n\\t * This is the current list of tags for Properties:\\r\\n\\t *\\r\\n\\t * CHANGED in 1.5:\\r\\n\\t * - CREDIT/DEBIT changed to INFLOWING/OUTFLOWING\\r\\n\\t * - added USD\\r\\n\\t * - added DURATION\\r\\n\\t *\\r\\n\\t * CHANGED in 1.6:\\r\\n\\t * - added ENTITY_TYPE\\r\\n\\t * - added ACCOUNT_OWNER, CLUSTER_SUMMARY, COUNTRY_CODE\\r\\n\\t *\\r\\n\\t * CHANGED in 1.7:\\r\\n\\t * - added CLUSTER\\r\\n\\t *\\r\\n\\t * CHANGED in 1.8:\\r\\n\\t * - added TOPIC\\r\\n\\t *\\r\\n\\t * CHANGED in 1.9:\\r\\n\\t * - added HTML\\r\\n\\t *\\r\\n\\t * CHANGED in 2.0:\\r\\n\\t * - added UNITS\",\"symbols\":[\"ID\",\"TYPE\",\"ENTITY_TYPE\",\"ACCOUNT_OWNER\",\"CLUSTER_SUMMARY\",\"CLUSTER\",\"NAME\",\"LABEL\",\"STAT\",\"TEXT\",\"HTML\",\"TOPIC\",\"STATUS\",\"ANNOTATION\",\"WARNING\",\"LINKED_DATA\",\"GEO\",\"COUNTRY_CODE\",\"DATE\",\"AMOUNT\",\"INFLOWING\",\"OUTFLOWING\",\"COUNT\",\"SERIES\",\"CONSTRUCTED\",\"RAW\",\"UNITS\",\"USD\",\"DURATION\",\"ENTITY\",\"SHARED_IDENTIFIER\"]}},\"doc\":\"List of tags that belong to this property *\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
-  /** key of the Property to search on */
+  /** property descriptor unique key */
    private java.lang.String key;
-  /** a human readable label to display if the key isn't friendly (optional) */
+  /** a human readable property name to display if the key isn't friendly (optional) */
    private java.lang.String friendlyText;
-  /** type of the Property to search on */
-   private influent.idl.FL_PropertyType type;
+  /** data type of the property */
+   private influent.idl.FL_PropertyType propertyType;
   /** range of the Property to search on */
    private influent.idl.FL_RangeType range;
-  /** MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT */
+  /** List of mappings against types to which this property belongs,  * */
+   private java.util.List<influent.idl.FL_TypeMapping> memberOf;
+  /** REQUIRED_EQUALS, FUZZY_PARTIAL_OPTIONAL, NOT, OPTIONAL_EQUALS, FUZZY_REQUIRED */
    private influent.idl.FL_Constraint constraint;
+  /** indicates whether this property is indexed for free text queries, or not at all * */
+   private influent.idl.FL_SearchableBy searchableBy;
+  /** Minimum amount of detail that this property is included in * */
+   private influent.idl.FL_LevelOfDetail levelOfDetail;
+  /** List of tags that belong to this property * */
+   private java.util.List<influent.idl.FL_PropertyTag> tags;
 
   /**
    * Default constructor.
@@ -33,12 +41,16 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
   /**
    * All-args constructor.
    */
-  public FL_PropertyDescriptor(java.lang.String key, java.lang.String friendlyText, influent.idl.FL_PropertyType type, influent.idl.FL_RangeType range, influent.idl.FL_Constraint constraint) {
+  public FL_PropertyDescriptor(java.lang.String key, java.lang.String friendlyText, influent.idl.FL_PropertyType propertyType, influent.idl.FL_RangeType range, java.util.List<influent.idl.FL_TypeMapping> memberOf, influent.idl.FL_Constraint constraint, influent.idl.FL_SearchableBy searchableBy, influent.idl.FL_LevelOfDetail levelOfDetail, java.util.List<influent.idl.FL_PropertyTag> tags) {
     this.key = key;
     this.friendlyText = friendlyText;
-    this.type = type;
+    this.propertyType = propertyType;
     this.range = range;
+    this.memberOf = memberOf;
     this.constraint = constraint;
+    this.searchableBy = searchableBy;
+    this.levelOfDetail = levelOfDetail;
+    this.tags = tags;
   }
 
   public org.apache.avro.Schema getSchema() { return SCHEMA$; }
@@ -47,9 +59,13 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
     switch (field$) {
     case 0: return key;
     case 1: return friendlyText;
-    case 2: return type;
+    case 2: return propertyType;
     case 3: return range;
-    case 4: return constraint;
+    case 4: return memberOf;
+    case 5: return constraint;
+    case 6: return searchableBy;
+    case 7: return levelOfDetail;
+    case 8: return tags;
     default: throw new org.apache.avro.AvroRuntimeException("Bad index");
     }
   }
@@ -59,23 +75,27 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
     switch (field$) {
     case 0: key = (java.lang.String)value$; break;
     case 1: friendlyText = (java.lang.String)value$; break;
-    case 2: type = (influent.idl.FL_PropertyType)value$; break;
+    case 2: propertyType = (influent.idl.FL_PropertyType)value$; break;
     case 3: range = (influent.idl.FL_RangeType)value$; break;
-    case 4: constraint = (influent.idl.FL_Constraint)value$; break;
+    case 4: memberOf = (java.util.List<influent.idl.FL_TypeMapping>)value$; break;
+    case 5: constraint = (influent.idl.FL_Constraint)value$; break;
+    case 6: searchableBy = (influent.idl.FL_SearchableBy)value$; break;
+    case 7: levelOfDetail = (influent.idl.FL_LevelOfDetail)value$; break;
+    case 8: tags = (java.util.List<influent.idl.FL_PropertyTag>)value$; break;
     default: throw new org.apache.avro.AvroRuntimeException("Bad index");
     }
   }
 
   /**
    * Gets the value of the 'key' field.
-   * key of the Property to search on   */
+   * property descriptor unique key   */
   public java.lang.String getKey() {
     return key;
   }
 
   /**
    * Sets the value of the 'key' field.
-   * key of the Property to search on   * @param value the value to set.
+   * property descriptor unique key   * @param value the value to set.
    */
   public void setKey(java.lang.String value) {
     this.key = value;
@@ -83,32 +103,32 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
 
   /**
    * Gets the value of the 'friendlyText' field.
-   * a human readable label to display if the key isn't friendly (optional)   */
+   * a human readable property name to display if the key isn't friendly (optional)   */
   public java.lang.String getFriendlyText() {
     return friendlyText;
   }
 
   /**
    * Sets the value of the 'friendlyText' field.
-   * a human readable label to display if the key isn't friendly (optional)   * @param value the value to set.
+   * a human readable property name to display if the key isn't friendly (optional)   * @param value the value to set.
    */
   public void setFriendlyText(java.lang.String value) {
     this.friendlyText = value;
   }
 
   /**
-   * Gets the value of the 'type' field.
-   * type of the Property to search on   */
-  public influent.idl.FL_PropertyType getType() {
-    return type;
+   * Gets the value of the 'propertyType' field.
+   * data type of the property   */
+  public influent.idl.FL_PropertyType getPropertyType() {
+    return propertyType;
   }
 
   /**
-   * Sets the value of the 'type' field.
-   * type of the Property to search on   * @param value the value to set.
+   * Sets the value of the 'propertyType' field.
+   * data type of the property   * @param value the value to set.
    */
-  public void setType(influent.idl.FL_PropertyType value) {
-    this.type = value;
+  public void setPropertyType(influent.idl.FL_PropertyType value) {
+    this.propertyType = value;
   }
 
   /**
@@ -127,18 +147,78 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
   }
 
   /**
+   * Gets the value of the 'memberOf' field.
+   * List of mappings against types to which this property belongs,  *   */
+  public java.util.List<influent.idl.FL_TypeMapping> getMemberOf() {
+    return memberOf;
+  }
+
+  /**
+   * Sets the value of the 'memberOf' field.
+   * List of mappings against types to which this property belongs,  *   * @param value the value to set.
+   */
+  public void setMemberOf(java.util.List<influent.idl.FL_TypeMapping> value) {
+    this.memberOf = value;
+  }
+
+  /**
    * Gets the value of the 'constraint' field.
-   * MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT   */
+   * REQUIRED_EQUALS, FUZZY_PARTIAL_OPTIONAL, NOT, OPTIONAL_EQUALS, FUZZY_REQUIRED   */
   public influent.idl.FL_Constraint getConstraint() {
     return constraint;
   }
 
   /**
    * Sets the value of the 'constraint' field.
-   * MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT   * @param value the value to set.
+   * REQUIRED_EQUALS, FUZZY_PARTIAL_OPTIONAL, NOT, OPTIONAL_EQUALS, FUZZY_REQUIRED   * @param value the value to set.
    */
   public void setConstraint(influent.idl.FL_Constraint value) {
     this.constraint = value;
+  }
+
+  /**
+   * Gets the value of the 'searchableBy' field.
+   * indicates whether this property is indexed for free text queries, or not at all *   */
+  public influent.idl.FL_SearchableBy getSearchableBy() {
+    return searchableBy;
+  }
+
+  /**
+   * Sets the value of the 'searchableBy' field.
+   * indicates whether this property is indexed for free text queries, or not at all *   * @param value the value to set.
+   */
+  public void setSearchableBy(influent.idl.FL_SearchableBy value) {
+    this.searchableBy = value;
+  }
+
+  /**
+   * Gets the value of the 'levelOfDetail' field.
+   * Minimum amount of detail that this property is included in *   */
+  public influent.idl.FL_LevelOfDetail getLevelOfDetail() {
+    return levelOfDetail;
+  }
+
+  /**
+   * Sets the value of the 'levelOfDetail' field.
+   * Minimum amount of detail that this property is included in *   * @param value the value to set.
+   */
+  public void setLevelOfDetail(influent.idl.FL_LevelOfDetail value) {
+    this.levelOfDetail = value;
+  }
+
+  /**
+   * Gets the value of the 'tags' field.
+   * List of tags that belong to this property *   */
+  public java.util.List<influent.idl.FL_PropertyTag> getTags() {
+    return tags;
+  }
+
+  /**
+   * Sets the value of the 'tags' field.
+   * List of tags that belong to this property *   * @param value the value to set.
+   */
+  public void setTags(java.util.List<influent.idl.FL_PropertyTag> value) {
+    this.tags = value;
   }
 
   /** Creates a new FL_PropertyDescriptor RecordBuilder */
@@ -164,9 +244,13 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
 
     private java.lang.String key;
     private java.lang.String friendlyText;
-    private influent.idl.FL_PropertyType type;
+    private influent.idl.FL_PropertyType propertyType;
     private influent.idl.FL_RangeType range;
+    private java.util.List<influent.idl.FL_TypeMapping> memberOf;
     private influent.idl.FL_Constraint constraint;
+    private influent.idl.FL_SearchableBy searchableBy;
+    private influent.idl.FL_LevelOfDetail levelOfDetail;
+    private java.util.List<influent.idl.FL_PropertyTag> tags;
 
     /** Creates a new Builder */
     private Builder() {
@@ -189,17 +273,33 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
         this.friendlyText = data().deepCopy(fields()[1].schema(), other.friendlyText);
         fieldSetFlags()[1] = true;
       }
-      if (isValidValue(fields()[2], other.type)) {
-        this.type = data().deepCopy(fields()[2].schema(), other.type);
+      if (isValidValue(fields()[2], other.propertyType)) {
+        this.propertyType = data().deepCopy(fields()[2].schema(), other.propertyType);
         fieldSetFlags()[2] = true;
       }
       if (isValidValue(fields()[3], other.range)) {
         this.range = data().deepCopy(fields()[3].schema(), other.range);
         fieldSetFlags()[3] = true;
       }
-      if (isValidValue(fields()[4], other.constraint)) {
-        this.constraint = data().deepCopy(fields()[4].schema(), other.constraint);
+      if (isValidValue(fields()[4], other.memberOf)) {
+        this.memberOf = data().deepCopy(fields()[4].schema(), other.memberOf);
         fieldSetFlags()[4] = true;
+      }
+      if (isValidValue(fields()[5], other.constraint)) {
+        this.constraint = data().deepCopy(fields()[5].schema(), other.constraint);
+        fieldSetFlags()[5] = true;
+      }
+      if (isValidValue(fields()[6], other.searchableBy)) {
+        this.searchableBy = data().deepCopy(fields()[6].schema(), other.searchableBy);
+        fieldSetFlags()[6] = true;
+      }
+      if (isValidValue(fields()[7], other.levelOfDetail)) {
+        this.levelOfDetail = data().deepCopy(fields()[7].schema(), other.levelOfDetail);
+        fieldSetFlags()[7] = true;
+      }
+      if (isValidValue(fields()[8], other.tags)) {
+        this.tags = data().deepCopy(fields()[8].schema(), other.tags);
+        fieldSetFlags()[8] = true;
       }
     }
 
@@ -253,27 +353,27 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
       return this;
     }
 
-    /** Gets the value of the 'type' field */
-    public influent.idl.FL_PropertyType getType() {
-      return type;
+    /** Gets the value of the 'propertyType' field */
+    public influent.idl.FL_PropertyType getPropertyType() {
+      return propertyType;
     }
     
-    /** Sets the value of the 'type' field */
-    public influent.idl.FL_PropertyDescriptor.Builder setType(influent.idl.FL_PropertyType value) {
+    /** Sets the value of the 'propertyType' field */
+    public influent.idl.FL_PropertyDescriptor.Builder setPropertyType(influent.idl.FL_PropertyType value) {
       validate(fields()[2], value);
-      this.type = value;
+      this.propertyType = value;
       fieldSetFlags()[2] = true;
       return this; 
     }
     
-    /** Checks whether the 'type' field has been set */
-    public boolean hasType() {
+    /** Checks whether the 'propertyType' field has been set */
+    public boolean hasPropertyType() {
       return fieldSetFlags()[2];
     }
     
-    /** Clears the value of the 'type' field */
-    public influent.idl.FL_PropertyDescriptor.Builder clearType() {
-      type = null;
+    /** Clears the value of the 'propertyType' field */
+    public influent.idl.FL_PropertyDescriptor.Builder clearPropertyType() {
+      propertyType = null;
       fieldSetFlags()[2] = false;
       return this;
     }
@@ -303,6 +403,31 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
       return this;
     }
 
+    /** Gets the value of the 'memberOf' field */
+    public java.util.List<influent.idl.FL_TypeMapping> getMemberOf() {
+      return memberOf;
+    }
+    
+    /** Sets the value of the 'memberOf' field */
+    public influent.idl.FL_PropertyDescriptor.Builder setMemberOf(java.util.List<influent.idl.FL_TypeMapping> value) {
+      validate(fields()[4], value);
+      this.memberOf = value;
+      fieldSetFlags()[4] = true;
+      return this; 
+    }
+    
+    /** Checks whether the 'memberOf' field has been set */
+    public boolean hasMemberOf() {
+      return fieldSetFlags()[4];
+    }
+    
+    /** Clears the value of the 'memberOf' field */
+    public influent.idl.FL_PropertyDescriptor.Builder clearMemberOf() {
+      memberOf = null;
+      fieldSetFlags()[4] = false;
+      return this;
+    }
+
     /** Gets the value of the 'constraint' field */
     public influent.idl.FL_Constraint getConstraint() {
       return constraint;
@@ -310,21 +435,96 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
     
     /** Sets the value of the 'constraint' field */
     public influent.idl.FL_PropertyDescriptor.Builder setConstraint(influent.idl.FL_Constraint value) {
-      validate(fields()[4], value);
+      validate(fields()[5], value);
       this.constraint = value;
-      fieldSetFlags()[4] = true;
+      fieldSetFlags()[5] = true;
       return this; 
     }
     
     /** Checks whether the 'constraint' field has been set */
     public boolean hasConstraint() {
-      return fieldSetFlags()[4];
+      return fieldSetFlags()[5];
     }
     
     /** Clears the value of the 'constraint' field */
     public influent.idl.FL_PropertyDescriptor.Builder clearConstraint() {
       constraint = null;
-      fieldSetFlags()[4] = false;
+      fieldSetFlags()[5] = false;
+      return this;
+    }
+
+    /** Gets the value of the 'searchableBy' field */
+    public influent.idl.FL_SearchableBy getSearchableBy() {
+      return searchableBy;
+    }
+    
+    /** Sets the value of the 'searchableBy' field */
+    public influent.idl.FL_PropertyDescriptor.Builder setSearchableBy(influent.idl.FL_SearchableBy value) {
+      validate(fields()[6], value);
+      this.searchableBy = value;
+      fieldSetFlags()[6] = true;
+      return this; 
+    }
+    
+    /** Checks whether the 'searchableBy' field has been set */
+    public boolean hasSearchableBy() {
+      return fieldSetFlags()[6];
+    }
+    
+    /** Clears the value of the 'searchableBy' field */
+    public influent.idl.FL_PropertyDescriptor.Builder clearSearchableBy() {
+      searchableBy = null;
+      fieldSetFlags()[6] = false;
+      return this;
+    }
+
+    /** Gets the value of the 'levelOfDetail' field */
+    public influent.idl.FL_LevelOfDetail getLevelOfDetail() {
+      return levelOfDetail;
+    }
+    
+    /** Sets the value of the 'levelOfDetail' field */
+    public influent.idl.FL_PropertyDescriptor.Builder setLevelOfDetail(influent.idl.FL_LevelOfDetail value) {
+      validate(fields()[7], value);
+      this.levelOfDetail = value;
+      fieldSetFlags()[7] = true;
+      return this; 
+    }
+    
+    /** Checks whether the 'levelOfDetail' field has been set */
+    public boolean hasLevelOfDetail() {
+      return fieldSetFlags()[7];
+    }
+    
+    /** Clears the value of the 'levelOfDetail' field */
+    public influent.idl.FL_PropertyDescriptor.Builder clearLevelOfDetail() {
+      levelOfDetail = null;
+      fieldSetFlags()[7] = false;
+      return this;
+    }
+
+    /** Gets the value of the 'tags' field */
+    public java.util.List<influent.idl.FL_PropertyTag> getTags() {
+      return tags;
+    }
+    
+    /** Sets the value of the 'tags' field */
+    public influent.idl.FL_PropertyDescriptor.Builder setTags(java.util.List<influent.idl.FL_PropertyTag> value) {
+      validate(fields()[8], value);
+      this.tags = value;
+      fieldSetFlags()[8] = true;
+      return this; 
+    }
+    
+    /** Checks whether the 'tags' field has been set */
+    public boolean hasTags() {
+      return fieldSetFlags()[8];
+    }
+    
+    /** Clears the value of the 'tags' field */
+    public influent.idl.FL_PropertyDescriptor.Builder clearTags() {
+      tags = null;
+      fieldSetFlags()[8] = false;
       return this;
     }
 
@@ -334,9 +534,13 @@ public class FL_PropertyDescriptor extends org.apache.avro.specific.SpecificReco
         FL_PropertyDescriptor record = new FL_PropertyDescriptor();
         record.key = fieldSetFlags()[0] ? this.key : (java.lang.String) defaultValue(fields()[0]);
         record.friendlyText = fieldSetFlags()[1] ? this.friendlyText : (java.lang.String) defaultValue(fields()[1]);
-        record.type = fieldSetFlags()[2] ? this.type : (influent.idl.FL_PropertyType) defaultValue(fields()[2]);
+        record.propertyType = fieldSetFlags()[2] ? this.propertyType : (influent.idl.FL_PropertyType) defaultValue(fields()[2]);
         record.range = fieldSetFlags()[3] ? this.range : (influent.idl.FL_RangeType) defaultValue(fields()[3]);
-        record.constraint = fieldSetFlags()[4] ? this.constraint : (influent.idl.FL_Constraint) defaultValue(fields()[4]);
+        record.memberOf = fieldSetFlags()[4] ? this.memberOf : (java.util.List<influent.idl.FL_TypeMapping>) defaultValue(fields()[4]);
+        record.constraint = fieldSetFlags()[5] ? this.constraint : (influent.idl.FL_Constraint) defaultValue(fields()[5]);
+        record.searchableBy = fieldSetFlags()[6] ? this.searchableBy : (influent.idl.FL_SearchableBy) defaultValue(fields()[6]);
+        record.levelOfDetail = fieldSetFlags()[7] ? this.levelOfDetail : (influent.idl.FL_LevelOfDetail) defaultValue(fields()[7]);
+        record.tags = fieldSetFlags()[8] ? this.tags : (java.util.List<influent.idl.FL_PropertyTag>) defaultValue(fields()[8]);
         return record;
       } catch (Exception e) {
         throw new org.apache.avro.AvroRuntimeException(e);

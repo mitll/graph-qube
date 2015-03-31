@@ -10,25 +10,25 @@ package influent.idl;
 	 *   certain path lengths or path time window matches. */
 @org.apache.avro.specific.AvroGenerated
 public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_LinkMatchDescriptor\",\"namespace\":\"influent.idl\",\"doc\":\"* CHANGED in 1.5 - The PathMatchDescriptor was removed, and replaced with FL_PathMatchTags,\\r\\n\\t *   which can be used as they key in a PropertyMatch Descriptor. Set these to require\\r\\n\\t *   certain path lengths or path time window matches.\",\"fields\":[{\"name\":\"uid\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.\\r\\n\\t\\t Cannot be null.\"},{\"name\":\"role\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"Optional role name, for labeling the pattern for human understanding\",\"default\":null},{\"name\":\"source\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) \\r\\n\\t\\t\\tBeing null indicates that matched links should have no source node\"},{\"name\":\"target\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) \\r\\n\\t\\t\\tBeing null indicates that matched links should have no target node\"},{\"name\":\"tags\",\"type\":[{\"type\":\"array\",\"items\":{\"type\":\"enum\",\"name\":\"FL_LinkTag\",\"doc\":\"This is the current list of tags for Links:\",\"symbols\":[\"FINANCIAL\",\"SOCIAL\",\"COMMUNICATION\",\"OTHER\"]}},\"null\"],\"doc\":\"entities should match AT LEAST ONE OF the given tags (e.g FINANCIAL, COMMUNICATION, SOCIAL), if provided\",\"default\":null},{\"name\":\"properties\",\"type\":[{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"FL_PropertyMatchDescriptor\",\"doc\":\"A PropertyDescriptor is used to describe a possible property that can be present in an entity or link. It describes \\r\\n\\t a single property that can be used in a property search. It can optionally include example or suggested values \\r\\n\\t for searching on.\\r\\n\\t \\r\\n\\t CHANGED IN 1.5\",\"fields\":[{\"name\":\"key\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"field name or FL_PropertyTag (or FL_PathMatchTag) that could be searched on\"},{\"name\":\"range\",\"type\":[{\"type\":\"record\",\"name\":\"FL_SingletonRange\",\"doc\":\"Single value\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"value\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",{\"type\":\"record\",\"name\":\"FL_GeoData\",\"doc\":\"Structured representation of geo-spatial data.\",\"fields\":[{\"name\":\"text\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"an address or other place reference; unstructured text field\",\"default\":null},{\"name\":\"lat\",\"type\":[\"double\",\"null\"],\"doc\":\"latitude\",\"default\":null},{\"name\":\"lon\",\"type\":[\"double\",\"null\"],\"doc\":\"longitude\",\"default\":null},{\"name\":\"cc\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"ISO 3 digit country code\",\"default\":null}]}]},{\"name\":\"type\",\"type\":{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"doc\":\"Allowed types for Property values.\\r\\n\\r\\n\\t CHANGED in 1.5\",\"symbols\":[\"DOUBLE\",\"LONG\",\"BOOLEAN\",\"STRING\",\"DATE\",\"GEO\",\"OTHER\"]},\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]},{\"type\":\"record\",\"name\":\"FL_ListRange\",\"doc\":\"List of values\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"values\",\"type\":{\"type\":\"array\",\"items\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\"]}},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]},{\"type\":\"record\",\"name\":\"FL_BoundedRange\",\"doc\":\"Bounded or unbounded range values\\r\\n\\t\\r\\n\\tADDED IN 1.5\",\"fields\":[{\"name\":\"start\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"start of range, or null if unbounded start\"},{\"name\":\"end\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"end of range, or null if unbounded start\"},{\"name\":\"inclusive\",\"type\":\"boolean\",\"doc\":\"If true, range includes specified endpoint. If false, range is exclusive.\"},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER\"}]}],\"doc\":\"value of the Property to search on\",\"default\":null},{\"name\":\"variable\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"If not null/empty, the value is relative to a logical variable specified here (e.g. \\\"X\\\")\\r\\n\\t\\t *  Other parameters using the same logical variable name are relative to this value.\\r\\n\\t\\t *  For instance, for a {key=\\\"amount\\\", value=\\\"0.98\\\", variable=\\\"A\\\"} means that the value\\r\\n\\t\\t *  of amount is 0.98A.  Another amount might be 0.55A, and the property match engine\\r\\n\\t\\t *  (e.g. search engine, database query or pattern match algorithm) should understand\\r\\n\\t\\t *  the relative values.\\r\\n\\t\\t *  \\r\\n\\t\\t *  If no variable is specified, then the value is an absolute number. For example,\\r\\n\\t\\t *  {key=\\\"amount\\\", value=\\\"0.98\\\"} refers to an amount of exactly 0.98.\",\"default\":\"\"},{\"name\":\"weight\",\"type\":[\"float\",\"null\"],\"doc\":\"Relative importance of this match criteria, where the default is 1.0.\",\"default\":1.0},{\"name\":\"include\",\"type\":\"boolean\",\"doc\":\"If true, INCLUDE all values matching this descriptor. If false, EXCLUDE all values matching this descriptor.\",\"default\":true},{\"name\":\"constraint\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"doc\":\"Property value matching constraints\\r\\n\\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]},\"null\"],\"doc\":\"MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT\"}]}},\"null\"],\"doc\":\"entities should match ALL of the provided property descriptors (e.g. LABEL, etc), if provided\",\"default\":null},{\"name\":\"stage\",\"type\":\"int\",\"doc\":\"If not negative, indicates the relative order of events within the pattern. Need not be unique.\\r\\n\\t\\t    If not provided, then transaction order must be inferred from the graph structure.\",\"default\":-1},{\"name\":\"constraint\",\"type\":[\"FL_Constraint\",\"null\"],\"doc\":\"MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_LinkMatchDescriptor\",\"namespace\":\"influent.idl\",\"doc\":\"* CHANGED in 1.5 - The PathMatchDescriptor was removed, and replaced with FL_PathMatchTags,\\r\\n\\t *   which can be used as they key in a PropertyMatch Descriptor. Set these to require\\r\\n\\t *   certain path lengths or path time window matches.\",\"fields\":[{\"name\":\"uid\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"* The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.\\r\\n\\t\\t * Cannot be null.\"},{\"name\":\"role\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"Optional role name, for labeling the pattern for human understanding\",\"default\":null},{\"name\":\"source\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)\\r\\n\\t\\t * Being null indicates that matched links should have no source node\"},{\"name\":\"target\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)\\r\\n\\t\\t * Being null indicates that matched links should have no target node\"},{\"name\":\"linkTypes\",\"type\":[{\"type\":\"array\",\"items\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},\"null\"],\"doc\":\"link types, if provided\",\"default\":null},{\"name\":\"properties\",\"type\":[{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"FL_PropertyMatchDescriptor\",\"doc\":\"* A PropertyMatchDescriptor is used to describe a possible property that can be present in an entity or link. It describes\\r\\n\\t * a single property that can be used in a property search. It can optionally include example or suggested values\\r\\n\\t * for searching on.\\r\\n\\t *\\r\\n\\t * CHANGED IN 1.5\\r\\n\\t *\",\"fields\":[{\"name\":\"key\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"field name or FL_PropertyTag (or FL_PathMatchTag) that could be searched on\"},{\"name\":\"range\",\"type\":[{\"type\":\"record\",\"name\":\"FL_SingletonRange\",\"doc\":\"* Single value\\r\\n\\t *\\r\\n\\t * ADDED IN 1.5\",\"fields\":[{\"name\":\"value\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",{\"type\":\"record\",\"name\":\"FL_GeoData\",\"doc\":\"* Structured representation of geo-spatial data.\",\"fields\":[{\"name\":\"text\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"an address or other place reference; unstructured text field\",\"default\":null},{\"name\":\"lat\",\"type\":[\"double\",\"null\"],\"doc\":\"latitude\",\"default\":null},{\"name\":\"lon\",\"type\":[\"double\",\"null\"],\"doc\":\"longitude\",\"default\":null},{\"name\":\"cc\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"ISO 3 digit country code\",\"default\":null}]}]},{\"name\":\"type\",\"type\":{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"doc\":\"* Allowed types for Property values.\\r\\n\\t *\\r\\n\\t * CHANGED in 1.9\",\"symbols\":[\"FLOAT\",\"DOUBLE\",\"INTEGER\",\"LONG\",\"BOOLEAN\",\"STRING\",\"IMAGE\",\"DATE\",\"GEO\"]},\"doc\":\"One of STRING, INTEGER, FLOAT, DOUBLE, LONG, BOOLEAN, DATE, GEO, IMAGE\"}]},{\"type\":\"record\",\"name\":\"FL_ListRange\",\"doc\":\"* List of values\\r\\n\\t *\\r\\n\\t * ADDED IN 1.5\",\"fields\":[{\"name\":\"values\",\"type\":{\"type\":\"array\",\"items\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\"]}},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of STRING, INTEGER, FLOAT, DOUBLE, LONG, BOOLEAN, DATE, GEO\"}]},{\"type\":\"record\",\"name\":\"FL_BoundedRange\",\"doc\":\"* Bounded or unbounded range values\\r\\n\\t *\\r\\n\\t * ADDED IN 1.5\",\"fields\":[{\"name\":\"start\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"start of range, or null if unbounded start\"},{\"name\":\"end\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"int\",\"float\",\"double\",\"long\",\"boolean\",\"FL_GeoData\",\"null\"],\"doc\":\"end of range, or null if unbounded start\"},{\"name\":\"inclusive\",\"type\":\"boolean\",\"doc\":\"If true, range includes specified endpoint. If false, range is exclusive.\"},{\"name\":\"type\",\"type\":\"FL_PropertyType\",\"doc\":\"One of STRING, INTEGER, FLOAT, DOUBLE, LONG, BOOLEAN, DATE, GEO\"}]}],\"doc\":\"value of the Property to search on\",\"default\":null},{\"name\":\"variable\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"],\"doc\":\"If not null/empty, the value is relative to a logical variable specified here (e.g. \\\"X\\\")\\r\\n\\t\\t *  Other parameters using the same logical variable name are relative to this value.\\r\\n\\t\\t *  For instance, for a {key=\\\"amount\\\", value=\\\"0.98\\\", variable=\\\"A\\\"} means that the value\\r\\n\\t\\t *  of amount is 0.98A.  Another amount might be 0.55A, and the property match engine\\r\\n\\t\\t *  (e.g. search engine, database query or pattern match algorithm) should understand\\r\\n\\t\\t *  the relative values.\\r\\n\\t\\t *\\r\\n\\t\\t *  If no variable is specified, then the value is an absolute number. For example,\\r\\n\\t\\t *  {key=\\\"amount\\\", value=\\\"0.98\\\"} refers to an amount of exactly 0.98.\",\"default\":\"\"},{\"name\":\"weight\",\"type\":[\"float\",\"null\"],\"doc\":\"Relative importance of this match criteria, where the default is 1.0.\",\"default\":1.0},{\"name\":\"similarity\",\"type\":[\"float\",\"null\"],\"doc\":\"Require similarity for fuzzy searches, the default is null.\",\"default\":1.0},{\"name\":\"include\",\"type\":\"boolean\",\"doc\":\"If true, INCLUDE all values matching this descriptor. If false, EXCLUDE all values matching this descriptor.\",\"default\":true},{\"name\":\"constraint\",\"type\":[{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"doc\":\"* Property value matching constraints\\r\\n\\t *\\r\\n\\t * ADDED IN 1.5\\r\\n\\t * MOVED IN 2.0\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]},\"null\"],\"doc\":\"MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT\"},{\"name\":\"typeMappings\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"FL_TypeMapping\",\"doc\":\"* Used to describe how an FL_PropertyDescriptor maps to given a type.\\r\\n\\t *\\r\\n\\t * ADDED IN 1.8\",\"fields\":[{\"name\":\"type\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"The type that the mapping applies to *\"},{\"name\":\"memberKey\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"doc\":\"field that the FL_Property maps to in the type *\"}]}},\"doc\":\"List of type mappings to match in *\",\"default\":null}]}},\"null\"],\"doc\":\"entities should match ALL of the provided property descriptors (e.g. LABEL, etc), if provided\",\"default\":null},{\"name\":\"stage\",\"type\":\"int\",\"doc\":\"If not negative, indicates the relative order of events within the pattern. Need not be unique.\\r\\n\\t\\t * If not provided, then transaction/event order must be inferred from the graph structure.\",\"default\":-1},{\"name\":\"constraint\",\"type\":[\"FL_Constraint\",\"null\"],\"doc\":\"MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT\",\"default\":null}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
-  /** The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.
-		 Cannot be null. */
+  /** * The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.
+		 * Cannot be null. */
    private java.lang.String uid;
   /** Optional role name, for labeling the pattern for human understanding */
    private java.lang.String role;
-  /** The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) 
-			Being null indicates that matched links should have no source node */
+  /** The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)
+		 * Being null indicates that matched links should have no source node */
    private java.lang.String source;
-  /** The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) 
-			Being null indicates that matched links should have no target node */
+  /** The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)
+		 * Being null indicates that matched links should have no target node */
    private java.lang.String target;
-  /** entities should match AT LEAST ONE OF the given tags (e.g FINANCIAL, COMMUNICATION, SOCIAL), if provided */
-   private java.util.List<influent.idl.FL_LinkTag> tags;
+  /** link types, if provided */
+   private java.util.List<java.lang.String> linkTypes;
   /** entities should match ALL of the provided property descriptors (e.g. LABEL, etc), if provided */
    private java.util.List<influent.idl.FL_PropertyMatchDescriptor> properties;
   /** If not negative, indicates the relative order of events within the pattern. Need not be unique.
-		    If not provided, then transaction order must be inferred from the graph structure. */
+		 * If not provided, then transaction/event order must be inferred from the graph structure. */
    private int stage;
   /** MUST_EQUALS, FUZZY_PARTIAL_OPTIONAL, MUST_NOT */
    private influent.idl.FL_Constraint constraint;
@@ -41,12 +41,12 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
   /**
    * All-args constructor.
    */
-  public FL_LinkMatchDescriptor(java.lang.String uid, java.lang.String role, java.lang.String source, java.lang.String target, java.util.List<influent.idl.FL_LinkTag> tags, java.util.List<influent.idl.FL_PropertyMatchDescriptor> properties, java.lang.Integer stage, influent.idl.FL_Constraint constraint) {
+  public FL_LinkMatchDescriptor(java.lang.String uid, java.lang.String role, java.lang.String source, java.lang.String target, java.util.List<java.lang.String> linkTypes, java.util.List<influent.idl.FL_PropertyMatchDescriptor> properties, java.lang.Integer stage, influent.idl.FL_Constraint constraint) {
     this.uid = uid;
     this.role = role;
     this.source = source;
     this.target = target;
-    this.tags = tags;
+    this.linkTypes = linkTypes;
     this.properties = properties;
     this.stage = stage;
     this.constraint = constraint;
@@ -60,7 +60,7 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
     case 1: return role;
     case 2: return source;
     case 3: return target;
-    case 4: return tags;
+    case 4: return linkTypes;
     case 5: return properties;
     case 6: return stage;
     case 7: return constraint;
@@ -75,7 +75,7 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
     case 1: role = (java.lang.String)value$; break;
     case 2: source = (java.lang.String)value$; break;
     case 3: target = (java.lang.String)value$; break;
-    case 4: tags = (java.util.List<influent.idl.FL_LinkTag>)value$; break;
+    case 4: linkTypes = (java.util.List<java.lang.String>)value$; break;
     case 5: properties = (java.util.List<influent.idl.FL_PropertyMatchDescriptor>)value$; break;
     case 6: stage = (java.lang.Integer)value$; break;
     case 7: constraint = (influent.idl.FL_Constraint)value$; break;
@@ -85,16 +85,16 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
 
   /**
    * Gets the value of the 'uid' field.
-   * The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.
-		 Cannot be null.   */
+   * * The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.
+		 * Cannot be null.   */
   public java.lang.String getUid() {
     return uid;
   }
 
   /**
    * Sets the value of the 'uid' field.
-   * The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.
-		 Cannot be null.   * @param value the value to set.
+   * * The UID of the PATTERN link (NOT the underlying matched link ID). Will be referenced in results.
+		 * Cannot be null.   * @param value the value to set.
    */
   public void setUid(java.lang.String value) {
     this.uid = value;
@@ -117,16 +117,16 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
 
   /**
    * Gets the value of the 'source' field.
-   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) 
-			Being null indicates that matched links should have no source node   */
+   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)
+		 * Being null indicates that matched links should have no source node   */
   public java.lang.String getSource() {
     return source;
   }
 
   /**
    * Sets the value of the 'source' field.
-   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) 
-			Being null indicates that matched links should have no source node   * @param value the value to set.
+   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)
+		 * Being null indicates that matched links should have no source node   * @param value the value to set.
    */
   public void setSource(java.lang.String value) {
     this.source = value;
@@ -134,34 +134,34 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
 
   /**
    * Gets the value of the 'target' field.
-   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) 
-			Being null indicates that matched links should have no target node   */
+   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)
+		 * Being null indicates that matched links should have no target node   */
   public java.lang.String getTarget() {
     return target;
   }
 
   /**
    * Sets the value of the 'target' field.
-   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID) 
-			Being null indicates that matched links should have no target node   * @param value the value to set.
+   * The UID of a FL_EntityMatchDescriptor node (not an underlying Entity UID)
+		 * Being null indicates that matched links should have no target node   * @param value the value to set.
    */
   public void setTarget(java.lang.String value) {
     this.target = value;
   }
 
   /**
-   * Gets the value of the 'tags' field.
-   * entities should match AT LEAST ONE OF the given tags (e.g FINANCIAL, COMMUNICATION, SOCIAL), if provided   */
-  public java.util.List<influent.idl.FL_LinkTag> getTags() {
-    return tags;
+   * Gets the value of the 'linkTypes' field.
+   * link types, if provided   */
+  public java.util.List<java.lang.String> getLinkTypes() {
+    return linkTypes;
   }
 
   /**
-   * Sets the value of the 'tags' field.
-   * entities should match AT LEAST ONE OF the given tags (e.g FINANCIAL, COMMUNICATION, SOCIAL), if provided   * @param value the value to set.
+   * Sets the value of the 'linkTypes' field.
+   * link types, if provided   * @param value the value to set.
    */
-  public void setTags(java.util.List<influent.idl.FL_LinkTag> value) {
-    this.tags = value;
+  public void setLinkTypes(java.util.List<java.lang.String> value) {
+    this.linkTypes = value;
   }
 
   /**
@@ -182,7 +182,7 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
   /**
    * Gets the value of the 'stage' field.
    * If not negative, indicates the relative order of events within the pattern. Need not be unique.
-		    If not provided, then transaction order must be inferred from the graph structure.   */
+		 * If not provided, then transaction/event order must be inferred from the graph structure.   */
   public java.lang.Integer getStage() {
     return stage;
   }
@@ -190,7 +190,7 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
   /**
    * Sets the value of the 'stage' field.
    * If not negative, indicates the relative order of events within the pattern. Need not be unique.
-		    If not provided, then transaction order must be inferred from the graph structure.   * @param value the value to set.
+		 * If not provided, then transaction/event order must be inferred from the graph structure.   * @param value the value to set.
    */
   public void setStage(java.lang.Integer value) {
     this.stage = value;
@@ -236,7 +236,7 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
     private java.lang.String role;
     private java.lang.String source;
     private java.lang.String target;
-    private java.util.List<influent.idl.FL_LinkTag> tags;
+    private java.util.List<java.lang.String> linkTypes;
     private java.util.List<influent.idl.FL_PropertyMatchDescriptor> properties;
     private int stage;
     private influent.idl.FL_Constraint constraint;
@@ -270,8 +270,8 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
         this.target = data().deepCopy(fields()[3].schema(), other.target);
         fieldSetFlags()[3] = true;
       }
-      if (isValidValue(fields()[4], other.tags)) {
-        this.tags = data().deepCopy(fields()[4].schema(), other.tags);
+      if (isValidValue(fields()[4], other.linkTypes)) {
+        this.linkTypes = data().deepCopy(fields()[4].schema(), other.linkTypes);
         fieldSetFlags()[4] = true;
       }
       if (isValidValue(fields()[5], other.properties)) {
@@ -388,27 +388,27 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
       return this;
     }
 
-    /** Gets the value of the 'tags' field */
-    public java.util.List<influent.idl.FL_LinkTag> getTags() {
-      return tags;
+    /** Gets the value of the 'linkTypes' field */
+    public java.util.List<java.lang.String> getLinkTypes() {
+      return linkTypes;
     }
     
-    /** Sets the value of the 'tags' field */
-    public influent.idl.FL_LinkMatchDescriptor.Builder setTags(java.util.List<influent.idl.FL_LinkTag> value) {
+    /** Sets the value of the 'linkTypes' field */
+    public influent.idl.FL_LinkMatchDescriptor.Builder setLinkTypes(java.util.List<java.lang.String> value) {
       validate(fields()[4], value);
-      this.tags = value;
+      this.linkTypes = value;
       fieldSetFlags()[4] = true;
       return this; 
     }
     
-    /** Checks whether the 'tags' field has been set */
-    public boolean hasTags() {
+    /** Checks whether the 'linkTypes' field has been set */
+    public boolean hasLinkTypes() {
       return fieldSetFlags()[4];
     }
     
-    /** Clears the value of the 'tags' field */
-    public influent.idl.FL_LinkMatchDescriptor.Builder clearTags() {
-      tags = null;
+    /** Clears the value of the 'linkTypes' field */
+    public influent.idl.FL_LinkMatchDescriptor.Builder clearLinkTypes() {
+      linkTypes = null;
       fieldSetFlags()[4] = false;
       return this;
     }
@@ -495,7 +495,7 @@ public class FL_LinkMatchDescriptor extends org.apache.avro.specific.SpecificRec
         record.role = fieldSetFlags()[1] ? this.role : (java.lang.String) defaultValue(fields()[1]);
         record.source = fieldSetFlags()[2] ? this.source : (java.lang.String) defaultValue(fields()[2]);
         record.target = fieldSetFlags()[3] ? this.target : (java.lang.String) defaultValue(fields()[3]);
-        record.tags = fieldSetFlags()[4] ? this.tags : (java.util.List<influent.idl.FL_LinkTag>) defaultValue(fields()[4]);
+        record.linkTypes = fieldSetFlags()[4] ? this.linkTypes : (java.util.List<java.lang.String>) defaultValue(fields()[4]);
         record.properties = fieldSetFlags()[5] ? this.properties : (java.util.List<influent.idl.FL_PropertyMatchDescriptor>) defaultValue(fields()[5]);
         record.stage = fieldSetFlags()[6] ? this.stage : (java.lang.Integer) defaultValue(fields()[6]);
         record.constraint = fieldSetFlags()[7] ? this.constraint : (influent.idl.FL_Constraint) defaultValue(fields()[7]);

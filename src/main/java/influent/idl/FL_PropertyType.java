@@ -5,12 +5,12 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** Allowed types for Property values.
-
-	 CHANGED in 1.5 */
+/** * Allowed types for Property values.
+	 *
+	 * CHANGED in 1.9 */
 @org.apache.avro.specific.AvroGenerated
 public enum FL_PropertyType { 
-  DOUBLE, LONG, BOOLEAN, STRING, DATE, GEO, OTHER  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"namespace\":\"influent.idl\",\"doc\":\"Allowed types for Property values.\\r\\n\\r\\n\\t CHANGED in 1.5\",\"symbols\":[\"DOUBLE\",\"LONG\",\"BOOLEAN\",\"STRING\",\"DATE\",\"GEO\",\"OTHER\"]}");
+  FLOAT, DOUBLE, INTEGER, LONG, BOOLEAN, STRING, IMAGE, DATE, GEO  ;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_PropertyType\",\"namespace\":\"influent.idl\",\"doc\":\"* Allowed types for Property values.\\r\\n\\t *\\r\\n\\t * CHANGED in 1.9\",\"symbols\":[\"FLOAT\",\"DOUBLE\",\"INTEGER\",\"LONG\",\"BOOLEAN\",\"STRING\",\"IMAGE\",\"DATE\",\"GEO\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 }

@@ -1,0 +1,336 @@
+/*
+ * Copyright (C) 2013-2015 Uncharted Software Inc.
+ *
+ * Property of Uncharted(TM), formerly Oculus Info Inc.
+ * http://uncharted.software/
+ *
+ * Released under the MIT License.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is furnished to do
+ * so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+@namespace("influent.idl")
+
+
+protocol FL_DataEnums {
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * A list of the required property keys that are reserved by the system and should be included as
+	 * the keys in FL_PropertyMatchDescriptors. Keys are case sensitive.
+	 *
+	 * ADDED IN 2.0
+	 */
+	enum FL_RequiredPropertyKey {
+		NAME,       // For nodes: entity name
+		ID,         // For nodes: the unique entity id
+		FROM,       // For links: source entity.
+		TO,         // For links: target entity.
+		DATE,       // For links: date or date range.
+		AMOUNT,     // For links: amount / weight.
+		ENTITY,     // For links: IDs of one or more entities at either end of a link (special key). For nodes, the id.
+		LINKED,     // For links: IDs of one or more entities opposite the ENTITY(s) (special key).
+		TYPE        // For nodes and links: the type of the node or link.
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * A list of case sensitive keys which are reserved keywords in search.
+	 *
+	 * ADDED IN 2.0
+	 */
+	enum FL_ReservedPropertyKey {
+		TYPE,  // Key indicating type, which typically differentiates schemas.
+		ORDER, // Key indicating ordering of results.
+		MATCH, // Key indicating whether to match any|all.
+		SCORE  // Key indicating how accurately the search matched.
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Tags are defined by the application layer as a taxonomy of user and application concepts,
+	 * independent of the data sources. This allows application semantics to be re-used with new
+	 * data, with a minimum of new software design and development. Data layer entity types, link
+	 * types and properties should be mapped into the list of tags. The application layer must be
+	 * able to search by native field name or by tag interchangeably, and properties returned must
+	 * contain both native field names as well as tags.
+	 *
+	 * The list of tags may change as application features evolve, though that will require
+	 * collaboration with the data layer providers. Evolving the tag list should not change the
+	 * Data Access or Search APIs.
+	 *
+	 * This is the current list of tags for Properties:
+	 *
+	 * CHANGED in 1.5:
+	 * - CREDIT/DEBIT changed to INFLOWING/OUTFLOWING
+	 * - added USD
+	 * - added DURATION
+	 *
+	 * CHANGED in 1.6:
+	 * - added ENTITY_TYPE
+	 * - added ACCOUNT_OWNER, CLUSTER_SUMMARY, COUNTRY_CODE
+	 *
+	 * CHANGED in 1.7:
+	 * - added CLUSTER
+	 *
+	 * CHANGED in 1.8:
+	 * - added TOPIC
+	 *
+	 * CHANGED in 1.9:
+	 * - added HTML
+	 *
+	 * CHANGED in 2.0:
+	 * - added UNITS
+	 */
+	enum FL_PropertyTag {
+		ID, 		 		// Underlying identifier in data set (not necessary a UID)	
+		TYPE,		 		// Data set specific account type (e.g. in Kiva: Lender, Borrower, Partner, etc).
+							// Shown to the user for context, and used in segmentation and clustering of data.
+		ENTITY_TYPE, 		// Data set specific entity type (e.g. person, organisation). 		 
+		ACCOUNT_OWNER,		// The account owner for an entity
+		CLUSTER_SUMMARY,	// The associated cluster summary for an entity
+		CLUSTER,			// The cluster an entity belongs to
+		NAME,		 		// A name, often also used in the label.
+		LABEL,		 		// A text label suitable for displaying to a user.
+		STAT,		 		// A text label containing aggregate or statistical summaries of numeric data.
+		TEXT,		 		// Comment or other arbitrarily long text field
+		HTML,				// Text field that is formatted with html tags
+		TOPIC,				// A distribution of topic labels
+		STATUS,		 		// Status indication in the form of a text field
+		ANNOTATION,	 		// A generic annotation in the form of a text field
+		WARNING,	 		// Warning annotation in the form of a text field
+		LINKED_DATA, 		// A LinkedData resource, with URL and a MIME type
+		GEO,		 		// A GeoData object 
+		COUNTRY_CODE,		// An ISO 3 digit country code
+		DATE,		 		// Date in Long format
+		AMOUNT,		 		// Financial amount (any currency)
+		INFLOWING,	 		// Amount flowing in (incoming messages, credits, etc)
+		OUTFLOWING,	 		// Amount flowing out (outgoing messages, debits, etc)
+		COUNT,		 		// When returned an aggregated Link (see below), this is the number of records.
+		SERIES,		 		// Timeseries or other series data suitable for building charts
+		CONSTRUCTED, 		// This property was not in the original data, but was constructed by algorithms.
+							// See Provenance and/or Uncertainty fields for more information.
+		RAW,	 	 		// This property was present in the original data. See Provenance for more information.
+		UNITS,          	// The unit of measurement for the amount property.
+		USD,		 		// flags an amount as being USD (for formatting purposes),
+		DURATION,	 		// An FL_Duration object
+		ENTITY,				// Identifier for an entity
+		SHARED_IDENTIFIER	// Shared attribute identifier
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * This is the current list of tags for Entities:
+	 *
+	 * CHANGED in 1.6:
+	 * - added ACCOUNT_OWNER, CLUSTER_SUMMARY
+	 *
+	 * CHANGED in 1.7:
+	 * - added PROMPT_FOR_DETAILS
+	 *
+	 * CHANGED in 1.8:
+	 * - added UNBRANCHABLE
+	 */
+	enum FL_EntityTag {
+		ACCOUNT_OWNER,		// an owner of accounts
+		ACCOUNT,			// a financial/communications/social account (regardless of owner: person, corporate, shared or otherwise)
+		GROUP, 				// a social group
+		CLUSTER,			// group of entities (system-generated)
+		CLUSTER_SUMMARY,	// summarizes a group of entities (does not allow drill-down to group members)
+		FILE,				// group of entities (user-created) e.g. in the sense of a "case file"
+		ANONYMOUS,			// This entity does not have a globally unique ID, and represents only a class of underlying data.
+							// The ID contains only sufficient information to perform searches, not to retrieve exact matches.
+							// For example, in Kiva, a Borrower has no UID, but is represented as a FirstName&LastName&Gender
+							// query in the Loans table.
+		UNBRANCHABLE,		// an entity for which branch operations are not available
+		PROMPT_FOR_DETAILS,	// Should prompt before showing full details
+		OTHER
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Allowed types for Property values.
+	 *
+	 * CHANGED in 1.9
+	 */
+	enum FL_PropertyType {
+		FLOAT,		// single precision floating-point (ADDED in 1.9 for consistency with allowed values)
+		DOUBLE,		// double precision floating-point
+		INTEGER,	// 32-bit signed integer (ADDED in 1.9 for consistency with allowed values)
+		LONG,		// 64-bit signed integer
+		BOOLEAN,	// true or false
+		STRING,		// UTF-8 Unicode string
+		IMAGE, 		// String, URL
+		DATE, 		// Long, representing the number of milliseconds since 1 January 1970 00:00:00 UTC
+		GEO			// GeoData
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Amount of detail requested
+	 *
+	 * ADDED IN 1.6
+	 *
+	 * CHANGED in 2.0:
+	 * - added KEY
+	 */
+	enum FL_LevelOfDetail {
+		KEY,        // property is returned as a column the search results
+		SUMMARY,    // property is returned in the summary field of the search results
+		FULL,       // property is only returned when a detailed search result is requested
+		HIDDEN      // property is not returned to the client
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Standard two letter continent code
+	 *
+	 * ADDED IN 1.6
+	 */
+	enum FL_ContinentCode {
+		AF, // Africa
+		AS, // Asia
+		EU, // Europe
+		NA, // North America
+		SA, // South America
+		OC, // Oceania
+		AN  // Antarctica
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Temporal resolution of a duration
+	 *
+	 * CHANGED IN 1.5
+	 */
+	enum FL_DateInterval {
+		SECONDS, // ADDED IN 1.5
+		HOURS,   // ADDED IN 1.5
+		DAYS,
+		WEEKS,
+		MONTHS,
+		QUARTERS,
+		YEARS
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Allowed types for Ranges of values.
+	 *
+	 * CHANGED IN 1.6
+	 */
+	enum FL_RangeType {
+		SINGLETON,
+		LIST,
+		BOUNDED,
+		DISTRIBUTION // ADDED IN 1.6
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Property value matching constraints
+	 *
+	 * ADDED IN 1.5
+	 * MOVED IN 2.0
+	 */
+	enum FL_Constraint {
+		REQUIRED_EQUALS, 		// used for cases of REQUIRED or EQUALS
+		FUZZY_PARTIAL_OPTIONAL, // used for cases of FUZZY or PARTIAL or OPTIONAL match
+		NOT,                    // used for MUST NOT match, or logical NOT
+		OPTIONAL_EQUALS,		// equals OR
+		FUZZY_REQUIRED			// fuzzy AND
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Used to describe in which contexts a term can (or should) be searched. Free text searches
+	 * do not describe properties to which they apply, and are often best restricted to
+	 * identity fields like names.
+	 *
+	 * ADDED IN 1.8
+	 * MOVED IN 2.0
+	 */
+	enum FL_SearchableBy {
+		FREE_TEXT,
+		DESCRIPTOR,
+		NONE
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Direction of desired links
+	 */
+	enum FL_DirectionFilter {
+		SOURCE,
+		DESTINATION,
+		BOTH
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Type of entity associated with desired links
+	 *
+	 * ADDED IN 1.6
+	 */
+	enum FL_LinkEntityTypeFilter {
+		ACCOUNT_OWNER,
+		ACCOUNT,
+		CLUSTER_SUMMARY,
+		ANY
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * In addition to PropertyTags, a PropertyMatchDescriptor might also be one of these.
+	 *
+	 * ADDED IN 1.5
+	 */
+	enum FL_PathMatchTag {
+		PATH_LENGTH,	// The length of a path. Used for property match descriptors in pattern search.
+		PATH_TIME,		// The time window for a path. Used for property match descriptors in pattern search.
+		PATH_SOURCES,	// Number of links from source nodes to match. If specified, this path represents multiple links from multiple sources (e.g. a fan-in pattern).
+		PATH_DESTS		// Number of links from dest nodes to match. If specified, this path represents multiple links to multiple dests (e.g. a fan-out pattern).
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Persistence save state
+	 */
+	enum FL_PersistenceState {
+		NEW,
+		MODIFIED,
+		NONE,
+		ERROR
+	}
+}

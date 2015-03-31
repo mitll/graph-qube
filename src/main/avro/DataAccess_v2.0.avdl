@@ -1,0 +1,129 @@
+/*
+ * Copyright (C) 2013-2015 Uncharted Software Inc.
+ *
+ * Property of Uncharted(TM), formerly Oculus Info Inc.
+ * http://uncharted.software/
+ *
+ * Released under the MIT License.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is furnished to do
+ * so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+@namespace("influent.idl")
+
+
+protocol FL_DataAccess {
+	import idl "DataTypes_v2.0.avdl";
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns data summary information
+	 * Service URL: /summary
+	 * HTTP Method: GET
+	 *
+	 * @return	data summary information
+	 */
+	array<FL_DataSummary> getDataSummary();
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns a set of entities by uid. Typically requested with a summary level of detail,
+	 * appropriate for card display and clustering. Full details are requested for
+	 * detailed display views.
+	 *
+	 * Service URL: /entity/list
+	 * HTTP Method: POST and GET
+	 *
+	 * @param entities 	uids of entities to retrieve
+	 * @return 			entities
+	 */
+	array<FL_Entity> getEntities(
+		array<string> entities,
+		FL_LevelOfDetail levelOfDetail
+	);
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns a set of accounts for each given entity. Typically requested with a summary level of detail,
+	 * appropriate for card display and cluster summarisation. Full details are requested for
+	 * detailed display views.
+	 *
+	 * Service URL: /entity/accounts
+	 * HTTP Method: POST and GET
+	 *
+	 * @param entities 		uids of entities to retrieve
+	 * @return 				map of input entity IDs to an array of the accounts for that entity
+	 */
+	map<array<FL_Entity>> getAccounts(array<string> entities);
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns links to other entities related to specify entities. Each Link returned should
+	 * represent multiple records, used for displaying flow.
+	 *
+	 * CHANGED IN 1.6
+	 * - Added entityType filter
+	 *
+	 * See the specification for the Flow Data View.
+	 * See the specification for the Time Series Data View.
+	 *
+	 * Service URL: /link/flow
+	 * HTTP Method: POST and GET
+	 *
+	 * @param entities 		    uids of entities to retrieve links for
+	 * @param focusEntities 	uids of focus entities (may be null)
+	 * @param direction 		one of: SOURCE, DESTINATION, BOTH
+	 * @param entityType		one of: ACCOUNT_OWNER, ACCOUNT, CLUSTER_SUMMARY, ANY
+	 * @param date 			    in the given date range
+	 * @return 				    map of input entity IDs to an array of the links for that entity
+	 */
+	map<array<FL_Link>> getFlowAggregation(
+		array<string> entities,
+		union {array<string>, null} focusEntities,
+		FL_DirectionFilter direction,
+		FL_LinkEntityTypeFilter entityType,
+		union {FL_DateRange, null} date
+	);
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns links to other entities related to specify entities.  Each Link returned should
+	 * represent multiple records, used for displaying time series.
+	 *
+	 * See the specification for the Time Series Data View.
+	 *
+	 * Service URL: /link/series
+	 * HTTP Method: POST and GET
+	 *
+	 * @param entities 		    uids of entities to retrieve links for
+	 * @param focusEntities 	uids of focus entities (may be null)
+	 * @param date 			    in the given date range
+	 * @return 				    map of input entity IDs to an array of the links for that entity
+	 */
+	map<array<FL_Link>> getTimeSeriesAggregation(
+		array<string> entities,
+		union {array<string>, null} focusEntities,
+		FL_DateRange date
+	);
+}

@@ -5,12 +5,13 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** Property value matching constraints
-
-	 CHANGED IN 1.5 */
+/** * Property value matching constraints
+	 *
+	 * ADDED IN 1.5
+	 * MOVED IN 2.0 */
 @org.apache.avro.specific.AvroGenerated
 public enum FL_Constraint { 
   REQUIRED_EQUALS, FUZZY_PARTIAL_OPTIONAL, NOT, OPTIONAL_EQUALS, FUZZY_REQUIRED  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"namespace\":\"influent.idl\",\"doc\":\"Property value matching constraints\\r\\n\\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_Constraint\",\"namespace\":\"influent.idl\",\"doc\":\"* Property value matching constraints\\r\\n\\t *\\r\\n\\t * ADDED IN 1.5\\r\\n\\t * MOVED IN 2.0\",\"symbols\":[\"REQUIRED_EQUALS\",\"FUZZY_PARTIAL_OPTIONAL\",\"NOT\",\"OPTIONAL_EQUALS\",\"FUZZY_REQUIRED\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 }

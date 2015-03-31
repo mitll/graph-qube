@@ -1,0 +1,92 @@
+/*
+ * Copyright (C) 2013-2015 Uncharted Software Inc.
+ *
+ * Property of Uncharted(TM), formerly Oculus Info Inc.
+ * http://uncharted.software/
+ *
+ * Released under the MIT License.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is furnished to do
+ * so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+@namespace("influent.idl")
+
+
+/**
+ *	ADDED IN 2.0
+ */
+protocol FL_LinkSearch {
+	import idl "Search_v2.0.avdl";
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns a set of link search results based on the query (if provided)
+	 * AND all matching terms (if any). Partial matches are allowed, but should
+	 * be ranked lower.
+	 *
+	 * Service URL: /links/search
+	 * HTTP Method: POST and GET
+	 *
+	 * @param termMap		Property Search Terms by type
+	 * @param orderBy		Priority-ordered list of fields to sort by. Null or empty indicates ordering by closeness of match.
+	 * @param start		0-based index of first result to return
+	 * @param max			maximum number of results to return
+	 * @return			    SearchResults
+	 */
+	FL_SearchResults search(
+		map<array<FL_PropertyMatchDescriptor>> termMap,
+		array<FL_OrderBy> orderBy = null,
+		long start = 0,
+		long max = -1,
+		FL_LevelOfDetail levelOfDetail
+	);
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns the property descriptors that can be used for a Search. This is normally used to populate the Advanced
+	 * Search UI, providing a list of various sub-sets of the data (by type) and the valid search options for each.
+	 * A base set of descriptors are injected representing the core set of search criteria which must be supported
+	 * in order for workflow-invoked queries to function correctly. Merge them into the returned list, with
+	 * modifications if desired.
+	 *
+	 * Service URL: /links/descriptors
+	 * HTTP Method: GET
+	 *
+	 * @return  a PropertyDescriptors instance that contains an array of PropertyDescriptor and an array of TypeDescriptor,
+	 * 			where fields in these descriptors contain info about the dataset-specific types and properties
+	 */
+	FL_PropertyDescriptors getDescriptors();
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns ordered property descriptors for organising key fields of search results in a structured way.
+	 * These translate into columns in certain views.
+	 *
+	 * @param results		Search results.
+	 * 					    Clients may optionally consider this in choosing which headers to use.
+	 * @param resultOrder	Priority-ordered list of fields that the results were sorted by, to be returned in the response.
+	 * 					    Clients may optionally consider this in choosing which headers to use.
+	 *
+	 * ADDED IN 2.0
+	 */
+	FL_PropertyDescriptors getKeyDescriptors(FL_SearchResults results, array<FL_OrderBy> resultOrder);
+}

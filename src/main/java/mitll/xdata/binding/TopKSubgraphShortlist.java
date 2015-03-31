@@ -1,4 +1,4 @@
-// Copyright 2014 MIT Lincoln Laboratory, Massachusetts Institute of Technology 
+// Copyright 2014-2015 MIT Lincoln Laboratory, Massachusetts Institute of Technology 
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -487,7 +487,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
 					link.setSource(src);
 					link.setTarget(dest);
-					link.setTags(new ArrayList<FL_LinkTag>());
+					//link.setTags(new ArrayList<FL_LinkTag>()); //Deprecated in Influent IDL 2.0
 
 					List<FL_Property> linkProperties;
 					if (binding.compareEntities(src, dest) == 1) {
@@ -636,7 +636,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
 			link.setSource(src);
 			link.setTarget(dest);
-			link.setTags(new ArrayList<FL_LinkTag>());
+			//link.setTags(new ArrayList<FL_LinkTag>()); //Deprecated in Influent IDL 2.0
 
 			List<FL_Property> linkProperties;
 			if (binding.compareEntities(src, dest) == 1) {

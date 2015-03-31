@@ -5,12 +5,12 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** A temporal duration
-	 
-	 ADDED IN 1.5 */
+/** * A temporal duration
+	 *
+	 * ADDED IN 1.5 */
 @org.apache.avro.specific.AvroGenerated
 public class FL_Duration extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_Duration\",\"namespace\":\"influent.idl\",\"doc\":\"A temporal duration\\r\\n\\t \\r\\n\\t ADDED IN 1.5\",\"fields\":[{\"name\":\"interval\",\"type\":{\"type\":\"enum\",\"name\":\"FL_DateInterval\",\"doc\":\"Temporal resolution of a duration\\r\\n\\t \\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"SECONDS\",\"HOURS\",\"DAYS\",\"WEEKS\",\"MONTHS\",\"QUARTERS\",\"YEARS\"]},\"doc\":\"time aggregation level, e.g. use monthly data\"},{\"name\":\"numIntervals\",\"type\":\"long\",\"doc\":\"number of intervals, e.g. 12 monthly intervals is a 1 year duration\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FL_Duration\",\"namespace\":\"influent.idl\",\"doc\":\"* A temporal duration\\r\\n\\t *\\r\\n\\t * ADDED IN 1.5\",\"fields\":[{\"name\":\"interval\",\"type\":{\"type\":\"enum\",\"name\":\"FL_DateInterval\",\"doc\":\"* Temporal resolution of a duration\\r\\n\\t *\\r\\n\\t * CHANGED IN 1.5\",\"symbols\":[\"SECONDS\",\"HOURS\",\"DAYS\",\"WEEKS\",\"MONTHS\",\"QUARTERS\",\"YEARS\"]},\"doc\":\"time aggregation level, e.g. use monthly data\"},{\"name\":\"numIntervals\",\"type\":\"long\",\"doc\":\"number of intervals, e.g. 12 monthly intervals is a 1 year duration\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
   /** time aggregation level, e.g. use monthly data */
    private influent.idl.FL_DateInterval interval;

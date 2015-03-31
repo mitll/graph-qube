@@ -210,7 +210,7 @@ public class TestBinding extends Binding {
 			FL_Link link = new FL_Link();
 			link.setSource(source);
 			link.setTarget(target);
-			link.setTags(new ArrayList<FL_LinkTag>());
+			//link.setTags(new ArrayList<FL_LinkTag>()); //Deprecated in Influent IDL 2.0
 			List<FL_Property> properties = new ArrayList<FL_Property>();
 			properties.add(createProperty("numEdges", numEdges, FL_PropertyType.LONG));
 			properties.add(createProperty("outFlow", out, FL_PropertyType.DOUBLE));

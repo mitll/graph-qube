@@ -1,19 +1,21 @@
-/**
- * Copyright (c) 2013 Oculus Info Inc. 
- * http://www.oculusinfo.com/
- * 
+/*
+ * Copyright (C) 2013-2015 Uncharted Software Inc.
+ *
+ * Property of Uncharted(TM), formerly Oculus Info Inc.
+ * http://uncharted.software/
+ *
  * Released under the MIT License.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
  * of the Software, and to permit persons to whom the Software is furnished to do
  * so, subject to the following conditions:
-
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
-
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,47 +24,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 @namespace("influent.idl")
 
+
 /**
-*/
-protocol FL_Persistence {
+ * Services for geocoding.
+ */
+protocol FL_Geocoding {
+	import idl "DataTypes_v2.0.avdl";
+	
+	//------------------------------------------------------------------------------------------------------------------
 
 	/**
-	 Persistence save state 
+	 * Geocodes the specified locations, populating missing properties in place.
+	 *
+	 * @param locations     the locations to geocode.
 	 */
-	enum FL_PersistenceState {
-		NEW,
-		MODIFIED,
-		NONE,
-		ERROR
-	}
-	
-	/**
-	 Saves the client state given a session UID.
-	 
-	 Service URL: /persist
-	 HTTP Method: POST
-	 
-	 @param sessionId 		session uid
-	 @param data 			string representation of client state
-	 @return				state of persistence for the sessionId
-	*/
-	FL_PersistenceState persistData(
-		string sessionId,
-		string data
+	boolean geocode(
+		array<FL_GeoData> locations
 	);
-		
+
+	//------------------------------------------------------------------------------------------------------------------
+
 	/**
-	 Returns the last saved client state given a session UID.
-	 
-	 Service URL: /persist
-	 HTTP Method: GET
-	 
-	 @param sessionId 		session uid
-	 @return 				client state data
+	 * Returns a list of country objects for the previously geolocated locations specified, based
+	 * on country code.
+	 *
+	 * @param locations     the locations to lookup, which must contain a country code.
+	 * @return 			    a list of geocoded countries, in the same order as requested.
 	 */
-	string getData(
-		string sessionId
+	array<FL_Country> getCountries(
+		array<FL_GeoData> locations
 	);
 }

@@ -5,12 +5,12 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** Temporal resolution of a duration
-	 
-	 CHANGED IN 1.5 */
+/** * Temporal resolution of a duration
+	 *
+	 * CHANGED IN 1.5 */
 @org.apache.avro.specific.AvroGenerated
 public enum FL_DateInterval { 
   SECONDS, HOURS, DAYS, WEEKS, MONTHS, QUARTERS, YEARS  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_DateInterval\",\"namespace\":\"influent.idl\",\"doc\":\"Temporal resolution of a duration\\r\\n\\t \\r\\n\\t CHANGED IN 1.5\",\"symbols\":[\"SECONDS\",\"HOURS\",\"DAYS\",\"WEEKS\",\"MONTHS\",\"QUARTERS\",\"YEARS\"]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_DateInterval\",\"namespace\":\"influent.idl\",\"doc\":\"* Temporal resolution of a duration\\r\\n\\t *\\r\\n\\t * CHANGED IN 1.5\",\"symbols\":[\"SECONDS\",\"HOURS\",\"DAYS\",\"WEEKS\",\"MONTHS\",\"QUARTERS\",\"YEARS\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 }

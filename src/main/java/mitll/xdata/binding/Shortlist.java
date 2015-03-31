@@ -69,7 +69,7 @@ public abstract class Shortlist {
 						FL_Link link = new FL_Link();
 						link.setSource(source);
 						link.setTarget(target);
-						link.setTags(new ArrayList<FL_LinkTag>());
+						//link.setTags(new ArrayList<FL_LinkTag>()); //deprecated in Influent IDL 2.0
 						List<FL_Property> properties = new ArrayList<FL_Property>();
 						properties.add(binding.createEdgeMetadataKeyProperty(edgeMetadataKey));
 						link.setProperties(properties);

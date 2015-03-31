@@ -5,12 +5,15 @@
  */
 package influent.idl;  
 @SuppressWarnings("all")
-/** Amount of detail requested
-	 
-	 ADDED IN 1.6 */
+/** * Amount of detail requested
+	 *
+	 * ADDED IN 1.6
+	 *
+	 * CHANGED in 2.0:
+	 * - added KEY */
 @org.apache.avro.specific.AvroGenerated
 public enum FL_LevelOfDetail { 
-  SUMMARY, FULL  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_LevelOfDetail\",\"namespace\":\"influent.idl\",\"doc\":\"Amount of detail requested\\r\\n\\t \\r\\n\\t ADDED IN 1.6\",\"symbols\":[\"SUMMARY\",\"FULL\"]}");
+  KEY, SUMMARY, FULL, HIDDEN  ;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"FL_LevelOfDetail\",\"namespace\":\"influent.idl\",\"doc\":\"* Amount of detail requested\\r\\n\\t *\\r\\n\\t * ADDED IN 1.6\\r\\n\\t *\\r\\n\\t * CHANGED in 2.0:\\r\\n\\t * - added KEY\",\"symbols\":[\"KEY\",\"SUMMARY\",\"FULL\",\"HIDDEN\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 }
