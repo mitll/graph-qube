@@ -1,6 +1,17 @@
-/**
- * 
- */
+// Copyright 2015 MIT Lincoln Laboratory, Massachusetts Institute of Technology 
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import java.io.File;
@@ -12,37 +23,40 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-//import java.util.Set;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
+import mitll.xdata.db.MysqlConnection;
 
-//import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
 import uiuc.topksubgraph.QueryExecutor;
 
-//import org.apache.commons.lang.StringUtils;
+
 
 /**
- * Re-creating func
+ * Bitcoin Ingest Class: SubGraph Search
  * 
- * @author ca22119
+ * Pre-processing the graph to prepare it for topk-subgraph ingest/indexing:
+ * - Filter-out non-active nodes, self-transitions, heavy-hitters
+ * - Create marginalized graph data and various stats
+ * - Do the indexing for the topk-subgraph algorithm
  * 
+ * @author Charlie Dagli, dagli@ll.mit.edu
+ *
  */
-
-
-
-public class BitcoinSubGraphIngest {
+public class BitcoinIngestSubGraph {
 	
-	private static final Logger logger = Logger.getLogger(BitcoinSubGraphIngest.class);
+	private static final Logger logger = Logger.getLogger(BitcoinIngestSubGraph.class);
 	
 	private static final int MIN_TRANSACTIONS = 10;
 	private static final int BITCOIN_OUTLIER = 25;
@@ -55,52 +69,10 @@ public class BitcoinSubGraphIngest {
 	
 	
 	private static PreparedStatement queryStatement;
+	private static String bitcoinDirectory = "src/main/resources" + 
+												BitcoinBinding.BITCOIN_FEATS_TSV;
 	
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Throwable {
-		
-//	    String bitcoinDirectory = "src/main/resources" + BitcoinBinding.BITCOIN_FEATS_TSV;
-//		DBConnection dbConnection = new H2Connection(bitcoinDirectory,"bitcoin");
-//		
-//		// Load graph into topk-subgraph Graph object
-//		Graph g = new Graph();
-//		g.loadGraph(dbConnection, "MARGINAL_GRAPH", "NUM_TRANS");
-		
-		
-		/*
-		 * All this should be wrapped in methods, and then put into BitcoinIngest
-		 */
-		
-		/*
-		 * This stuff is pre-processing the graph to prepare it for topk-subgraph ingest/indexing 
-		 */
-		//String bitcoinDirectory = "src/main/resources/bitcoin_small_feats_tsv/";
-	    String bitcoinDirectory = "src/main/resources" + BitcoinBinding.BITCOIN_FEATS_TSV;
-		
-		DBConnection dbConnection = new H2Connection(bitcoinDirectory,"bitcoin");
-	    
-		// Filter-out non-active nodes, self-transitions, heavy-hitters
-		filterForActivity(dbConnection);
-		
-		// Create marginalized graph data and various stats
-		extractUndirectedGraph(dbConnection);
-		
-		/*
-		 * Do the indexing for the topk-subgraph algorithm
-		 */
-		computeIndices(bitcoinDirectory, dbConnection);
-		
-		/*
-		 * Do some querying based on some input graph
-		 */
-		executeQuery(bitcoinDirectory,dbConnection);
-		
-		
-		
-	}
-
+	
 
 	/**
 	 * @param dbConnection
@@ -138,7 +110,7 @@ public class BitcoinSubGraphIngest {
 		QueryExecutor.topK=5001;
 
 		QueryExecutor.spathFile=QueryExecutor.datasetId+"."+QueryExecutor.k0+".spath";
-		QueryExecutor.topologyFile=QueryExecutor.datasetId+"."+QueryExecutor.k0+".topology"; ////////////////////
+		QueryExecutor.topologyFile=QueryExecutor.datasetId+"."+QueryExecutor.k0+".topology";
 		QueryExecutor.spdFile=QueryExecutor.datasetId+"."+QueryExecutor.k0+".spd";
 		QueryExecutor.resultDir="results";
 
@@ -240,14 +212,37 @@ public class BitcoinSubGraphIngest {
 		}
 	}
 
+	
 	/**
+	 * Overloaded {@link #computeIndices(String, DBConnection)}
+	 * 
+	 * @param dbType
+	 * @param h2DatabaseName
+	 * @throws Throwable
+	 * @throws Exception
+	 */
+	protected static void computeIndices(String dbType, String h2DatabaseName) throws Throwable, Exception {
+
+		DBConnection connection = dbType.equalsIgnoreCase("h2") ?
+			new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
+				new MysqlConnection(h2DatabaseName) : null;
+							
+		computeIndices(bitcoinDirectory,connection);
+			
+		connection.closeConnection();
+	}
+	
+	
+	/**
+	 * Compute all indices needed for UIUC Top-K subgraph search algorithm
+	 * 
 	 * @param bitcoinDirectory
 	 * @param dbConnection
 	 * @throws Throwable
 	 * @throws Exception
 	 * @throws IOException
 	 */
-	private static void computeIndices(String bitcoinDirectory,
+	protected static void computeIndices(String bitcoinDirectory,
 			DBConnection dbConnection) throws Throwable, Exception, IOException {
 		/*
 		 * This is stuff is doing the actual topk-subgraph indexing
@@ -259,7 +254,7 @@ public class BitcoinSubGraphIngest {
 		Graph g = new Graph();
 		g.loadGraph(dbConnection, "MARGINAL_GRAPH", "NUM_TRANS");
 		MultipleIndexConstructor.setGraph(g);
-	    logger.info("Loaded graph file...");
+	    logger.info("Loaded graph from database...");
 		
 //	    //iterate through hashmap test
 //	    int c=0;
@@ -281,7 +276,7 @@ public class BitcoinSubGraphIngest {
 		
 		// Load types into topk-subgraph object...
 		MultipleIndexConstructor.loadTypesFromDatabase(dbConnection,USERS,USERID_COLUMN,TYPE_COLUMN);
-	    logger.info("Loaded types file...");
+	    logger.info("Loaded types from database...");
 	    logger.debug("Number of types: "+MultipleIndexConstructor.totalTypes);	
 		
 		// Create Typed Edges
@@ -306,11 +301,11 @@ public class BitcoinSubGraphIngest {
 	
 	/**
 	 * Find all unique edges and gather statistics about the activity between them.
-	 * 
+	 * <p>
 	 * The primary key in this table is the tuple "sorted_pair" which is a guid for each edge 
 	 * where the accounts involved in a transaction are listed in numerical order; 
 	 * e.g. (a,b) for all transactions between a and b, given a < b. 
-	 * 
+	 * <p>
 	 * The column "TOT_USD" sums the total amount transacted between a and b
 	 * The column "NUM_TRANS" count the total number of transactions between a and b
 	 * The column "TOT_OUT" sums the value of transactions from a->b
@@ -320,7 +315,37 @@ public class BitcoinSubGraphIngest {
 	 * @return
 	 * @throws Exception
 	 */
-	private static void extractUndirectedGraph(DBConnection connection) throws Exception {
+	protected static void extractUndirectedGraph(String dbType, String h2DatabaseName) throws Exception {
+
+		DBConnection connection = dbType.equalsIgnoreCase("h2") ?
+			new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
+				new MysqlConnection(h2DatabaseName) : null;
+							
+		extractUndirectedGraph(connection);
+			
+		connection.closeConnection();
+	}
+	
+	
+	/**
+	 * Overloaded {@link #extractUndirectedGraph(String, String)}
+	 * 
+	 * Find all unique edges and gather statistics about the activity between them.
+	 * <p>
+	 * The primary key in this table is the tuple "sorted_pair" which is a guid for each edge 
+	 * where the accounts involved in a transaction are listed in numerical order; 
+	 * e.g. (a,b) for all transactions between a and b, given a < b. 
+	 * <p>
+	 * The column "TOT_USD" sums the total amount transacted between a and b
+	 * The column "NUM_TRANS" count the total number of transactions between a and b
+	 * The column "TOT_OUT" sums the value of transactions from a->b
+	 * The column "TOT_IN" sums the value of transactions from b->a 
+	 * 
+	 * @param connection
+	 * @return
+	 * @throws Exception
+	 */
+	protected static void extractUndirectedGraph(DBConnection connection) throws Exception {
 		
 		/*
 		 * Setup SQL statements
@@ -373,12 +398,13 @@ public class BitcoinSubGraphIngest {
 		doSQLUpdate(connection, sqlDropTemp);
 	}
 
+	
 	/**
 	 * Filter out accounts involved in fewer than {@link #MIN_TRANSACTIONS} so that
 	 * the transactions table has only transactions involving accounts that transact 
 	 * "frequently enough." Also creates a table containing all users and their total
 	 * number of transactions, "USERS"
-	 *
+	 * <p>
 	 * NOTES:
 	 * --Filter out self-to-self transactions
 	 * --Throw out "supernode" #25
@@ -387,7 +413,34 @@ public class BitcoinSubGraphIngest {
 	 * @return
 	 * @throws Exception
 	 */
-	private static void filterForActivity(DBConnection connection) throws Exception {
+	protected static void filterForActivity(String dbType, String h2DatabaseName) throws Exception {
+
+		DBConnection connection = dbType.equalsIgnoreCase("h2") ?
+			new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
+				new MysqlConnection(h2DatabaseName) : null;
+							
+		filterForActivity(connection);
+			
+		connection.closeConnection();
+	}
+	
+	
+	/**
+	 * Overloaded {@link #filterForActivity(String, String)}
+	 * <p>
+	 * Filter out accounts involved in fewer than {@link #MIN_TRANSACTIONS} so that
+	 * the transactions table has only transactions involving accounts that transact 
+	 * "frequently enough." Also creates a table containing all users and their total
+	 * number of transactions, "USERS"
+	 * <p>
+	 * NOTES:
+	 * --Filter out self-to-self transactions
+	 * --Throw out "supernode" #25
+	 * 
+	 * @param connection
+	 * @throws Exception
+	 */
+	protected static void filterForActivity(DBConnection connection) throws Exception {
 		
 		/*
 		 * Setup SQL queries
@@ -452,10 +505,9 @@ public class BitcoinSubGraphIngest {
 		}
 		
 		//cleanup
-		doSQLUpdate(connection, "drop table inactive");
-		
-		
+		doSQLUpdate(connection, "drop table inactive");			
 	}	
+
 	
 	/**
 	 * Do SQL, update something, return nothing
@@ -509,6 +561,32 @@ public class BitcoinSubGraphIngest {
 			QueryExecutor.spdFile=QueryExecutor.spdFile.replace(separator, "/");
 			QueryExecutor.resultDir=QueryExecutor.resultDir.replace(separator, "/");
 		}
+	}
+	
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws Throwable {
+		
+		/*
+		 * Pre-processing the graph to prepare it for topk-subgraph ingest/indexing 
+		 */
+	    String bitcoinDirectory = "src/main/resources" + BitcoinBinding.BITCOIN_FEATS_TSV;
+		
+		DBConnection dbConnection = new H2Connection(bitcoinDirectory,"bitcoin");
+	    
+		// Filter-out non-active nodes, self-transitions, heavy-hitters
+		filterForActivity(dbConnection);
+		
+		// Create marginalized graph data and various stats
+		extractUndirectedGraph(dbConnection);
+		
+		//Do the indexing for the topk-subgraph algorithm
+		computeIndices(bitcoinDirectory, dbConnection);
+				
+		// Do some querying (from example query files) based on some input graph
+		//executeQuery(bitcoinDirectory,dbConnection);		
 	}
 	
 }
