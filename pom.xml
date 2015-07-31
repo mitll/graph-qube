@@ -152,11 +152,20 @@
 		</dependency>
 
 		<dependency>
+			<groupId>jahmm</groupId>
+			<artifactId>jahmm</artifactId>
+			<scope>system</scope>
+			<version>0.6.2</version>
+			<systemPath>${project.basedir}/lib/jahmm-0.6.2.jar</systemPath>
+		</dependency>
+
+<!--
+		<dependency>
 			<groupId>be.ac.ulg.montefiore.run.jahmm</groupId>
 			<artifactId>jahmm</artifactId>
 			<version>0.6.2</version>
 		</dependency>
-
+-->
 		<dependency>
 			<groupId>net.sf.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
@@ -239,10 +248,20 @@
 			<artifactId>commons-math3</artifactId>
 			<version>3.2</version>
 		</dependency>
+<!--
+
 		<dependency>
 			<groupId>org.gephi</groupId>
 			<artifactId>gephi-toolkit</artifactId>
 			<version>0.8.2</version>
+		</dependency>
+-->
+		<dependency>
+			<groupId>org.gephi</groupId>
+			<artifactId>gephi-toolkit</artifactId>
+			<version>0.8.7</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/gephi-toolkit.jar</systemPath>
 		</dependency>
 
 		<dependency>
@@ -262,9 +281,9 @@
 		<dependency>
 			<groupId>ajt</groupId>
 			<artifactId>ajt</artifactId>
-			<version>2.9</version>
+			<version>2.11</version>
 			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/ajt-2.9.jar</systemPath>
+			<systemPath>${project.basedir}/lib/ajt-2.11.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>weka</groupId>
