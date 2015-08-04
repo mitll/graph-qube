@@ -1177,7 +1177,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			List<List<Edge>> resultEdges = new ArrayList<List<Edge>>();
 			List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
 
-			logger.info("=====================");
+			logger.info("========get here=============");
 			logger.info(example);
 			//logger.info(exemplarIDs);
 			//logger.info(results);
@@ -1195,7 +1195,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 			logger.info(queryEdges);
 			logger.info("there were: "+queryEdges.size()+" things in queryEdges...");
 
-			boolean doFeatureTesting=false;
+			boolean doFeatureTesting=true;
 			if (doFeatureTesting) {
 				//=============================== TESTING SOME STUFF OUT =================================
 				// pack features from query and results
@@ -1369,7 +1369,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 				//=============================== TESTING SOME STUFF OUT =================================
 			}
 
-			boolean doRescoringTesting = true;
+			boolean doRescoringTesting = false;
 			if (doRescoringTesting) {
 				try {
 					File file = new File("src/main/resources/graphqube_vstacs_rescore.tsv");
@@ -1385,7 +1385,13 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 						double newScore = Double.parseDouble(lineSplit[1]);
 
 						//reset score...
-						results.get(index+1).setScore(newScore);
+						//results.get(index+1).setScore(newScore);
+						if (index == 0) {
+							results.get(index).setScore(0.0);
+						} else {
+							results.get(index).setScore(newScore);	
+						}
+						
 					}
 					reader.close();
 				} catch (IOException e) {

@@ -524,7 +524,9 @@ public class Graph {
 			
 			int from = (Integer)sortedPair[0];
 			int to = (Integer)sortedPair[1];
-
+//			long from = (Long)sortedPair[0];
+//			long to = (Long)sortedPair[1];
+			
 			//logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
 			
 			if(node2NodeIdMap.containsKey(from))

@@ -229,6 +229,7 @@ public class BitcoinIngestRaw {
 			Double rate = rc.getConversionRate(day, x.getTime());
 			double usd = btc * rate;
 			statement.setDouble(i++, usd);
+			logger.info(additionalFeatures);
 			for (double feat : additionalFeatures) statement.setDouble(i++, feat);
 			try {
 				statement.executeUpdate();
