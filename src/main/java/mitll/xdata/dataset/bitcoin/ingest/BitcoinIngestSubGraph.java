@@ -59,7 +59,10 @@ public class BitcoinIngestSubGraph {
 	private static final Logger logger = Logger.getLogger(BitcoinIngestSubGraph.class);
 	
 	private static final int MIN_TRANSACTIONS = 10;
-	private static final int BITCOIN_OUTLIER = 25;
+	
+	//private static final int BITCOIN_OUTLIER = 25;
+	private static final List<Integer> BITCOIN_OUTLIERS = Arrays.asList(25,39);
+	
 	private static final String TABLE_NAME = "transactions";
 	private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
 	
@@ -445,9 +448,23 @@ public class BitcoinIngestSubGraph {
 		/*
 		 * Setup SQL queries
 		 */
-		String sqlRemoveAccount = "delete from "+TABLE_NAME+" where"+
-				" (source = "+BITCOIN_OUTLIER+") or"+ 
-				" (target  = "+BITCOIN_OUTLIER+");";
+//		String sqlRemoveAccountOld = "delete from "+TABLE_NAME+" where"+
+//				" (source = "+BITCOIN_OUTLIER+") or"+ 
+//				" (target  = "+BITCOIN_OUTLIER+");";
+		
+		String sqlRemoveAccount = "delete from "+TABLE_NAME+" where";
+		// loop-through all outliers we want to remove...
+		for (int i = 0; i < BITCOIN_OUTLIERS.size(); i++) {
+			sqlRemoveAccount += " (source = "+BITCOIN_OUTLIERS.get(i)+") or"+
+								" (target  = "+BITCOIN_OUTLIERS.get(i)+")";
+			
+			if (i != BITCOIN_OUTLIERS.size()-1)
+				sqlRemoveAccount += " or";
+		}
+		sqlRemoveAccount += ";";
+
+	
+		
 		
 		String sqlRemoveSelfTrans = "delete from "+TABLE_NAME+" where (source = target);";
 
