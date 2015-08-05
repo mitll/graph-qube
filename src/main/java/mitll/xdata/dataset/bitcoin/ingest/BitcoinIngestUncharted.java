@@ -16,11 +16,9 @@ package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
-
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
 
 
 /**
@@ -29,13 +27,12 @@ import java.io.IOException;
  *  - Extract account features
  *  - Build SubGraph Search Indices and Features
  */
-public class BitcoinIngest {
-	private static final Logger logger = Logger.getLogger(BitcoinIngest.class);
+public class BitcoinIngestUncharted {
+	private static final Logger logger = Logger.getLogger(BitcoinIngestUncharted.class);
 
 	private static final boolean USE_TIMESTAMP = false;
 	private static final String BTC_TO_DOLLAR_CONVERSION_TXT = "btcToDollarConversion.txt";
 
-	
 	/**
 	 * Remember to give lots of memory if running on fill bitcoin dataset -- more than 2G
 	 * <p>

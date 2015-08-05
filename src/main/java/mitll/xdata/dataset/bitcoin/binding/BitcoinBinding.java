@@ -51,15 +51,15 @@ public class BitcoinBinding extends Binding {
 	private boolean useFastBitcoinConnectedTest = true;
 
 	// TopKSubgraphShortlist Parameters
-	public static final int DEFAULT_SHORTLIST_SIZE = 1000;
+	private static final int DEFAULT_SHORTLIST_SIZE = 1000;
 	public static final int SHORTLISTING_D = 2;
 
 	public static final String USER_FEATURES_TABLE = "users";
-	public static final String USERID_COLUMN = "user";
-	public static final String TYPE_COLUMN = "type";
+	private static final String USERID_COLUMN = "user";
+	private static final String TYPE_COLUMN = "type";
 
-	public static final String GRAPH_TABLE = "MARGINAL_GRAPH";
-	public static final String PAIRID_COLUMN = "SORTED_PAIR";
+	private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
+	private static final String PAIRID_COLUMN = "SORTED_PAIR";
 
 	//  Comparator<String> entityComparator = new Comparator<String>() {
 	//	  @Override
