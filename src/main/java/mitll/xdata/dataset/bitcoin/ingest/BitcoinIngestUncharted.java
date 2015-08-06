@@ -86,7 +86,7 @@ public class BitcoinIngestUncharted {
 		logger.debug("BTC to Dollar File Loaded...");
 
 		// populate the transactions table
-		BitcoinIngestRaw.loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
+		new BitcoinIngestRaw().loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
 		
 		// Extract features for each account
 		new File(writeDir).mkdirs();

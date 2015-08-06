@@ -29,13 +29,12 @@ import java.io.IOException;
  *  - Extract account features
  *  - Build SubGraph Search Indices and Features
  */
-public class BitcoinIngest {
+public class BitcoinIngest extends BitcoinIngestBase {
 	private static final Logger logger = Logger.getLogger(BitcoinIngest.class);
 
 	private static final boolean USE_TIMESTAMP = false;
 	private static final String BTC_TO_DOLLAR_CONVERSION_TXT = "btcToDollarConversion.txt";
 
-	
 	/**
 	 * Remember to give lots of memory if running on fill bitcoin dataset -- more than 2G
 	 * <p>
@@ -71,16 +70,21 @@ public class BitcoinIngest {
 			logger.debug("got output dir " + writeDir);
 		}
 
-		
+	 new BitcoinIngest().doIngest(dataFilename, dbName, writeDir);
+
+
+	}
+
+	private void doIngest(String dataFilename, String dbName, String writeDir) throws Throwable {
 		//
 		// Raw Ingest (csv to database table + basic features)
 		//
 		long then = System.currentTimeMillis();
-		
+
 		// btc to Dollar Conversion
 		String btcToDollarFile = "src/main/resources" +
 				BitcoinBinding.BITCOIN_FEATS_TSV +
-				BTC_TO_DOLLAR_CONVERSION_TXT;    
+				BTC_TO_DOLLAR_CONVERSION_TXT;
 
 		File file = new File(btcToDollarFile);
 		if (!file.exists()) {
@@ -89,32 +93,35 @@ public class BitcoinIngest {
 		logger.debug("BTC to Dollar File Loaded...");
 
 		// populate the transactions table
-		BitcoinIngestRaw.loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
-		
+		new BitcoinIngestRaw().loadTransactionTable(BitcoinBinding.TRANSACTIONS, dataFilename, btcToDollarFile, "h2", dbName, USE_TIMESTAMP);
+
 		// Extract features for each account
 		new File(writeDir).mkdirs();
 
 		new BitcoinFeatures(dbName, writeDir, dataFilename);
-		
+
 		long now = System.currentTimeMillis();
 		logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " +(now-then)/1000 + " seconds");
-		
-		
-		/*
+		doSubgraphs(dbName);
+	}
+
+	private void doSubgraphs(String dbName) throws Throwable {
+		long then;
+		long now;/*
 		 * Pre-processing the transaction data to prepare it for topk-subgraph search:
-		 * - Graph construction, filtering and indexing 
+		 * - Graph construction, filtering and indexing
 		 */
 		then = System.currentTimeMillis();
-	    
+
 		// Filter-out non-active nodes, self-transitions, heavy-hitters
 		BitcoinIngestSubGraph.filterForActivity("h2", dbName);
-		
+
 		// Create marginalized graph data and various stats
 		BitcoinIngestSubGraph.extractUndirectedGraph("h2",dbName);
-		
+
 		//Do the indexing for the topk-subgraph algorithm
 		BitcoinIngestSubGraph.computeIndices("h2", dbName);
-		
+
 		now = System.currentTimeMillis();
 		logger.debug("SubGraph Search Ingest (graph building, filtering, index construction) complete. Elapsed time: " +(now-then)/1000 + " seconds");
 	}
