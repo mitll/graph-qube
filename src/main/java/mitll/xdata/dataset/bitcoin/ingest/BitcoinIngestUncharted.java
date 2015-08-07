@@ -15,6 +15,9 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesUncharted;
+import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
@@ -63,7 +66,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       logger.debug("got db name " + dbName);
     }
 
-    String writeDir = "out";
+    String writeDir = "outUncharted";
     if (args.length > 2) {
       writeDir = args[2];
       logger.debug("got output dir " + writeDir);
@@ -78,20 +81,23 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     //
     long then = System.currentTimeMillis();
 
-    Map<String, String> slotToCol = new HashMap<>();
-    for (String col : Arrays.asList("TransactionId", "ReceiverId", "TxTime", "BTC", "USD")) {
-      slotToCol.put(col, col);
-    }
+//    Map<String, String> slotToCol = new HashMap<>();
+//    for (String col : Arrays.asList("TransactionId", "SenderId", "ReceiverId", "TxTime", "BTC", "USD")) {
+//      slotToCol.put(col, col);
+//    }
 
     // populate the transactions table
     int limit = 10000;
-    new BitcoinIngestUnchartedTransactions().loadTransactionTable(dataSourceJDBC, transactionsTable,
-        "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, slotToCol, limit);
+    MysqlInfo info = new MysqlInfo();
+
+    new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
+        "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit);
 
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-//		new BitcoinFeatures(destinationDbName, writeDir, dataFilename);
+    int limit1 = 1000000;
+    new BitcoinFeaturesUncharted(destinationDbName, writeDir, info, limit1);
 
     long now = System.currentTimeMillis();
     logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");

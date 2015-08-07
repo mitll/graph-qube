@@ -14,15 +14,15 @@
 
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 import java.sql.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -39,19 +39,22 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   /**
    * Adds equivalent dollar value column
    *
-   * @param jdbcURL
+   * @param info
    * @param dbType       h2 or mysql
    * @param tableName    table name to create
    * @param useTimestamp true if we want to store a sql timestamp for time, false if just a long for unix millis
    * @throws Exception
    * @see BitcoinIngestUncharted#main
    */
-  protected void loadTransactionTable(String jdbcURL, String transactionsTable, String dbType, String h2DatabaseName, String tableName,
-                                      boolean useTimestamp,
-                                      Map<String, String> slotToCol,
-                                      int limit) throws Exception {
+  protected void loadTransactionTable(
+      MysqlInfo info,
+//      String jdbcURL, String transactionsTable,
+      String dbType, String h2DatabaseName, String tableName,
+      boolean useTimestamp,
+      //Map<String, String> slotToCol,
+      int limit) throws Exception {
     DBConnection connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
-    Connection uncharted = new MysqlConnection().connectWithURL(jdbcURL);
+    Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
 
     if (connection == null) {
       logger.error("can't handle dbtype " + dbType);
@@ -61,20 +64,17 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     ingestSql.createTable(dbType, tableName, useTimestamp, connection);
     logMemory();
 
-    // Connection uncharted = bitcoinData.getConnection();
-    // PreparedStatement statement = getStatement(uncharted, transactionsTable);
-    // int limit = 20000000;
-    // int limit = 10000000;
-
     String sql = "select " +
-        slotToCol.get("SenderId") +
+        info.getSlotToCol().get(MysqlInfo.SENDER_ID) +
         ", " +
-        slotToCol.get("ReceiverId") +
+        info.getSlotToCol().get(MysqlInfo.RECEIVER_ID) +
         ", " +
-        slotToCol.get("USD") +
-        " from " + transactionsTable + " limit " + limit;
+        info.getSlotToCol().get(MysqlInfo.USD) +
+        " from " + info.getTable() + " limit " + limit;
+
     logger.debug("exec " + sql);
     PreparedStatement statement = uncharted.prepareStatement(sql);
+    statement.setFetchSize(1000000);
     logMemory();
 
     logger.debug("Getting result set --- ");
@@ -83,8 +83,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
     int count = 0;
     long t0 = System.currentTimeMillis();
-    //   int max = Integer.MAX_VALUE;
-//    int bad = 0;
+
     double totalUSD = 0;
     Map<Integer, UserStats> userToStats = new HashMap<Integer, UserStats>();
     int mod = 1000000;
@@ -116,7 +115,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
     double avgUSD = totalUSD / (double) count;
 
-    count = insertRowsInTable(tableName, useTimestamp, connection, uncharted, transactionsTable, userToStats, avgUSD, slotToCol, limit);
+    count = insertRowsInTable(tableName, info, useTimestamp, connection, uncharted, userToStats, avgUSD, limit);
 
     ingestSql.createIndices(tableName, connection);
     logMemory();
@@ -140,14 +139,17 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
   }
 
-  private int insertRowsInTable(String tableName, boolean useTimestamp,
-                                DBConnection connection,
-                                Connection uncharted,
-                                String transactionsTable,
-                                Map<Integer, UserStats> userToStats,
-                                double avgUSD,
-                                Map<String, String> slotToCol,
-                                int limit) throws Exception {
+  private int insertRowsInTable(
+      String tableName,
+      MysqlInfo info,
+      boolean useTimestamp,
+      DBConnection connection,
+      Connection uncharted,
+      //     String transactionsTable,
+      Map<Integer, UserStats> userToStats,
+      double avgUSD,
+      //                        Map<String, String> slotToCol,
+      int limit) throws Exception {
     int count;
     count = 0;
     long t0 = System.currentTimeMillis();
@@ -159,18 +161,20 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
     PreparedStatement rstatement =
         uncharted.prepareStatement("select " +
-            slotToCol.get("TransactionId") +
+            info.getSlotToCol().get(MysqlInfo.TRANSACTION_ID) +
             ", " +
-            slotToCol.get("SenderId") +
+            info.getSlotToCol().get(MysqlInfo.SENDER_ID) +
             ", " +
-            slotToCol.get("ReceiverId") +
+            info.getSlotToCol().get(MysqlInfo.RECEIVER_ID) +
             ", " +
-            slotToCol.get("TxTime") +
+            info.getSlotToCol().get(MysqlInfo.TX_TIME) +
             ", " +
-            slotToCol.get("BTC") +
+            info.getSlotToCol().get(MysqlInfo.BTC) +
             ", " +
-            slotToCol.get("USD") +
-            " from " + transactionsTable + " limit " + limit);
+            info.getSlotToCol().get("USD") +
+            " from " + info.getTable() + " limit " + limit);
+    rstatement.setFetchSize(1000000);
+
     logMemory();
 
     ResultSet resultSet = rstatement.executeQuery();

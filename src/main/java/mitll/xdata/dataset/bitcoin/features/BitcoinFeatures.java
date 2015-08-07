@@ -14,7 +14,6 @@ import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -24,7 +23,7 @@ import java.util.*;
  * Time: 8:55 PM
  * To change this template use File | Settings | File Templates.
  */
-public class BitcoinFeatures {
+public class BitcoinFeatures extends BitcoinFeaturesBase {
   private static final int MIN_TRANSACTIONS = 10;
   private static final boolean LIMIT = false;
   private static final int BITCOIN_OUTLIER = 25;
@@ -33,7 +32,7 @@ public class BitcoinFeatures {
   private static final int MIN_CREDITS = 5;
   private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
   private static final int SPECLEN = 100;//
-  public static final int NUM_STANDARD_FEATURES = 10;
+  private static final int NUM_STANDARD_FEATURES = 10;
   //public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
   private static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
   public static final String BITCOIN_FEATURES_STANDARDIZED_TSV = "bitcoin_features_standardized.tsv";
@@ -92,355 +91,8 @@ public class BitcoinFeatures {
     writePairs(users, datafile, pairsFilename);
 
     Map<Integer, UserFeatures> transForUsers = getTransForUsers(datafile, users);
-    long now = System.currentTimeMillis();
-    logger.debug("took " + (now - then) + " to read " + transForUsers.size() + " user features");
 
-    //BufferedWriter writer = new BufferedWriter(new FileWriter("bitcoin_features.tsv"));
-    BufferedWriter rawWriter = new BufferedWriter(new FileWriter(new File(writeDirectory, BITCOIN_RAW_FEATURES_TSV)));
-    //BufferedWriter idsWriter = new BufferedWriter(new FileWriter(BITCOIN_IDS_TSV));
-    BufferedWriter standardFeatureWriter = new BufferedWriter(new FileWriter(new File(writeDirectory, BITCOIN_FEATURES_STANDARDIZED_TSV)));
-
-    // write header liner
-    //  idsWriter.write("user\n");
-
-    //writeHeader(writer);
-    writeHeader(rawWriter);
-    writeHeader(standardFeatureWriter);
-
-    List<Features> features = new ArrayList<Features>();
-    Map<Integer, Features> userToFeatures = new TreeMap<Integer, Features>();
-
-    // TODO - change size if we add spectral features
-    Map<Integer, Integer> userToIndex = new HashMap<Integer, Integer>();
-
-    populateUserToFeatures(users, transForUsers, features, userToFeatures, userToIndex);
-
-    // copy features into a matrix
-
-    double[][] standardizedFeatures = getStandardizedFeatures(features);
-    // getStandardizationStats();
-
-    writeFeaturesToFiles(rawWriter, standardFeatureWriter, userToFeatures, userToIndex, standardizedFeatures);
-
-    writeFeaturesToDatabase(connection, userToFeatures, userToIndex, standardizedFeatures);
-
-    //writer.close();
-    rawWriter.close();
-    // idsWriter.close();
-    standardFeatureWriter.close();
-
-    connection.closeConnection();
-  }
-
-  /**
-   * Calculate features for each user from the raw features in UserFeatures
-   *
-   * @param users
-   * @param transForUsers
-   * @param features
-   * @param userToFeatures
-   * @param userToIndex
-   */
-  private void populateUserToFeatures(Collection<Integer> users,
-                                      Map<Integer, UserFeatures> transForUsers,
-                                      List<Features> features,
-                                      Map<Integer, Features> userToFeatures,
-                                      Map<Integer, Integer> userToIndex) {
-    int skipped = 0;
-    int count = 0;
-    for (Integer user : users) {
-      // logger.debug("user " + user);
-      Features featuresForUser = getFeaturesForUser(transForUsers, user);
-      if (featuresForUser != null) {
-        features.add(featuresForUser);
- /*       if (count < 10) {
-          logger.debug("mapping " + user + " to " + count + " features " + featuresForUser);
-        }*/
-        userToIndex.put(user, count++);
-        userToFeatures.put(user, featuresForUser);
-      } else {
-        skipped++;
-      }
-    }
-    logger.info("skipped " + skipped + " out of " + users.size() + " users who had less than 5 credits and less than 5 debits");
-  }
-
-  private void getStandardizationStats() {
-    // normalize mean and variance
-
-    //Features firstFeature = features.get(0);
-    //int numFeatures = firstFeature.other.length;
-    //DescriptiveStatistics[] summaries = getSummaries(features, numFeatures);
-
-    // TODO : finish adding spectral features -- need weights, need to add mean/std for spectral features
-    // double[] weightVector = new double[useSpectralFeatures ? 160 : 10];
-/*
-    double[] weightVector = new double[] {
-        statWeight, statWeight, iarrWeight, iarrWeight, statWeight, statWeight, iarrWeight, iarrWeight, ppWeight, ppWeight };
-*/
-
-/*
-    if (useSpectralFeatures) {
-      Arrays.fill(weightVector,specWeight);
-    }
-    System.arraycopy(weightVector2, 0, weightVector, (useSpectralFeatures ? 150 : 0), weightVector2.length);
-*/
-
-/*    double[] means = new double[numFeatures];
-    double[] stds = new double[numFeatures];
-
-    // calculate means and standard deviations
-    for (int i = 0; i < numFeatures; i++) {
-      means[i] = summaries[i].getMean();
-      stds[i] = summaries[i].getStandardDeviation();
-      logger.debug("feature " + i + " " + means[i] + " std " + stds[i] + " num " + summaries[i].getN());
-    }*/
-  }
-
-  private void writeFeaturesToFiles(BufferedWriter rawWriter, BufferedWriter standardFeatureWriter,
-                                    Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
-                                    double[][] standardizedFeatures) throws IOException {
-    Features next = userToFeatures.values().iterator().next();
-    int numFeatures = next.other.length;
-
-    int j = 0;
-    for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
-      Features value = userFeatPair.getValue();
-      double[] featureVector = value.other;
-      int id = userFeatPair.getKey();
-      // writer.write(id + "\t");
-      rawWriter.write(id + "\t");
-      //idsWriter.write(id + "\n");
-      standardFeatureWriter.write(id + "\t");
-
-      //if (useSpectralFeatures) {
-      // TODO write out features, maybe to a separate file?
-      // }
-      Integer userIndex = userToIndex.get(id);
-
-      double[] standardizedFeature = standardizedFeatures[userIndex];
-
-		  /*      if (id < 10) {
-        logger.debug("user " + id + " index " + userIndex + " features " + value + " vs " + getDoubles(standardizedFeature));
-      }*/
-      for (int i = 0; i < numFeatures; i++) {
-        double v = featureVector[i];
-        //      double finalValue = ((v - means[i]) / stds[i]) * weightVector[i];
-        String separator = (i == numFeatures - 1) ? "\n" : "\t";
-        //    writer.write(finalValue + separator);
-        rawWriter.write(v + separator);
-
-        double standardizedValue = standardizedFeature[i];
-        standardFeatureWriter.write(standardizedValue + separator);
-
-        if (j++ % 10000 == 0) {
-          //    writer.flush();
-          rawWriter.flush();
-          standardFeatureWriter.flush();
-        }
-      }
-    }
-  }
-
-  private void writeFeaturesToDatabase(DBConnection dbConnection, Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
-                                       double[][] standardizedFeatures) throws Exception {
-
-    Connection connection = dbConnection.getConnection();
-    new FeaturesSql().createUsersTable(connection);
-    PreparedStatement statement;
-
-
-    String[] columnLabels = {"USER", "CREDIT_MEAN", "CREDIT_STD",
-        "CREDIT_INTERARR_MEAN", "CREDIT_INTERARR_STD",
-        "DEBIT_MEAN", "DEBIT_STD",
-        "DEBIT_INTERARR_MEAN", "DEBIT_INTERARR_STD",
-        "PERP_IN", "PERP_OUT"};
-    String columnLabelText = "(" + StringUtils.join(columnLabels, ", ") + ")";
-
-
-    int numFeatures = columnLabels.length - 1;
-
-
-    for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
-
-      int id = userFeatPair.getKey();
-      Integer userIndex = userToIndex.get(id);
-      double[] standardizedFeature = standardizedFeatures[userIndex];
-
-      String featValueText = "(" + id + ", ";
-      for (int i = 0; i < numFeatures; i++) {
-
-        if (i != numFeatures - 1) {
-          featValueText += Double.toString(standardizedFeature[i]) + ", ";
-        } else {
-          featValueText += Double.toString(standardizedFeature[i]) + ")";
-        }
-      }
-
-      String sqlInsertVector = "insert into users " + columnLabelText + " values " + featValueText + ";";
-      statement = connection.prepareStatement(sqlInsertVector);
-      statement.executeUpdate();
-      statement.close();
-    }
-
-    // Insert default type into table (to possibly be overwritten by clustering output)
-    String sqlInsertType = "alter table USERS add TYPE int not null default(1);";
-    statement = connection.prepareStatement(sqlInsertType);
-    statement.executeUpdate();
-    statement.close();
-
-    connection.close();
-  }
-
-  static String getDoubles(double[] arr) {
-    String val = "";
-    for (double d : arr) val += d + " ";
-    return val;
-  }
-
-  private double[][] getStandardizedFeatures(List<Features> features) {
-    double[][] featureMatrix = new double[features.size()][NUM_STANDARD_FEATURES];
-    int i = 0;
-    for (Features feature : features) {
-      double[] dest = featureMatrix[i++];
-      if (feature.other == null) logger.error("huh? feature vector is null");
-      System.arraycopy(feature.other, 0, dest, 0, NUM_STANDARD_FEATURES);
-    }
-
-    for (int j = 0; j < NUM_STANDARD_FEATURES; j++) { //num_feats = 10 for our raw bitcoin features
-      if (j == 4) {//: #change polarity for mean debits
-        for (int k = 0; k < features.size(); k++) {
-          featureMatrix[k][j] = Math.log(1 + Math.abs(featureMatrix[k][j]));
-        }
-      } else if ((j == 8) | (j == 9)) { //#perplexity metric has min val = 1
-        for (int k = 0; k < features.size(); k++) {
-          featureMatrix[k][j] = Math.log(featureMatrix[k][j]);
-        }
-      } else {
-        for (int k = 0; k < features.size(); k++) {
-          featureMatrix[k][j] = Math.log(1 + Math.abs(featureMatrix[k][j]));
-        }
-      }
-    }
-
-    double lowerPercentile = 0.025;
-    double upperPercentile = 0.975;
-    FeatureNormalizer normalizer = new FeatureNormalizer(featureMatrix, lowerPercentile, upperPercentile);
-    return normalizer.normalizeFeatures(featureMatrix);
-  }
-
-  private void writeHeader(BufferedWriter writer) throws IOException {
-    writer.write("user\t");
-
-    writer.write("credit_mean\tcredit_std\t");
-    writer.write("credit_interarr_mean\tcredit_interarr_std\t");
-    writer.write("debit_mean\tdebit_std\t");
-    writer.write("debit_interarr_mean\tdebit_interarr_std\t");
-    writer.write("perp_in\tperp_out\n");
-  }
-
-  private DescriptiveStatistics[] getSummaries(List<Features> features, int numFeatures) {
-    DescriptiveStatistics[] summaries = new DescriptiveStatistics[numFeatures];
-
-    for (int i = 0; i < numFeatures; i++) {
-      summaries[i] = new DescriptiveStatistics();
-    }
-    for (Features featureVector : features) {
-      for (int i = 0; i < numFeatures; i++) {
-        summaries[i].addValue(featureVector.other[i]);
-      }
-    }
-    return summaries;
-  }
-
-  /**
-   * 160 features
-   * <p>
-   * *    name         = $nms
-   * credit_spec  = $credit_spec    x50
-   * debit_spec   = $debit_spec     x50
-   * merge_spec   = $merge_spec     x50
-   * credit_stats = $credit_stats
-   * credit_iarr  = $credit_iarr
-   * debit_stats  = $debit_stats
-   * debit_iarr   = $debit_iarr
-   * p_in         = $p_in           perp
-   * p_out        = $p_out          perp
-   *
-   * @param transForUsers
-   * @param user
-   * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String, String, boolean)
-   */
-  private Features getFeaturesForUser(Map<Integer, UserFeatures> transForUsers, Integer user) {
-    UserFeatures stats = transForUsers.get(user);
-
-    if (stats == null) {
-      //logger.debug("no transactions for " + user + " in "  + transForUsers.keySet().size() + " keys.");
-      return null;
-    }
-
-    double[] sfeatures = new double[150]; // later 160
-    double[] features = new double[NUM_STANDARD_FEATURES]; // later 160
-    if (stats.isValid()) {
-      stats.calc();
-
-      // TODO get this going later
-      int i = 0;
-      if (useSpectral) {
-        float[] creditSpec = stats.getCreditSpec();
-        for (float aCreditSpec : creditSpec) sfeatures[i++] = aCreditSpec;
-        float[] debitSpec = stats.getDebitSpec();
-        for (float aDebitSpec : debitSpec) sfeatures[i++] = aDebitSpec;
-        float[] mergeSpec = stats.getMergeSpec();
-        for (float aMergeSpec : mergeSpec) sfeatures[i++] = aMergeSpec;
-      }
-
-      i = 0;
-
-      List<Double> creditMeanAndStd = stats.getCreditMeanAndStd();
-      List<Double> creditInterarrivalTimes = stats.getCreditInterarrMeanAndStd();
-      List<Double> debitMeanAndStd = stats.getDebitMeanAndStd();
-      List<Double> debitInterarrivalTimes = stats.getDebitInterarrMeanAndStd();
-
-      double inPerplexity = stats.getInPerplexity();
-      double outPerplexity = stats.getOutPerplexity();
-
-      features[i++] = creditMeanAndStd.get(0);
-      features[i++] = creditMeanAndStd.get(1);
-
-      features[i++] = creditInterarrivalTimes.get(0);
-      features[i++] = creditInterarrivalTimes.get(1);
-
-      features[i++] = debitMeanAndStd.get(0);
-      features[i++] = debitMeanAndStd.get(1);
-
-      features[i++] = debitInterarrivalTimes.get(0);
-      features[i++] = debitInterarrivalTimes.get(1);
-
-      features[i++] = inPerplexity;
-      features[i++] = outPerplexity;
-    } else {
-      //  logger.debug("\tuser " +user+ " is not valid");
-      //features = null;
-      return null;
-    }
-
-    return new Features(sfeatures, features);
-  }
-
-  private static class Features {
-    final double[] spectral;
-    final double[] other;  // the non-spectral 10 features
-
-    Features(double[] spectral, double[] other) {
-      this.spectral = spectral;
-      this.other = other;
-    }
-
-    public String toString() {
-
-      return "Features " + getDoubles(other);
-    }
+    writeFeatures(connection, writeDirectory, then, users, transForUsers);
   }
 
   /**
@@ -527,7 +179,6 @@ public class BitcoinFeatures {
                           String dataFilename, String outfile) throws Exception {
 
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
-    BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
     String line;
     int count = 0;
     long t0 = System.currentTimeMillis();
@@ -550,17 +201,11 @@ public class BitcoinFeatures {
 
       int source = Integer.parseInt(split[1]);
       int target = Integer.parseInt(split[2]);
-      if (users.contains(source) && users.contains(target)) {
-        Set<Integer> integers = stot.get(source);
-        if (integers == null) stot.put(source, integers = new HashSet<Integer>());
-        if (!integers.contains(target)) integers.add(target);
-      } else {
-        skipped++;
-      }
+
+      skipped = getSkipped(users, stot, skipped, source, target);
       // long key = storeTwo(source, target);
       //if (!connectedPairs.contains(key)) connectedPairs.add(key);
       if (c++ % 1000000 == 0) logger.debug("read " + c + " from " + dataFilename);
-
 
       if (count % 10000000 == 0) {
         logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
@@ -568,17 +213,10 @@ public class BitcoinFeatures {
       }
     }
     logger.debug("skipped " + skipped + " transactions where either the source or target has been pruned");
-    //for (Long pair : connectedPairs) writer.write(pair+"\n");
-    int cc = 0;
-    for (Map.Entry<Integer, Set<Integer>> pair : stot.entrySet()) {
-      for (Integer i : pair.getValue()) {
-        writer.write(storeTwo(pair.getKey(), i) + "\n");
-        cc++;
-      }
-    }
-    writer.close();
     br.close();
-    logger.debug("wrote " + cc + " pairs.");
+
+    //for (Long pair : connectedPairs) writer.write(pair+"\n");
+    writePairs(outfile, stot);
     if (bad > 0) logger.warn("Got " + bad + " transactions...");
   }
 
@@ -592,19 +230,20 @@ public class BitcoinFeatures {
    * @return
    * @see
    */
-  private long storeTwo(long low, long high) {
+/*  private long storeTwo(long low, long high) {
     long combined = low;
     combined += high << 32;
     return combined;
-  }
+  }*/
 
   /**
    * @param dataFilename
    * @param users        transactions must be between the subset of non-trivial users (who have more than 10 transactions)
    * @return
    * @throws Exception
+   * @see #BitcoinFeatures(DBConnection, String, String, boolean)
    */
-  private Map<Integer, UserFeatures> getTransForUsers(String dataFilename, Collection<Integer> users) throws Exception {
+  protected Map<Integer, UserFeatures> getTransForUsers(String dataFilename, Collection<Integer> users) throws Exception {
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
     String line;
     int count = 0;
@@ -639,18 +278,6 @@ public class BitcoinFeatures {
     }
     if (bad > 0) logger.warn("Got " + bad + " transactions...");
     return idToStats;
-  }
-
-  private void addTransaction(Map<Integer, UserFeatures> idToStats, int source, int target, long time, double amount) {
-    UserFeatures sourceStats = idToStats.get(source);
-    if (sourceStats == null) idToStats.put(source, sourceStats = new UserFeatures(source));
-    UserFeatures targetStats = idToStats.get(target);
-    if (targetStats == null) idToStats.put(target, targetStats = new UserFeatures(target));
-
-    Transaction trans = new Transaction(source, target, time, amount);
-
-    sourceStats.addDebit(trans);
-    targetStats.addCredit(trans);
   }
 
   private long getTime(String[] split, boolean onlyGetDailyData, Calendar calendar) {
@@ -690,223 +317,7 @@ public class BitcoinFeatures {
     calendar.set(Integer.parseInt(year), imonth, Integer.parseInt(day));
   }
 
-  /**
-   * The features we collect for each user (160)
-   * <p>
-   * credit spectrum (50 values)
-   * debit spectrum (50 values)
-   * merged spectrum  (50 values)
-   * credit mean, std
-   * credit inter arrival times mean, std
-   * debit mean, std
-   * debit inter arrival times mean, std
-   * incoming link perplexity
-   * outgoing link perplexity
-   */
-  private class UserFeatures {
-    private final int id;
-    final List<Transaction> debits = new ArrayList<Transaction>();
-    final List<Transaction> credits = new ArrayList<Transaction>();
-    final Map<Integer, Integer> targetToCount = new HashMap<Integer, Integer>();
-    final Map<Integer, Integer> sourceToCount = new HashMap<Integer, Integer>();
-
-    float[] expandedDebits, expandedCredits, expandedMerged;
-    float[] dspectrum, cspectrum, mspectrum;
-
-    public UserFeatures(int id) {
-      this.id = id;
-    }
-
     /**
-     * @param t
-     * @see BitcoinFeatures#getTransForUsers(String, java.util.Collection)
-     */
-    public void addDebit(Transaction t) {
-      debits.add(t);
-      Integer outgoing = targetToCount.get(t.target);
-      targetToCount.put(t.target, outgoing == null ? 1 : outgoing + 1);
-    }
-
-    public void addCredit(Transaction t) {
-      credits.add(t);
-
-      Integer incoming = sourceToCount.get(t.source);
-      sourceToCount.put(t.source, incoming == null ? 1 : incoming + 1);
-    }
-
-    public void calc() {
-      Collections.sort(debits);
-      Collections.sort(credits);
-
-      expandedDebits = getExpanded(debits, period, true);
-      expandedCredits = getExpanded(credits, period, false);
-      expandedMerged = getExpanded(credits, debits, period);
-
-      if (useSpectral) {
-        dspectrum = getSpectrum(expandedDebits);
-        cspectrum = getSpectrum(expandedCredits);
-        mspectrum = getSpectrum(expandedMerged);
-      }
-    }
-
-    public List<Double> getCreditMeanAndStd() {
-      if (credits.isEmpty()) {
-        return EMPTY_DOUBLES;
-      }
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Transaction transaction : credits) {
-        descriptiveStatistics.addValue(transaction.amount);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    public List<Double> getDebitMeanAndStd() {
-      if (debits.isEmpty()) {
-        return EMPTY_DOUBLES;
-      }
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Transaction transaction : debits) {
-        descriptiveStatistics.addValue(-transaction.amount);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    private float[] getExpanded(List<Transaction> debits, PERIOD period, boolean subtract) {
-      long quanta = period.equals(PERIOD.DAY) ? DAY_IN_MILLIS : period.equals(PERIOD.HOUR) ? HOUR_IN_MILLIS : DAY_IN_MILLIS;
-
-      if (debits.isEmpty()) return new float[0];
-
-      long first = debits.get(0).time;
-      long last = debits.get(debits.size() - 1).time;
-      long bins = (last - first) / quanta;
-      float[] expDebits = new float[(int) bins + 1];
-
-      for (Transaction debit : debits) {
-        long day = (debit.time - first) / quanta;
-        expDebits[(int) day] += (subtract ? -1 : +1) * debit.amount;
-      }
-
-      return expDebits;
-    }
-
-    private float[] getExpanded(List<Transaction> credits, List<Transaction> debits, PERIOD period) {
-      long quanta = period.equals(PERIOD.DAY) ? DAY_IN_MILLIS : period.equals(PERIOD.HOUR) ? HOUR_IN_MILLIS : DAY_IN_MILLIS;
-
-      // TODO : this is slow of course...
-      List<Transaction> merged = new ArrayList<Transaction>(debits);
-      merged.addAll(credits);
-      Collections.sort(merged);
-
-      long first = merged.get(0).time;
-      long last = merged.get(merged.size() - 1).time;
-      long bins = (last - first) / quanta;
-      float[] expDebits = new float[(int) bins + 1];
-
-      for (Transaction debit : debits) {
-        long day = (debit.time - first) / quanta;
-        expDebits[(int) day] += -debit.amount;
-      }
-
-      for (Transaction credit : credits) {
-        long day = (credit.time - first) / quanta;
-        expDebits[(int) day] += credit.amount;
-      }
-
-      return expDebits;
-    }
-
-    public double getInPerplexity() {
-      return getPerplexity(sourceToCount);
-    }
-
-    public double getOutPerplexity() {
-      return getPerplexity(targetToCount);
-    }
-
-    public double getPerplexity(Map<Integer, Integer> sourceToCount) {
-      float total = 0f;
-      for (int count : sourceToCount.values()) {
-        total += (float) count;
-      }
-      float sum = 0;
-      double log2 = Math.log(2);
-
-      // logger.debug(this + " perp " + sourceToCount);
-      for (int count : sourceToCount.values()) {
-        float prob = (float) count / total;
-        //   logger.debug("source " + count + " prob " + prob + " total " + total);
-        sum += prob * (Math.log(prob) / log2);
-      }
-      return Math.pow(2, -sum);
-    }
-
-    public List<Double> getCreditInterarrMeanAndStd() {
-      List<Long> creditInterarrivalTimes = getCreditInterarrivalTimes();
-      if (creditInterarrivalTimes.isEmpty()) return EMPTY_DOUBLES;
-
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Long inter : creditInterarrivalTimes) {
-        descriptiveStatistics.addValue(inter);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    public List<Double> getDebitInterarrMeanAndStd() {
-      List<Long> debitInterarrivalTimes = getDebitInterarrivalTimes();
-      if (debitInterarrivalTimes.isEmpty()) return EMPTY_DOUBLES;
-
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Long inter : debitInterarrivalTimes) {
-        descriptiveStatistics.addValue(inter);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    private List<Long> getDebitInterarrivalTimes() {
-      return getInterarrivalTimes(debits);
-    }
-
-    private List<Long> getCreditInterarrivalTimes() {
-      return getInterarrivalTimes(credits);
-    }
-
-    public List<Long> getInterarrivalTimes(List<Transaction> times) {
-      List<Long> diffs = new ArrayList<Long>();
-      for (int i = 0; i < times.size() - 1; i += 1) {
-        long diff = times.get(i + 1).time - times.get(i).time;
-        if (period == PERIOD.DAY) {
-          diff /= DAY_IN_MILLIS;
-        } else if (period == PERIOD.HOUR) {
-          diff /= HOUR_IN_MILLIS;
-        }
-        diffs.add(diff);
-      }
-      return diffs;
-    }
-
-    public boolean isValid() {
-      //  logger.debug(this + " " + " num debits " + debits.size() + " num credits " + credits.size());
-      return debits.size() > MIN_DEBITS || credits.size() > MIN_CREDITS;
-    }
-
-    public float[] getCreditSpec() {
-      return cspectrum;
-    }
-
-    public float[] getDebitSpec() {
-      return dspectrum;
-    }
-
-    public float[] getMergeSpec() {
-      return mspectrum;
-    }
-
-    public String toString() {
-      return "" + id;
-    }
-  }
-
-  /**
    * TODO : fill this in -- note we want only the real components:
    * <p>
    * Julia from Wade:
@@ -974,79 +385,14 @@ public class BitcoinFeatures {
     return r;
   }
 
-  /**
-   * Filter out accounts that have less than {@link #MIN_TRANSACTIONS} transactions.
-   * NOTE : throws out "supernode" #25
-   *
-   * @param connection
-   * @return
-   * @throws Exception
-   */
-  private Collection<Integer> getUsers(DBConnection connection) throws Exception {
-    long then = System.currentTimeMillis();
 
-	  /*
-     * Grab only those users having more than MIN_TRANSACTIONS total transactions
-	   * (as either source or target); filter out BITCOIN_OUTLIER
-	   */
-	  /*
-    String sql =
-        "select source, count(*) as cnt from "+BitcoinBinding.TRANSACTIONS+" "+
-            "where source <> " +
-            BITCOIN_OUTLIER +
-            " " +
-            //"group by source having cnt > " +
-            //MIN_TRANSACTIONS +
-            (LIMIT ? " limit " + USER_LIMIT : "");
-	   */
 
-	  /*
-	   * Execute updates to figure out 
-	   */
-    String sql = "drop table temp if exists;" +
-        " drop table temp2 if exists;" +
-        " create table temp as select source as uid, count(*) as num_trans " +
-        " from " + BitcoinBinding.TRANSACTIONS + " where source <> " + BITCOIN_OUTLIER + " group by source;" +
-        " insert into temp (uid,num_trans)" +
-        " select target, count(*) from " + BitcoinBinding.TRANSACTIONS +
-        " where target <> " + BITCOIN_OUTLIER + " group by target;" +
-        " drop table temp2 if exists;" +
-        " create table temp2 as select uid, sum(num_trans) as tot_num_trans" +
-        " from temp group by uid having tot_num_trans >= " + MIN_TRANSACTIONS + ";" +
-        " drop table temp;" +
-        " select * from temp2;";
-
-    PreparedStatement statement = connection.getConnection().prepareStatement(sql);
-    statement.executeUpdate();
-
-	  /*
-	   * Execute query to load in active-enough users...
-	   */
-    String sqlQuery = "select * from temp2;";
-    statement = connection.getConnection().prepareStatement(sqlQuery);
-    ResultSet rs = statement.executeQuery();
-
-    Set<Integer> ids = new HashSet<Integer>();
-    int c = 0;
-
-    while (rs.next()) {
-      c++;
-      if (c % 100000 == 0) logger.debug("read  " + c);
-      ids.add(rs.getInt(1));
-    }
-    long now = System.currentTimeMillis();
-    logger.debug("took " + (now - then) + " millis to read " + ids.size() + " users");
-
-    rs.close();
-    statement.close();
-    return ids;
-  }
-
+  @SuppressWarnings("CanBeFinal")
   private static class Transaction implements Comparable<Transaction> {
-    int source;
-    int target;
-    long time;
-    double amount;
+    final int source;
+    final int target;
+    final long time;
+    final double amount;
 /*    public Transaction(ResultSet rs) throws Exception {
       int i = 1;
       source = rs.getInt(i++);

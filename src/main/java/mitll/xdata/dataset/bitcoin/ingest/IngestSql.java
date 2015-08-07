@@ -71,7 +71,7 @@ public class IngestSql {
     }
     sql += "\n);";
 
-    logger.debug("create " + sql);
+ //   logger.debug("create " + sql);
     return sql;
   }
 
