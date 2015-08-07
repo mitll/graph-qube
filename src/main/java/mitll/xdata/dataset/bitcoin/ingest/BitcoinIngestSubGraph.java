@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.FeaturesSql;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
@@ -72,7 +73,7 @@ public class BitcoinIngestSubGraph {
 	
 	
 	private static PreparedStatement queryStatement;
-	private static String bitcoinDirectory = "src/main/resources" + 
+	private static final String bitcoinDirectory = "src/main/resources" +
 												BitcoinBinding.BITCOIN_FEATS_TSV;
 	
 	
@@ -224,7 +225,7 @@ public class BitcoinIngestSubGraph {
 	 * @throws Throwable
 	 * @throws Exception
 	 */
-	protected static void computeIndices(String dbType, String h2DatabaseName) throws Throwable, Exception {
+	protected static void computeIndices(String dbType, String h2DatabaseName) throws Throwable {
 		DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
 		computeIndices(bitcoinDirectory,connection);
@@ -242,8 +243,8 @@ public class BitcoinIngestSubGraph {
 	 * @throws Exception
 	 * @throws IOException
 	 */
-	protected static void computeIndices(String bitcoinDirectory,
-			DBConnection dbConnection) throws Throwable, Exception, IOException {
+	private static void computeIndices(String bitcoinDirectory,
+                                     DBConnection dbConnection) throws Throwable, Exception, IOException {
 		/*
 		 * This is stuff is doing the actual topk-subgraph indexing
 		 */
@@ -273,10 +274,11 @@ public class BitcoinIngestSubGraph {
 //								" alter table "+USERS+" add "+TYPE_COLUMN+" int not null default(1);";
 //		doSQLUpdate(dbConnection, sqlInsertType);
 		
-		
+
+		new FeaturesSql().createUsersTableNoDrop(dbConnection.getConnection());
 		// Load types into topk-subgraph object...
-		MultipleIndexConstructor.loadTypesFromDatabase(dbConnection,USERS,USERID_COLUMN,TYPE_COLUMN);
-	    logger.info("Loaded types from database...");
+    MultipleIndexConstructor.loadTypesFromDatabase(dbConnection, USERS, USERID_COLUMN, TYPE_COLUMN);
+    logger.info("Loaded types from database...");
 	    logger.debug("Number of types: "+MultipleIndexConstructor.totalTypes);	
 		
 		// Create Typed Edges
@@ -311,7 +313,7 @@ public class BitcoinIngestSubGraph {
 	 * The column "TOT_OUT" sums the value of transactions from a->b
 	 * The column "TOT_IN" sums the value of transactions from b->a 
 	 * 
-	 * @param connection
+	 * @param dbType
 	 * @return
 	 * @throws Exception
 	 */
@@ -342,7 +344,7 @@ public class BitcoinIngestSubGraph {
 	 * @return
 	 * @throws Exception
 	 */
-	protected static void extractUndirectedGraph(DBConnection connection) throws Exception {
+	private static void extractUndirectedGraph(DBConnection connection) throws Exception {
 		
 		/*
 		 * Setup SQL statements
@@ -434,7 +436,7 @@ public class BitcoinIngestSubGraph {
 	 * @param connection
 	 * @throws Exception
 	 */
-	protected static void filterForActivity(DBConnection connection) throws Exception {
+	private static void filterForActivity(DBConnection connection) throws Exception {
 		
 		/*
 		 * Setup SQL queries

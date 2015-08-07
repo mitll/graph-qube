@@ -17,7 +17,7 @@ import java.util.Map;
  * Created by go22670 on 8/6/15.
  */
 public class IngestSql {
-  private static final Logger logger = Logger.getLogger(BitcoinIngestRaw.class);
+  private static final Logger logger = Logger.getLogger(IngestSql.class);
 
   private static final Map<String, String> TYPE_TO_DB = new HashMap<String, String>();
 
@@ -57,7 +57,7 @@ public class IngestSql {
     long t = System.currentTimeMillis();
     logger.debug("dropping current " + tableName);
     doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
-    logger.debug("took " + (System.currentTimeMillis() - t) + " millis to drop " + tableName);
+    logger.debug("took " + (since(t)) + " millis to drop " + tableName);
     doSQL(connection, createCreateSQL(tableName, cnames, types, false));
   }
 
@@ -70,6 +70,8 @@ public class IngestSql {
       sql += (i > 0 ? ",\n  " : "  ") + names.get(i) + " " + statedType;
     }
     sql += "\n);";
+
+    logger.debug("create " + sql);
     return sql;
   }
 
@@ -96,14 +98,14 @@ public class IngestSql {
   void createIndices(String tableName, DBConnection connection) throws SQLException {
     long then = System.currentTimeMillis();
     doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "SOURCE" + ")");
-    logger.debug("first index complete in " + (System.currentTimeMillis() - then));
+    logger.debug("first  index complete in " + since(then) + " on " + tableName);
     then = System.currentTimeMillis();
     doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "TARGET" + ")");
-    logger.debug("second index complete in " + (System.currentTimeMillis() - then));
+    logger.debug("second index complete in " + (since(then)) + " on " + tableName);
 
     then = System.currentTimeMillis();
     doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "TIME" + ")");
-    logger.debug("third index complete in " + (System.currentTimeMillis() - then));
+    logger.debug("third  index complete in " + (since(then)) + " on " + tableName);
 
     doSQL(connection, "create index " +
         //"idx_transactions_source_target" +
@@ -111,6 +113,10 @@ public class IngestSql {
         tableName +
         "(" +
         "SOURCE" + ", TARGET" + ")");
-    logger.debug("fourth index complete in " + (System.currentTimeMillis() - then));
+    logger.debug("fourth index complete in " + (since(then)) + " on " + tableName);
+  }
+
+  private long since(long then) {
+    return System.currentTimeMillis() - then;
   }
 }

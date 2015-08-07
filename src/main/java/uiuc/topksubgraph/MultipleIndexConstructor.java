@@ -513,16 +513,21 @@ public class MultipleIndexConstructor {
 	 * @param dbConnection
 	 * @return
 	 * @throws Exception
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection)
 	 */
 	public static void loadTypesFromDatabase(DBConnection dbConnection, String tableName, String uidColumn, String typeColumn)
 			throws Exception {
-		
+
+    logger.info("loadTypesFromDatabase " + tableName + " " + uidColumn + " " + typeColumn);
+
 		/*
 		 * Do query
 		 */
 		Connection connection = dbConnection.getConnection();
 
 		String sqlQuery = "select "+uidColumn+", "+typeColumn+" from "+tableName+";";
+
+		logger.info("sql " + sqlQuery + " on " + connection);
 
 		PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
 		ResultSet rs = queryStatement.executeQuery();

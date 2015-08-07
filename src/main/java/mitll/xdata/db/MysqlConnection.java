@@ -22,23 +22,41 @@ public class MysqlConnection implements DBConnection {
 
   private Connection conn;
 
+  public MysqlConnection() {
+  }
+
   public MysqlConnection(String database) throws Exception {
     connect(database, USER, PASSWORD);
   }
-  public MysqlConnection(String database,String user, String password) throws Exception { connect(database,user, password); }
+
+  public MysqlConnection(String database, String user, String password) throws Exception {
+    connect(database, user, password);
+  }
+
   /**
    */
-  private void connect(String database, String user, String password) throws Exception {
-    String url = "jdbc:mysql://localhost:3306/" + database;// + "?autoReconnect=true";
+  public Connection connect(String database, String user, String password) throws Exception {
+    String url = getSimpleURL(database);// + "?autoReconnect=true";
 
+    return connectWithURL(url, user, password);
+  }
+
+  public String getSimpleURL(String database) {
+    return "jdbc:mysql://localhost:3306/" + database;
+  }
+
+  public Connection connectWithURL(String url) {
+    return connectWithURL(url, USER, PASSWORD);
+  }
+
+  private Connection connectWithURL(String url, String user, String password) {
     try {
       Class.forName("com.mysql.jdbc.Driver");
     } catch (ClassNotFoundException e) {
-      logger.error("got error trying to create mysql connection with URL '" + url + "', exception = " +e,e);
+      logger.error("got error trying to create mysql connection with URL '" + url + "', exception = " + e, e);
     }
 
     logger.debug("connecting to " + url);
-    org.h2.Driver.load();
     try {
       conn = DriverManager.getConnection(url, user, password);
 
@@ -46,12 +64,15 @@ public class MysqlConnection implements DBConnection {
 
     } catch (SQLException e) {
       conn = null;
-      logger.error("got error trying to create mysql connection with URL '" + url + "', exception = " +e,e);
+      logger.error("got error trying to create mysql connection with URL '" + url + "', exception = " + e, e);
     }
+    return conn;
   }
 
   @Override
-  public Connection getConnection() {  return conn; }
+  public Connection getConnection() {
+    return conn;
+  }
 
   @Override
   public void closeConnection() {
@@ -66,7 +87,9 @@ public class MysqlConnection implements DBConnection {
   }
 
   @Override
-  public boolean isValid() { return conn != null; }
+  public boolean isValid() {
+    return conn != null;
+  }
 
   @Override
   public String getType() {

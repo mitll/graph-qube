@@ -39,17 +39,19 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   /**
    * Adds equivalent dollar value column
    *
-   * @param bitcoinDB
+   * @param jdbcURL
    * @param dbType       h2 or mysql
    * @param tableName    table name to create
    * @param useTimestamp true if we want to store a sql timestamp for time, false if just a long for unix millis
    * @throws Exception
    * @see BitcoinIngestUncharted#main
    */
-  protected void loadTransactionTable(String bitcoinDB, String transactionsTable, String dbType, String h2DatabaseName, String tableName,
-                                      boolean useTimestamp) throws Exception {
+  protected void loadTransactionTable(String jdbcURL, String transactionsTable, String dbType, String h2DatabaseName, String tableName,
+                                      boolean useTimestamp,
+                                      Map<String, String> slotToCol,
+                                      int limit) throws Exception {
     DBConnection connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
-    DBConnection bitcoinData = new MysqlConnection(bitcoinDB);
+    Connection uncharted = new MysqlConnection().connectWithURL(jdbcURL);
 
     if (connection == null) {
       logger.error("can't handle dbtype " + dbType);
@@ -59,12 +61,18 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     ingestSql.createTable(dbType, tableName, useTimestamp, connection);
     logMemory();
 
-    Connection uncharted = bitcoinData.getConnection();
-  //  PreparedStatement statement = getStatement(uncharted, transactionsTable);
+    // Connection uncharted = bitcoinData.getConnection();
+    // PreparedStatement statement = getStatement(uncharted, transactionsTable);
+    // int limit = 20000000;
+    // int limit = 10000000;
 
-    int limit = 20000000;
-
-    String sql = "select SenderId, ReceiverID, USD from " + transactionsTable + " limit " + limit;
+    String sql = "select " +
+        slotToCol.get("SenderId") +
+        ", " +
+        slotToCol.get("ReceiverId") +
+        ", " +
+        slotToCol.get("USD") +
+        " from " + transactionsTable + " limit " + limit;
     logger.debug("exec " + sql);
     PreparedStatement statement = uncharted.prepareStatement(sql);
     logMemory();
@@ -75,11 +83,11 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
     int count = 0;
     long t0 = System.currentTimeMillis();
- //   int max = Integer.MAX_VALUE;
+    //   int max = Integer.MAX_VALUE;
 //    int bad = 0;
     double totalUSD = 0;
     Map<Integer, UserStats> userToStats = new HashMap<Integer, UserStats>();
-    int mod = 100000;
+    int mod = 1000000;
 
     logMemory();
     logger.debug("Going through     result set --- ");
@@ -108,7 +116,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
     double avgUSD = totalUSD / (double) count;
 
-    count = insertRowsInTable(tableName, useTimestamp,  connection, uncharted, transactionsTable,userToStats,avgUSD,limit);
+    count = insertRowsInTable(tableName, useTimestamp, connection, uncharted, transactionsTable, userToStats, avgUSD, slotToCol, limit);
 
     ingestSql.createIndices(tableName, connection);
     logMemory();
@@ -121,6 +129,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     logger.debug((t1 - 1.0 * t0) / count + " ms/insert");
     logger.debug((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
   }
+
   private static final int MB = (1024 * 1024);
 
   private void logMemory() {
@@ -129,11 +138,6 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     long used = rt.totalMemory() - free;
     long max = rt.maxMemory();
     logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
-    //return free;
-  }
-
-  private PreparedStatement getStatement(Connection uncharted, String transactionsTable, int limit) throws SQLException {
-    return uncharted.prepareStatement("select SenderId, ReceiverID, TxTime, BTC, USD from " + transactionsTable + " limit " + limit);
   }
 
   private int insertRowsInTable(String tableName, boolean useTimestamp,
@@ -142,17 +146,31 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
                                 String transactionsTable,
                                 Map<Integer, UserStats> userToStats,
                                 double avgUSD,
-                                 int limit) throws Exception {
+                                Map<String, String> slotToCol,
+                                int limit) throws Exception {
     int count;
     count = 0;
     long t0 = System.currentTimeMillis();
 
     List<String> cnames = ingestSql.getColumnsForTransactionsTable();
     PreparedStatement statement = connection.getConnection().prepareStatement(ingestSql.createInsertSQL(tableName, cnames));
-
+    logger.debug("insertRowsInTable");
+    logMemory();
 
     PreparedStatement rstatement =
-        uncharted.prepareStatement("select TransactionId, SenderId, ReceiverID, TxTime, BTC, USD from " + transactionsTable+ " limit " + limit);
+        uncharted.prepareStatement("select " +
+            slotToCol.get("TransactionId") +
+            ", " +
+            slotToCol.get("SenderId") +
+            ", " +
+            slotToCol.get("ReceiverId") +
+            ", " +
+            slotToCol.get("TxTime") +
+            ", " +
+            slotToCol.get("BTC") +
+            ", " +
+            slotToCol.get("USD") +
+            " from " + transactionsTable + " limit " + limit);
     logMemory();
 
     ResultSet resultSet = rstatement.executeQuery();
@@ -208,7 +226,6 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
     // do dollars
     statement.setDouble(i++, usd);
-    //logger.info(additionalFeatures);
     for (double feat : additionalFeatures) statement.setDouble(i++, feat);
     statement.executeUpdate();
 
@@ -217,46 +234,4 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
           + " ms/insert");
     }
   }
-
-/*  private List<double[]> addFeatures(
-      Connection uncharted,
-      String transactionsTable,
-      Map<Integer, UserStats> userToStats,
-      double avgUSD
-  ) throws Exception {
-    PreparedStatement statement = getStatement(uncharted, transactionsTable);
-    ResultSet resultSet = statement.executeQuery();
-
-    int count = 0;
-    long t0 = System.currentTimeMillis();
-    // List<String> cnames = Arrays.asList("DEVPOP", "CREDITDEV", "DEBITDEV");
-    List<double[]> feats = new ArrayList<double[]>();
-
-    while (resultSet.next()) {
-      count++;
-
-      try {
-        int col = 1;
-        int sourceid = resultSet.getInt(col++);
-        int targetID = resultSet.getInt(col++);
-
-        Timestamp x = resultSet.getTimestamp(col++);
-        double btc = resultSet.getDouble(col++);
-
-        double usd = resultSet.getDouble(col++);
-
-        feats.add(addAvgDollarFeatures(userToStats, avgUSD, count, sourceid, targetID, usd));
-
-        if (count % 1000000 == 0) {
-          logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
-              + " ms/insert");
-        }
-      } catch (Exception e) {
-        logger.error("got " + e, e);
-      }
-    }
-
-    statement.close();
-    return feats;
-  }*/
 }
