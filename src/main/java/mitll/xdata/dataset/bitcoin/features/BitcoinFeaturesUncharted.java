@@ -174,7 +174,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
         info.getSlotToCol().get(MysqlInfo.SENDER_ID) + ", " +
         info.getSlotToCol().get(MysqlInfo.RECEIVER_ID) + ", " +
         info.getSlotToCol().get(MysqlInfo.TX_TIME) + ", " +
-        info.getSlotToCol().get(MysqlInfo.USD) + ", " +
+        info.getSlotToCol().get(MysqlInfo.USD) + //", " +
         " from " + info.getTable() + " limit " + limit;
 
     logger.debug("exec " + sql);

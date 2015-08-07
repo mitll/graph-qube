@@ -87,8 +87,10 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
 //    }
 
     // populate the transactions table
-    int limit = 10000;
+    int limit = 1000000;
     MysqlInfo info = new MysqlInfo();
+    info.setJdbc(dataSourceJDBC);
+    info.setTable(transactionsTable);
 
     new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
         "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit);
@@ -96,8 +98,8 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-    int limit1 = 1000000;
-    new BitcoinFeaturesUncharted(destinationDbName, writeDir, info, limit1);
+   // int limit1 = 1000000;
+    new BitcoinFeaturesUncharted(destinationDbName, writeDir, info, limit);
 
     long now = System.currentTimeMillis();
     logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");

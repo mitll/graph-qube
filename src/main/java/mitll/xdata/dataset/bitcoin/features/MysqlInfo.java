@@ -31,8 +31,8 @@ public class MysqlInfo {
   }
 
   public MysqlInfo(String jdbc, String table, Map<String, String> slotToCol) {
-    this.jdbc = jdbc;
-    this.table = table;
+    this.setJdbc(jdbc);
+    this.setTable(table);
     this.slotToCol = slotToCol;
   }
 
@@ -46,5 +46,13 @@ public class MysqlInfo {
 
   public Map<String, String> getSlotToCol() {
     return slotToCol;
+  }
+
+  public void setJdbc(String jdbc) {
+    this.jdbc = jdbc;
+  }
+
+  public void setTable(String table) {
+    this.table = table;
   }
 }
