@@ -20,8 +20,9 @@ public class BitcoinIngestTransactions {
   }
 
   protected double[] addAvgDollarFeatures(Map<Integer, UserStats> userToStats,
-                                    double avgUSD, int count,
-                                     int sourceid, int targetID, double usd) {
+                                          double avgUSD,
+                                          int count,
+                                          int sourceid, int targetID, double usd) {
     double devFraction = (usd - avgUSD) / avgUSD;
     //    statement.setDouble(i++, devFraction);
     double[] addFeats = new double[3];

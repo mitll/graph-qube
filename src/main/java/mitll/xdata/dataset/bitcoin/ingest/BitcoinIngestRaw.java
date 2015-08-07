@@ -15,8 +15,6 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.db.DBConnection;
-import mitll.xdata.db.H2Connection;
-import mitll.xdata.db.MysqlConnection;
 
 import org.apache.log4j.Logger;
 
@@ -27,7 +25,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.SynchronousQueue;
 
 
 /**
@@ -53,23 +50,14 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
    */
   protected void loadTransactionTable(String tableName, String dataFilename, String btcToDollarFile,
                                       String dbType, String h2DatabaseName, boolean useTimestamp) throws Exception {
-    if (dbType.equals("h2")) tableName = tableName.toUpperCase();
-    List<String> cnames = Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
-    List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
-        "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL"); // bitcoin seems to allow 8 digits after the decimal
-
-    DBConnection connection = dbType.equalsIgnoreCase("h2") ?
-        new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
-        new MysqlConnection(h2DatabaseName) : null;
+    DBConnection connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
 
     if (connection == null) {
       logger.error("can't handle dbtype " + dbType);
       return;
     }
 
-    ingestSql.createTable(tableName, cnames, types, connection);
-    //doSQL(connection, "ALTER TABLE " + tableName + " ALTER COLUMN UID INT NOT NULL");
-    //doSQL(connection, "ALTER TABLE " + tableName + " ADD PRIMARY KEY (UID)");
+    ingestSql.createTable(dbType, tableName, useTimestamp, connection);
 
     RateConverter rc = new RateConverter(btcToDollarFile);
 
@@ -103,7 +91,6 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
       double btc = Double.parseDouble(split[5]);
 
       totalUSD += addUserStats(rc, userToStats, sourceid, targetID, day, x, btc);
-      ;
 
       if (count % 1000000 == 0) {
         logger.debug("transaction count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
@@ -117,7 +104,7 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
     List<double[]> feats = addFeatures(dataFilename, userToStats, avgUSD, rc);
 
     br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
-    count = insertRowsInTable(tableName, useTimestamp, cnames, connection, rc, br, feats);
+    count = insertRowsInTable(tableName, useTimestamp, ingestSql.getColumnsForTransactionsTable(), connection, rc, br, feats);
 
     br.close();
 
@@ -250,8 +237,8 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
     return feats;
   }
 
-  protected double addUserStats(RateConverter rc,
-                                Map<Integer, UserStats> userToStats, int sourceid, int targetID, String day, Timestamp x, double btc) throws Exception {
+  private double addUserStats(RateConverter rc,
+                              Map<Integer, UserStats> userToStats, int sourceid, int targetID, String day, Timestamp x, double btc) throws Exception {
     // do dollars
     double usd = toDollars(rc, day, x, btc);
     return addUserStats(userToStats, sourceid, targetID, usd);

@@ -14,22 +14,22 @@ import java.sql.SQLException;
  * To change this template use File | Settings | File Templates.
  */
 public class MysqlConnection implements DBConnection {
-  public static final String USER = "root";
-  public static final String PASSWORD = "";
+  private static final Logger logger = Logger.getLogger(MysqlConnection.class);
+
+  private static final String USER = "root";
+  private static final String PASSWORD = "";
   //private final String database;
-  private static Logger logger = Logger.getLogger(MysqlConnection.class);
 
   private Connection conn;
 
-  public MysqlConnection(String database) throws Exception { connect(database,USER,PASSWORD); }
+  public MysqlConnection(String database) throws Exception {
+    connect(database, USER, PASSWORD);
+  }
   public MysqlConnection(String database,String user, String password) throws Exception { connect(database,user, password); }
   /**
    */
   private void connect(String database, String user, String password) throws Exception {
-
-
-    String url = "jdbc:mysql:localhost";
-    url = "jdbc:mysql://localhost:3306/" + database + "?autoReconnect=true";
+    String url = "jdbc:mysql://localhost:3306/" + database;// + "?autoReconnect=true";
 
     try {
       Class.forName("com.mysql.jdbc.Driver");
@@ -51,10 +51,7 @@ public class MysqlConnection implements DBConnection {
   }
 
   @Override
-  public Connection getConnection() {
-
-    return conn;
-  }
+  public Connection getConnection() {  return conn; }
 
   @Override
   public void closeConnection() {

@@ -1,11 +1,14 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.db.DBConnection;
+import mitll.xdata.db.H2Connection;
+import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +29,31 @@ public class IngestSql {
     TYPE_TO_DB.put("BOOLEAN", "BOOLEAN");
   }
 
-  void createTable(String tableName, List<String> cnames, List<String> types, DBConnection connection) throws SQLException {
+  DBConnection getDbConnection(String dbType, String h2DatabaseName) throws Exception {
+    return dbType.equalsIgnoreCase("h2") ?
+        new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
+        new MysqlConnection(h2DatabaseName) : null;
+  }
+
+  void createTable(String dbType, String tableName, boolean useTimestamp, DBConnection connection) throws SQLException {
+    List<String> cnames = getColumnsForTransactionsTable();
+
+    List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
+        "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL"); // bitcoin seems to allow 8 digits after the decimal
+
+    if (dbType.equals("h2")) tableName = tableName.toUpperCase();
+
+    createTable(connection, tableName, cnames, types);
+
+    //doSQL(connection, "ALTER TABLE " + tableName + " ALTER COLUMN UID INT NOT NULL");
+    //doSQL(connection, "ALTER TABLE " + tableName + " ADD PRIMARY KEY (UID)");
+  }
+
+  List<String> getColumnsForTransactionsTable() {
+    return Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
+  }
+
+  void createTable(DBConnection connection, String tableName, List<String> cnames, List<String> types) throws SQLException {
     long t = System.currentTimeMillis();
     logger.debug("dropping current " + tableName);
     doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
@@ -65,7 +92,6 @@ public class IngestSql {
     statement.executeUpdate();
     statement.close();
   }
-
 
   void createIndices(String tableName, DBConnection connection) throws SQLException {
     long then = System.currentTimeMillis();

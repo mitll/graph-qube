@@ -46,7 +46,6 @@ public class BitcoinIngest extends BitcoinIngestBase {
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Throwable {
-
 		logger.debug("Starting Ingest...");
 
 		//
@@ -70,9 +69,7 @@ public class BitcoinIngest extends BitcoinIngestBase {
 			logger.debug("got output dir " + writeDir);
 		}
 
-	 new BitcoinIngest().doIngest(dataFilename, dbName, writeDir);
-
-
+  	new BitcoinIngest().doIngest(dataFilename, dbName, writeDir);
 	}
 
 	private void doIngest(String dataFilename, String dbName, String writeDir) throws Throwable {
@@ -105,26 +102,6 @@ public class BitcoinIngest extends BitcoinIngestBase {
 		doSubgraphs(dbName);
 	}
 
-	private void doSubgraphs(String dbName) throws Throwable {
-		long then;
-		long now;/*
-		 * Pre-processing the transaction data to prepare it for topk-subgraph search:
-		 * - Graph construction, filtering and indexing
-		 */
-		then = System.currentTimeMillis();
-
-		// Filter-out non-active nodes, self-transitions, heavy-hitters
-		BitcoinIngestSubGraph.filterForActivity("h2", dbName);
-
-		// Create marginalized graph data and various stats
-		BitcoinIngestSubGraph.extractUndirectedGraph("h2",dbName);
-
-		//Do the indexing for the topk-subgraph algorithm
-		BitcoinIngestSubGraph.computeIndices("h2", dbName);
-
-		now = System.currentTimeMillis();
-		logger.debug("SubGraph Search Ingest (graph building, filtering, index construction) complete. Elapsed time: " +(now-then)/1000 + " seconds");
-	}
 }
 
 

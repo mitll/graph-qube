@@ -225,11 +225,8 @@ public class BitcoinIngestSubGraph {
 	 * @throws Exception
 	 */
 	protected static void computeIndices(String dbType, String h2DatabaseName) throws Throwable, Exception {
+		DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
-		DBConnection connection = dbType.equalsIgnoreCase("h2") ?
-			new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
-				new MysqlConnection(h2DatabaseName) : null;
-							
 		computeIndices(bitcoinDirectory,connection);
 			
 		connection.closeConnection();
@@ -319,11 +316,8 @@ public class BitcoinIngestSubGraph {
 	 * @throws Exception
 	 */
 	protected static void extractUndirectedGraph(String dbType, String h2DatabaseName) throws Exception {
+		DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
-		DBConnection connection = dbType.equalsIgnoreCase("h2") ?
-			new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
-				new MysqlConnection(h2DatabaseName) : null;
-							
 		extractUndirectedGraph(connection);
 			
 		connection.closeConnection();
@@ -417,11 +411,8 @@ public class BitcoinIngestSubGraph {
 	 * @throws Exception
 	 */
 	protected static void filterForActivity(String dbType, String h2DatabaseName) throws Exception {
+		DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
-		DBConnection connection = dbType.equalsIgnoreCase("h2") ?
-			new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
-				new MysqlConnection(h2DatabaseName) : null;
-							
 		filterForActivity(connection);
 			
 		connection.closeConnection();
