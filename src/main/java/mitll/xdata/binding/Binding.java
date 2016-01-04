@@ -7,15 +7,9 @@ import mitll.xdata.db.DBConnection;
 import mitll.xdata.hmm.*;
 import mitll.xdata.scoring.FeatureNormalizer;
 import mitll.xdata.sql.SqlUtilities;
-
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

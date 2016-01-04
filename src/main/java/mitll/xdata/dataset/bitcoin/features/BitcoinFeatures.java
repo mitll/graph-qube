@@ -1,19 +1,13 @@
 package mitll.xdata.dataset.bitcoin.features;
 
 import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D;
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
-import mitll.xdata.scoring.FeatureNormalizer;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-import java.io.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 
 /**

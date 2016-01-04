@@ -1,12 +1,11 @@
 package mitll.xdata;
 
-import java.io.*;
-import java.util.*;
-
-import org.apache.log4j.Logger;
-
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import net.sf.javaml.core.kdtree.KDTree;
+import org.apache.log4j.Logger;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#getSimilarity(String, String)

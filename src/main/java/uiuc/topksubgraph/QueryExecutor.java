@@ -3,32 +3,22 @@
  */
 package uiuc.topksubgraph;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import mitll.xdata.db.DBConnection;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+import org.jgrapht.util.FibonacciHeap;
+import org.jgrapht.util.FibonacciHeapNode;
+
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
-
-import mitll.xdata.db.DBConnection;
-
-import org.jgrapht.util.FibonacciHeap;
-import org.jgrapht.util.FibonacciHeapNode;
-
-import uiuc.topksubgraph.Edge;
-import uiuc.topksubgraph.Graph;
-import uiuc.topksubgraph.MultipleIndexConstructor;
-
-import org.apache.log4j.Logger;
-import org.apache.log4j.BasicConfigurator;
 
 /**
  * Uses the sorted edge list and the MPW index indexes (in the metapath format) for query execution.

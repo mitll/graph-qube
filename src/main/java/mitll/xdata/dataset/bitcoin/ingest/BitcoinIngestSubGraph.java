@@ -14,6 +14,15 @@
 
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.FeaturesSql;
+import mitll.xdata.db.DBConnection;
+import mitll.xdata.db.H2Connection;
+import org.apache.log4j.Logger;
+import uiuc.topksubgraph.Graph;
+import uiuc.topksubgraph.MultipleIndexConstructor;
+import uiuc.topksubgraph.QueryExecutor;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -22,25 +31,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
-
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
-import mitll.xdata.dataset.bitcoin.features.FeaturesSql;
-import mitll.xdata.db.DBConnection;
-import mitll.xdata.db.H2Connection;
-import mitll.xdata.db.MysqlConnection;
-
-import org.apache.log4j.Logger;
-
-import uiuc.topksubgraph.Graph;
-import uiuc.topksubgraph.MultipleIndexConstructor;
-import uiuc.topksubgraph.QueryExecutor;
 
 
 

@@ -10,7 +10,6 @@ import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.hmm.VectorObservation;
 import mitll.xdata.scoring.Transaction;
-
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;

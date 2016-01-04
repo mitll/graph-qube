@@ -1,12 +1,12 @@
 package mitll.xdata.scoring;
 
+import be.ac.ulg.montefiore.run.jahmm.ObservationVector;
+import be.ac.ulg.montefiore.run.jahmm.Opdf;
+
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import be.ac.ulg.montefiore.run.jahmm.ObservationVector;
-import be.ac.ulg.montefiore.run.jahmm.Opdf;
 
 public class OpdfKernelDensityEstimator implements Opdf<ObservationVector> {
     private static final long serialVersionUID = 1L;

@@ -1,37 +1,9 @@
 package mitll.xdata.viz;
 
-import influent.idl.FL_Entity;
-import influent.idl.FL_EntityMatchDescriptor;
-import influent.idl.FL_EntityMatchResult;
-import influent.idl.FL_Link;
-import influent.idl.FL_LinkMatchResult;
-import influent.idl.FL_PatternSearchResult;
-import influent.idl.FL_PatternSearchResults;
-import influent.idl.FL_Property;
-import influent.idl.FL_SingletonRange;
-
-import java.awt.Color;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
+import influent.idl.*;
 import mitll.xdata.binding.Binding;
-
 import org.apache.log4j.Logger;
-import org.gephi.graph.api.DirectedGraph;
-import org.gephi.graph.api.Edge;
-import org.gephi.graph.api.Graph;
-import org.gephi.graph.api.GraphController;
-import org.gephi.graph.api.GraphModel;
-import org.gephi.graph.api.Node;
-import org.gephi.graph.api.NodeData;
+import org.gephi.graph.api.*;
 import org.gephi.io.exporter.api.ExportController;
 import org.gephi.io.exporter.preview.SVGExporter;
 import org.gephi.layout.plugin.scale.ScaleLayout;
@@ -47,6 +19,18 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.awt.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.

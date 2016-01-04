@@ -1,16 +1,11 @@
 package mitll.xdata.scoring;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-
-import org.apache.log4j.Logger;
-
 import be.ac.ulg.montefiore.run.jahmm.Hmm;
 import be.ac.ulg.montefiore.run.jahmm.ObservationVector;
+import org.apache.log4j.Logger;
+
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class HmmScorer {
     private static final Logger logger = Logger.getLogger(HmmScorer.class);

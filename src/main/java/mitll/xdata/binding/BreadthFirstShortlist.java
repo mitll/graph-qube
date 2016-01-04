@@ -1,6 +1,8 @@
 package mitll.xdata.binding;
 
-import influent.idl.*;
+import influent.idl.FL_EntityMatchDescriptor;
+import influent.idl.FL_EntityMatchResult;
+import influent.idl.FL_PatternSearchResult;
 import org.apache.log4j.Logger;
 
 import java.util.*;

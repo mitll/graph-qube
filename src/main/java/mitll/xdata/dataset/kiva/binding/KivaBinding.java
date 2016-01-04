@@ -5,11 +5,8 @@ import mitll.xdata.NodeSimilaritySearch;
 import mitll.xdata.binding.Binding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.hmm.VectorObservation;
-import mitll.xdata.scoring.Transaction;
-
 import org.apache.log4j.Logger;
 
-import java.io.InputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.*;

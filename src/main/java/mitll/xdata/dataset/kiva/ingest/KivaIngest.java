@@ -14,6 +14,8 @@
 
 package mitll.xdata.dataset.kiva.ingest;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.FileUtils;
 
 public class KivaIngest {
     public static Map<String, String> TYPE_TO_DB = new HashMap<String, String>();

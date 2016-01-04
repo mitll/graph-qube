@@ -15,16 +15,12 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
-import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesUncharted;
 import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**

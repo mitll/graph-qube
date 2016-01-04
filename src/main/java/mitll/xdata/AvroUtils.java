@@ -15,35 +15,16 @@
 
 package mitll.xdata;
 
-import influent.idl.FL_EntityMatchDescriptor;
-import influent.idl.FL_EntityMatchResult;
-import influent.idl.FL_LinkMatchDescriptor;
-import influent.idl.FL_PatternDescriptor;
-import influent.idl.FL_PatternSearchResult;
-import influent.idl.FL_PatternSearchResults;
-import influent.idl.FL_Property;
-import influent.idl.FL_SingletonRange;
-
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-
+import influent.idl.*;
 import org.apache.avro.Schema;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.io.DecoderFactory;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.io.JsonDecoder;
-import org.apache.avro.io.JsonEncoder;
+import org.apache.avro.io.*;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.avro.specific.SpecificRecordBase;
 
-import com.itextpdf.text.log.Logger;
+import java.io.ByteArrayOutputStream;
+import java.util.*;
 
 public class AvroUtils {
     /**

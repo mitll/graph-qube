@@ -14,28 +14,17 @@
  */
 package uiuc.topksubgraph;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.db.DBConnection;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
-import mitll.xdata.db.DBConnection;
-
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
+import java.util.*;
 
 
 /**

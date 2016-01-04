@@ -210,7 +210,9 @@
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<version>1.4.188</version>
+<!--
 			<systemPath>${project.basedir}/lib/h2-1.4.188.jar</systemPath>
+-->
 		</dependency>
 
 		<dependency>
@@ -229,7 +231,9 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 			<version>5.1.36</version>
+<!--
 			<systemPath>${project.basedir}/lib/mysql-connector-java-5.1.36-bin.jar</systemPath>
+-->
 		</dependency>
 
 		<dependency>

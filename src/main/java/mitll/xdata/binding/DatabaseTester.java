@@ -3,20 +3,15 @@
  */
 package mitll.xdata.binding;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.ResultSet;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Set;
-
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
-import mitll.xdata.db.MysqlConnection;
-
 import org.apache.log4j.Logger;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
 
 /**
  * @author ca22119

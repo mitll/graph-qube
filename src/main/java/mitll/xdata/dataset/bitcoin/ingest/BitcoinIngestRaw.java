@@ -15,7 +15,6 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.db.DBConnection;
-
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -24,7 +23,10 @@ import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**

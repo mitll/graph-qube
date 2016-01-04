@@ -1,8 +1,8 @@
 package mitll.xdata.hmm;
 
-import java.util.List;
-
 import org.apache.log4j.Logger;
+
+import java.util.List;
 
 /**
  * @see mitll.xdata.binding.Binding#makeHMM(java.util.List)

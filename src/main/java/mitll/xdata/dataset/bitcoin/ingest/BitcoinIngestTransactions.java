@@ -2,8 +2,6 @@ package mitll.xdata.dataset.bitcoin.ingest;
 
 import org.apache.log4j.Logger;
 
-import java.sql.Timestamp;
-import java.util.List;
 import java.util.Map;
 
 /**

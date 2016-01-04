@@ -1,8 +1,8 @@
 package mitll.xdata.hmm;
 
-import java.util.List;
-
 import mitll.xdata.binding.Binding.Edge;
+
+import java.util.List;
 
 /**
  * @see mitll.xdata.binding.Binding#addRelevantEdges(influent.idl.FL_PatternSearchResult, java.util.List)

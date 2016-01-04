@@ -14,13 +14,22 @@
 
 package mitll.xdata;
 
-import static spark.Spark.get;
-import static spark.Spark.post;
-import static spark.Spark.staticFileLocation;
 import influent.idl.FL_EntityMatchDescriptor;
 import influent.idl.FL_Future;
 import influent.idl.FL_PatternDescriptor;
 import influent.idl.FL_PatternSearchResults;
+import mitll.xdata.binding.Binding;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.kiva.binding.KivaBinding;
+import mitll.xdata.db.DBConnection;
+import mitll.xdata.db.H2Connection;
+import mitll.xdata.db.MysqlConnection;
+import mitll.xdata.viz.SVGGraph;
+import org.apache.avro.AvroRemoteException;
+import org.apache.log4j.Logger;
+import spark.Request;
+import spark.Response;
+import spark.Route;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -29,20 +38,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 
-import mitll.xdata.binding.Binding;
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
-import mitll.xdata.dataset.kiva.binding.KivaBinding;
-import mitll.xdata.db.DBConnection;
-import mitll.xdata.db.H2Connection;
-import mitll.xdata.db.MysqlConnection;
-import mitll.xdata.viz.SVGGraph;
-
-import org.apache.avro.AvroRemoteException;
-import org.apache.log4j.Logger;
-
-import spark.Request;
-import spark.Response;
-import spark.Route;
+import static spark.Spark.*;
 
 public class GraphQuBEServer {
   private static Logger logger = Logger.getLogger(GraphQuBEServer.class);

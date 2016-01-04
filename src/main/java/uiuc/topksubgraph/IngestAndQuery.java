@@ -14,27 +14,17 @@
  */
 package uiuc.topksubgraph;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintStream;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+import org.jgrapht.util.FibonacciHeap;
+import org.jgrapht.util.FibonacciHeapNode;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Pattern;
-
-import org.apache.log4j.BasicConfigurator; 
-import org.apache.log4j.Logger;
-
-import org.jgrapht.util.FibonacciHeap;
-import org.jgrapht.util.FibonacciHeapNode;
-
-import uiuc.topksubgraph.Graph;
-import uiuc.topksubgraph.MultipleIndexConstructor;
-import uiuc.topksubgraph.QueryExecutor;
 
 /**
  * Test-class for both ingest and sub-graph query for bitcoin_small example

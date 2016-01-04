@@ -1,10 +1,10 @@
 package mitll.xdata.hmm;
 
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.log4j.Logger;
 
 /**
  * @see mitll.xdata.binding.Binding#rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)

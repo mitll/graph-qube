@@ -15,15 +15,11 @@
 package mitll.xdata.binding;
 
 import influent.idl.*;
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding.BitcoinEdge;
-import mitll.xdata.scoring.Transaction;
-
 import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
-
-import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.Edge;
+import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.QueryExecutor;
 
 import java.io.File;

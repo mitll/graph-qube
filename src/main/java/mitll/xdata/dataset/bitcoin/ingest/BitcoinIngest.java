@@ -16,11 +16,9 @@ package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
-
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
 
 
 /**

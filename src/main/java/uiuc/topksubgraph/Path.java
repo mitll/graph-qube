@@ -1,6 +1,6 @@
 package uiuc.topksubgraph;
 
-import java.util.*;
+import java.util.ArrayList;
 
 /**
  * Represents a path which stores the path in the query and the instantiated graph node that represents the origin of the path.

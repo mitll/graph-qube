@@ -1,10 +1,10 @@
 package mitll.xdata.scoring;
 
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
-
-import org.apache.log4j.Logger;
 
 /**
  * Do percentile-based normalization.
