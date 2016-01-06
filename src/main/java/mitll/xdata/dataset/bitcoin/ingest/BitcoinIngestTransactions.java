@@ -8,7 +8,8 @@ import java.util.Map;
  * Created by go22670 on 8/6/15.
  */
 public class BitcoinIngestTransactions {
-  private static final Logger logger = Logger.getLogger(BitcoinIngestRaw.class);
+  private static final Logger logger = Logger.getLogger(BitcoinIngestTransactions.class);
+  public static final int DEBUG_OUTPUT_MAX = 5;
   IngestSql ingestSql = new IngestSql();
 
   private static UserStats getUserStats(Map<Integer, UserStats> userToStats, int sourceid) {
@@ -37,7 +38,7 @@ public class BitcoinIngestTransactions {
     double ddevFraction = avgDebit == 0 ? -1 : (usd - avgDebit) / avgDebit;
     addFeats[2] = ddevFraction;
 
-    if (count < 100) {
+    if (count < DEBUG_OUTPUT_MAX) {
       logger.debug("source " + sourceid + " target " + targetID + " $" + usd + " avg " + avgUSD +
           " dev " + devFraction +
           " cavg  " + avgCredit +

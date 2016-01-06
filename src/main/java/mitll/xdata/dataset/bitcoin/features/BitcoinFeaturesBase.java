@@ -25,7 +25,10 @@ import java.util.*;
  * To change this template use File | Settings | File Templates.
  */
 public class BitcoinFeaturesBase {
-  private static final int MIN_TRANSACTIONS = 10;
+  private static final Logger logger = Logger.getLogger(BitcoinFeaturesBase.class);
+
+  public static final int MIN_TRANSACTIONS = 10;
+
   private static final boolean LIMIT = false;
   private static final int BITCOIN_OUTLIER = 25;
   private static final int USER_LIMIT = 10000000;
@@ -36,13 +39,13 @@ public class BitcoinFeaturesBase {
   private static final int NUM_STANDARD_FEATURES = 10;
   //public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
   private static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
-  public static final String BITCOIN_FEATURES_STANDARDIZED_TSV = "bitcoin_features_standardized.tsv";
+  private static final String BITCOIN_FEATURES_STANDARDIZED_TSV = "bitcoin_features_standardized.tsv";
   // private static final boolean USE_SPECTRAL_FEATURES = true;
   // double specWeight = 1.0;
   // private final double statWeight = 15.0;
   // private final double iarrWeight = 30.0;
   // private final double ppWeight   = 20.0;
-  private boolean useSpectral = false;
+  private final boolean useSpectral = false;
 
   private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
   private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
@@ -50,8 +53,6 @@ public class BitcoinFeaturesBase {
   private enum PERIOD {HOUR, DAY, WEEK, MONTH}
 
   private final PERIOD period = PERIOD.DAY; // bin by day for now
-  private static final Logger logger = Logger.getLogger(BitcoinFeatures.class);
-
 
 /*  public BitcoinFeaturesBase(String h2DatabaseFile, String writeDirectory, String datafile) throws Exception {
     this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory, datafile, false);
@@ -167,7 +168,11 @@ public class BitcoinFeaturesBase {
         skipped++;
       }
     }
-    logger.info("skipped " + skipped + " out of " + users.size() + " users who had less than 5 credits and less than 5 debits");
+    logger.info("populateUserToFeatures skipped " + skipped + " out of " + users.size() + " users who had less than " +
+        MIN_TRANSACTIONS +
+        " credits and less than " +
+        MIN_TRANSACTIONS +
+        " debits");
   }
 
   private void getStandardizationStats() {
@@ -247,15 +252,21 @@ public class BitcoinFeaturesBase {
     }
   }
 
+  /**
+   * @see BitcoinFeaturesBase#writeFeatures(DBConnection, String, long, Collection, Map)
+   * @param dbConnection
+   * @param userToFeatures
+   * @param userToIndex
+   * @param standardizedFeatures
+   * @throws Exception
+   */
   private void writeFeaturesToDatabase(DBConnection dbConnection, Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
                                        double[][] standardizedFeatures) throws Exception {
-
-    logger.info("writeFeaturesToDatabase");
+    logger.info("writeFeaturesToDatabase " + userToFeatures.size() + " users.");
 
     Connection connection = dbConnection.getConnection();
     new FeaturesSql().createUsersTable(connection);
     PreparedStatement statement;
-
 
     String[] columnLabels = {"USER", "CREDIT_MEAN", "CREDIT_STD",
         "CREDIT_INTERARR_MEAN", "CREDIT_INTERARR_STD",
@@ -264,12 +275,9 @@ public class BitcoinFeaturesBase {
         "PERP_IN", "PERP_OUT"};
     String columnLabelText = "(" + StringUtils.join(columnLabels, ", ") + ")";
 
-
     int numFeatures = columnLabels.length - 1;
 
-
     for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
-
       int id = userFeatPair.getKey();
       Integer userIndex = userToIndex.get(id);
       double[] standardizedFeature = standardizedFeatures[userIndex];
@@ -284,19 +292,19 @@ public class BitcoinFeaturesBase {
         }
       }
 
-      String sqlInsertVector = "insert into users " + columnLabelText + " values " + featValueText + ";";
+      String sqlInsertVector = "insert into users " + columnLabelText + " values " + featValueText;
       statement = connection.prepareStatement(sqlInsertVector);
       statement.executeUpdate();
       statement.close();
     }
 
-    logger.info("writeFeaturesToDatabase - alter users table");
+ //   logger.info("writeFeaturesToDatabase - alter users table");
 
     // Insert default type into table (to possibly be overwritten by clustering output)
-    String sqlInsertType = "alter table USERS add TYPE int not null default(1);";
+/*    String sqlInsertType = "alter table USERS add TYPE int not null default(1);";
     statement = connection.prepareStatement(sqlInsertType);
     statement.executeUpdate();
-    statement.close();
+    statement.close();*/
 
     connection.close();
   }
@@ -579,6 +587,16 @@ public class BitcoinFeaturesBase {
     if (bad > 0) logger.warn("Got " + bad + " transactions...");
   }*/
 
+  /**
+   * Skip transactions from users who have done < 25 transactions.
+   *
+   * @param users
+   * @param stot
+   * @param skipped
+   * @param source
+   * @param target
+   * @return
+   */
   protected int getSkipped(Collection<Integer> users, Map<Integer, Set<Integer>> stot, int skipped, int source, int target) {
     if (users.contains(source) && users.contains(target)) {
       Set<Integer> integers = stot.get(source);
@@ -600,7 +618,7 @@ public class BitcoinFeaturesBase {
       }
     }
     writer.close();
-    logger.debug("wrote " + cc + " pairs.");
+    logger.debug("wrote " + cc + " pairs to " + outfile);
   }
 
   /**
@@ -1025,18 +1043,27 @@ public class BitcoinFeaturesBase {
 	  /*
 	   * Execute updates to figure out
 	   */
-    String sql = "drop table temp if exists;" +
-        " drop table temp2 if exists;" +
-        " create table temp as select source as uid, count(*) as num_trans " +
-        " from " + BitcoinBinding.TRANSACTIONS + " where source <> " + BITCOIN_OUTLIER + " group by source;" +
-        " insert into temp (uid,num_trans)" +
-        " select target, count(*) from " + BitcoinBinding.TRANSACTIONS +
-        " where target <> " + BITCOIN_OUTLIER + " group by target;" +
-        " drop table temp2 if exists;" +
-        " create table temp2 as select uid, sum(num_trans) as tot_num_trans" +
-        " from temp group by uid having tot_num_trans >= " + MIN_TRANSACTIONS + ";" +
-        " drop table temp;" +
-        " select * from temp2;";
+    String dropTables = "drop table temp if exists;" +
+
+        " drop table temp2 if exists;";
+    String sql =
+        dropTables +
+
+            " create table temp as select source as uid, count(*) as num_trans " +
+            " from " + BitcoinBinding.TRANSACTIONS +
+            " where source <> " + BITCOIN_OUTLIER +
+            " group by source;" +
+
+            " insert into temp (uid,num_trans)" +
+            " select target, count(*) from " + BitcoinBinding.TRANSACTIONS +
+            " where target <> " + BITCOIN_OUTLIER +
+            " group by target;" +
+
+//            " drop table temp2 if exists;" +
+            " create table temp2 as select uid, sum(num_trans) as tot_num_trans" +
+            " from temp group by uid having tot_num_trans >= " + MIN_TRANSACTIONS + ";" +
+//        " drop table temp;" +
+            " select * from temp2;";
 
     PreparedStatement statement = connection.getConnection().prepareStatement(sql);
     statement.executeUpdate();

@@ -9,10 +9,7 @@ import org.apache.log4j.Logger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -25,14 +22,22 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
   private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
   private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
-  private enum PERIOD {HOUR, DAY, WEEK, MONTH}
-
-  private final PERIOD period = PERIOD.DAY; // bin by day for now
+  //private enum PERIOD {HOUR, DAY, WEEK, MONTH}
+  //private final PERIOD period = PERIOD.DAY; // bin by day for now
   private static final Logger logger = Logger.getLogger(BitcoinFeaturesUncharted.class);
+  public static final String ENTITYID = "entityid";
+  public static final String FINENTITY = "FinEntity";
 
-
-  public BitcoinFeaturesUncharted(String h2DatabaseFile, String writeDirectory, MysqlInfo info, int limit) throws Exception {
-    this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory,info, false,limit);
+  /**
+   *
+   * @param h2DatabaseFile
+   * @param writeDirectory
+   * @param info
+   * @param limit
+   * @throws Exception
+   */
+  public BitcoinFeaturesUncharted(String h2DatabaseFile, String writeDirectory, MysqlInfo info, int limit,Collection<Integer> users) throws Exception {
+    this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory,info, false,limit, users);
   }
 
   /**
@@ -56,14 +61,16 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @throws Exception
    * @see #main(String[])
    */
-  private BitcoinFeaturesUncharted(DBConnection connection, String writeDirectory, MysqlInfo info, boolean useSpectralFeatures, int limit) throws Exception {
+  private BitcoinFeaturesUncharted(DBConnection connection, String writeDirectory, MysqlInfo info,
+                                   boolean useSpectralFeatures, int limit,
+                                   Collection<Integer> users) throws Exception {
     long then = System.currentTimeMillis();
    // this.useSpectral = useSpectralFeatures;
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
     logger.debug("reading users from db " + connection);
 
-    Collection<Integer> users = getUsers(connection);
+    //Collection<Integer> users = getUsers(connection);
 
     String pairsFilename = writeDirectory + "pairs.txt";
 
@@ -74,6 +81,46 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     writeFeatures(connection, writeDirectory, then, users, transForUsers);
   }
 
+  /**
+   * Filter out accounts that have less than {@link #MIN_TRANSACTIONS} transactions.
+   * NOTE : throws out "supernode" #25
+   *
+   * @param connection
+   * @return
+   * @throws Exception
+   * @see #BitcoinFeaturesUncharted(DBConnection, String, MysqlInfo, boolean, int)
+   */
+  Collection<Integer> getUsers(DBConnection connection) throws Exception {
+    long then = System.currentTimeMillis();
+
+	  /*
+	   * Execute updates to figure out
+	   */
+    String filterUsers = "select " +
+        ENTITYID +
+        " from " +
+        FINENTITY +
+        " where numtransactions > " + MIN_TRANSACTIONS;
+
+    PreparedStatement statement = connection.getConnection().prepareStatement(filterUsers);
+    statement.executeUpdate();
+    ResultSet rs = statement.executeQuery();
+
+    Set<Integer> ids = new HashSet<Integer>();
+    int c = 0;
+
+    while (rs.next()) {
+      c++;
+      if (c % 100000 == 0) logger.debug("read  " + c);
+      ids.add(rs.getInt(1));
+    }
+    long now = System.currentTimeMillis();
+    logger.debug("getUsers took " + (now - then) + " millis to read " + ids.size() + " users");
+
+    rs.close();
+    statement.close();
+    return ids;
+  }
 
   /**
    * The binding reads the file produced here to support connected lookup.
@@ -109,9 +156,9 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     statement.setFetchSize(1000000);
     logMemory();
 
-    logger.debug("Getting result set --- ");
+    logger.debug("writePairs Getting result set --- ");
     ResultSet resultSet = statement.executeQuery();
-    logger.debug("Got     result set --- ");
+    logger.debug("writePairs Got     result set --- ");
 
     int mod = 1000000;
 
@@ -127,7 +174,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
       skipped = getSkipped(users, stot, skipped, source, target);
 
       if (count % mod == 0) {
-        logger.debug("transaction count = " + count + "; " + (System.currentTimeMillis() - t0) / count + " ms/read");
+        logger.debug("writePairs transaction count = " + count + "; " + (System.currentTimeMillis() - t0) / count + " ms/read");
         logMemory();
       }
     }
@@ -135,7 +182,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     resultSet.close();
     uncharted.close();
 
-    logger.debug("Got past result set ");
+    logger.debug("writePairs Got past result set ");
 
     //for (Long pair : connectedPairs) writer.write(pair+"\n");
     writePairs(outfile, stot);
@@ -180,16 +227,16 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
         info.getSlotToCol().get(MysqlInfo.USD) + //", " +
         " from " + info.getTable() + " limit " + limit;
 
-    logger.debug("exec " + sql);
+    logger.debug("getTransForUsers exec " + sql);
     Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
 
     PreparedStatement statement = uncharted.prepareStatement(sql);
     statement.setFetchSize(1000000);
     logMemory();
 
-    logger.debug("Getting result set --- ");
+    logger.debug("getTransForUsers Getting result set --- ");
     ResultSet resultSet = statement.executeQuery();
-    logger.debug("Got     result set --- ");
+    logger.debug("getTransForUsers Got     result set --- ");
 
     int mod = 1000000;
 

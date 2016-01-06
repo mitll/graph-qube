@@ -14,7 +14,7 @@ public class FeaturesSql {
   public static final String USERS = "USERS";
 
   public void createUsersTable(Connection connection) throws SQLException {
-    logger.info("create users table");
+    logger.info("FeaturesSql create users table");
 
   /*
    * Make USERS table
@@ -39,7 +39,9 @@ public class FeaturesSql {
         " DEBIT_INTERARR_MEAN double," +
         " DEBIT_INTERARR_STD double," +
         " PERP_IN double," +
-        " PERP_OUT double)";
+        " PERP_OUT double," +
+        " TYPE int not null default(1)" +
+        ")";
   }
 
   public void createUsersTableNoDrop(Connection connection) throws SQLException {

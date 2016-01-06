@@ -1,5 +1,6 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
@@ -8,18 +9,14 @@ import org.apache.log4j.Logger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by go22670 on 8/6/15.
  */
 public class IngestSql {
   private static final Logger logger = Logger.getLogger(IngestSql.class);
-
-  private static final Map<String, String> TYPE_TO_DB = new HashMap<String, String>();
+  private static final Map<String, String> TYPE_TO_DB = new HashMap<>();
 
   static {
     TYPE_TO_DB.put("INTEGER", "INT");
@@ -35,11 +32,19 @@ public class IngestSql {
         new MysqlConnection(h2DatabaseName) : null;
   }
 
+  /**
+   * @see BitcoinIngestUnchartedTransactions#loadTransactionTable(MysqlInfo, String, String, String, boolean, int)
+   * @param dbType
+   * @param tableName
+   * @param useTimestamp
+   * @param connection
+   * @throws SQLException
+   */
   void createTable(String dbType, String tableName, boolean useTimestamp, DBConnection connection) throws SQLException {
     List<String> cnames = getColumnsForTransactionsTable();
 
     List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
-        "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL"); // bitcoin seems to allow 8 digits after the decimal
+        "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL", "ARRAY"); // bitcoin seems to allow 8 digits after the decimal
 
     if (dbType.equals("h2")) tableName = tableName.toUpperCase();
 
@@ -49,11 +54,30 @@ public class IngestSql {
     //doSQL(connection, "ALTER TABLE " + tableName + " ADD PRIMARY KEY (UID)");
   }
 
+  /**
+   * @see
+   * @return
+   */
   List<String> getColumnsForTransactionsTable() {
+    List<String> cols = new ArrayList<>(getColumnsForInsert());
+    cols.add(BitcoinIngestSubGraph.SORTED_PAIR);
+    return cols;
+    //return Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV", BitcoinIngestSubGraph.SORTED_PAIR);
+  }
+
+  List<String> getColumnsForInsert() {
     return Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
   }
 
-  void createTable(DBConnection connection, String tableName, List<String> cnames, List<String> types) throws SQLException {
+  /**
+   * @see #createTable(String, String, boolean, DBConnection)
+   * @param connection
+   * @param tableName
+   * @param cnames
+   * @param types
+   * @throws SQLException
+   */
+  private void createTable(DBConnection connection, String tableName, List<String> cnames, List<String> types) throws SQLException {
     long t = System.currentTimeMillis();
     logger.debug("dropping current " + tableName);
     doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
@@ -61,6 +85,14 @@ public class IngestSql {
     doSQL(connection, createCreateSQL(tableName, cnames, types, false));
   }
 
+  /**
+   * @see #createTable(DBConnection, String, List, List)
+   * @param tableName
+   * @param names
+   * @param types
+   * @param mapTypes
+   * @return
+   */
   private  String createCreateSQL(String tableName, List<String> names, List<String> types, boolean mapTypes) {
     String sql = "CREATE TABLE " + tableName + " (" + "\n";
     for (int i = 0; i < names.size(); i++) {
@@ -88,7 +120,7 @@ public class IngestSql {
     return sql;
   }
 
-  void doSQL(DBConnection connection, String createSQL) throws SQLException {
+  private void doSQL(DBConnection connection, String createSQL) throws SQLException {
     Connection connection1 = connection.getConnection();
     PreparedStatement statement = connection1.prepareStatement(createSQL);
     statement.executeUpdate();

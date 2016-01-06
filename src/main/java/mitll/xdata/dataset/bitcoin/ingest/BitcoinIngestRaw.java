@@ -106,7 +106,7 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
     List<double[]> feats = addFeatures(dataFilename, userToStats, avgUSD, rc);
 
     br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
-    count = insertRowsInTable(tableName, useTimestamp, ingestSql.getColumnsForTransactionsTable(), connection, rc, br, feats);
+    count = insertRowsInTable(tableName, useTimestamp, ingestSql.getColumnsForInsert(), connection, rc, br, feats);
 
     br.close();
 

@@ -53,7 +53,7 @@ public class GraphQuBEServer {
   //private static final String MYSQL_BITCOIN_DATABASE = "";
  // private static final boolean USE_MYSQL = false;
 
-  private ServerProperties props = new ServerProperties();
+ // private ServerProperties props = new ServerProperties();
 
   /**
    * arg 0 - port to run the server on

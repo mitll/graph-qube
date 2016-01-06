@@ -21,6 +21,7 @@ import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.util.Collection;
 
 
 /**
@@ -33,6 +34,9 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
   private static final Logger logger = Logger.getLogger(BitcoinIngestUncharted.class);
 
   private static final boolean USE_TIMESTAMP = false;
+  public static final String BITCOIN = "bitcoin";
+  public static final String USERTRANSACTIONS_2013_LARGERTHANDOLLAR = "usertransactions2013largerthandollar";
+  public static final String SKIP_TRUE = "skip=true";
 
   /**
    * Remember to give lots of memory if running on fill bitcoin dataset -- more than 2G
@@ -50,10 +54,17 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     //
     // Parse Arguments...
     //
-    String dataFilename = new MysqlConnection().getSimpleURL("bitcoin");//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
+    String dataFilename = new MysqlConnection().getSimpleURL(BITCOIN);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
+    boolean skipLoadTransactions = false;
     if (args.length > 0) {
-      dataFilename = args[0];
-      logger.debug("got data file " + dataFilename);
+      String first = args[0];
+      if (first.startsWith("skip=")) {
+        skipLoadTransactions = first.equals(SKIP_TRUE);
+      }
+      else {
+        logger.debug("got data file " + dataFilename);
+        dataFilename = first;
+      }
     }
 
     String dbName = "bitcoin";
@@ -68,10 +79,17 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       logger.debug("got output dir " + writeDir);
     }
 
-    new BitcoinIngestUncharted().doIngest(dataFilename, "usertransactions2013largerthandollar", dbName, writeDir);
+    if (args.length > 3) {
+      skipLoadTransactions = args[3].equals("skip");
+      logger.debug("got skip load transactions " + skipLoadTransactions);
+    }
+
+    new BitcoinIngestUncharted().doIngest(dataFilename, USERTRANSACTIONS_2013_LARGERTHANDOLLAR, dbName, writeDir,
+        skipLoadTransactions);
   }
 
-  private void doIngest(String dataSourceJDBC, String transactionsTable, String destinationDbName, String writeDir) throws Throwable {
+  private void doIngest(String dataSourceJDBC, String transactionsTable, String destinationDbName, String writeDir,
+                        boolean skipLoadTransactions) throws Throwable {
     //
     // Raw Ingest (csv to database table + basic features)
     //
@@ -88,14 +106,18 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     info.setJdbc(dataSourceJDBC);
     info.setTable(transactionsTable);
 
-    new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
-        "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit);
+    if (!skipLoadTransactions) {
+      new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
+          "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit);
+    }
+
+    Collection<Integer> users = new BitcoinIngestUnchartedTransactions().getUsers(info);
 
     // Extract features for each account
     new File(writeDir).mkdirs();
 
    // int limit1 = 1000000;
-    new BitcoinFeaturesUncharted(destinationDbName, writeDir, info, limit);
+    new BitcoinFeaturesUncharted(destinationDbName, writeDir, info, limit, users);
 
     long now = System.currentTimeMillis();
     logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");

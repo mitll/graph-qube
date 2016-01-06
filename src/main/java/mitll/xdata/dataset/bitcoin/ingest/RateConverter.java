@@ -12,15 +12,15 @@ import java.util.*;
  * Created by go22670 on 8/6/15.
  */
 public class RateConverter {
-  private static final Logger logger = Logger.getLogger(BitcoinIngestRaw.class);
+  private static final Logger logger = Logger.getLogger(RateConverter.class);
 
-  SortedMap<Long, Double> btcToDollar;
-  long firstDate;
+  private SortedMap<Long, Double> btcToDollar;
+  private long firstDate;
   // long earliest;
-  double first;
-  long lastDate;
+  private double first;
+  private long lastDate;
   // long latest;
-  double last;
+  private double last;
 
   public RateConverter(String btcToDollarFile) throws Exception {
     btcToDollar = getBTCToDollar(btcToDollarFile);
@@ -32,8 +32,8 @@ public class RateConverter {
     last = btcToDollar.get(lastDate);
   }
 
-  final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-  final Map<String, Long> dayToTime = new HashMap<String, Long>();
+  private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+  private final Map<String, Long> dayToTime = new HashMap<String, Long>();
 
   public Double getConversionRate(
       String day, long time) throws Exception {
@@ -43,10 +43,9 @@ public class RateConverter {
       dayToTime.put(day, parse.getTime());
       return getConversionRate(parse.getTime(), time);
     }
-
   }
 
-  public Double getConversionRate(
+  private Double getConversionRate(
       long day, long time) {
     Double rate = btcToDollar.get(day);
     if (rate == null) {
@@ -60,7 +59,7 @@ public class RateConverter {
     return rate;
   }
 
-  public SortedMap<Long, Double> getBTCToDollar(String btcToDollarFile) throws Exception {
+  private SortedMap<Long, Double> getBTCToDollar(String btcToDollarFile) throws Exception {
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(btcToDollarFile), "UTF-8"));
     String line;
     int count = 0;
