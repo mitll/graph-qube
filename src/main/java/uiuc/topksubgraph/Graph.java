@@ -471,6 +471,7 @@ public class Graph {
 	 * @param tableName
 	 * @param edgeName
 	 * @throws SQLException
+	 * @see Graph#loadGraph(DBConnection, String, String)
 	 */
 	public void loadGraph(Connection connection, String tableName, String edgeName) throws SQLException
 	{

@@ -505,7 +505,7 @@ public class BitcoinFeaturesBase {
    * @param connection
    * @return
    * @throws Exception
-   * @deprecated
+   * @deprecatedx
    */
 /*  private List<Transaction> getTransactions(DBConnection connection) throws Exception {
       String sql = "select SOURCE,TARGET,TIME,AMOUNT from TRANSACTIONS where SOURCE <> 25 AND TARGET <> 25";

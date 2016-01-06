@@ -49,7 +49,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @param useTimestamp true if we want to store a sql timestamp for time, false if just a long for unix millis
    * @param limit        max number of transactions
    * @throws Exception
-   * @see BitcoinIngestUncharted#doIngest(String, String, String, String)
+   * @see BitcoinIngestUncharted#doIngest
    */
   protected void loadTransactionTable(
       MysqlInfo info,
@@ -57,7 +57,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       String dbType, String h2DatabaseName, String tableName,
       boolean useTimestamp,
       //Map<String, String> slotToCol,
-      int limit) throws Exception {
+      long limit) throws Exception {
     DBConnection connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
     Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
 
@@ -201,6 +201,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @param limit
    * @return
    * @throws Exception
+   * @see BitcoinIngestUnchartedTransactions#loadTransactionTable(MysqlInfo, String, String, String, boolean, int)
    */
   private int insertRowsInTable(
       String tableName,
@@ -212,7 +213,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       Map<Integer, UserStats> userToStats,
       double avgUSD,
       //                        Map<String, String> slotToCol,
-      int limit) throws Exception {
+      long limit) throws Exception {
     int count;
     count = 0;
     long t0 = System.currentTimeMillis();

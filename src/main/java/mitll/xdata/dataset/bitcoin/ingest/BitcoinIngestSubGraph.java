@@ -55,7 +55,8 @@ public class BitcoinIngestSubGraph {
   private static final List<Integer> BITCOIN_OUTLIERS = Arrays.asList(25, 39);
 
   private static final String TABLE_NAME = "transactions";
-  private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
+  public static final String MARGINAL_GRAPH = "MARGINAL_GRAPH";
+  private static final String GRAPH_TABLE = MARGINAL_GRAPH;
 
   private static final String USERS = "users";
   private static final String TYPE_COLUMN = "type";
@@ -214,6 +215,7 @@ public class BitcoinIngestSubGraph {
    * @param h2DatabaseName
    * @throws Throwable
    * @throws Exception
+   * @see BitcoinIngestBase#doSubgraphs(String)
    */
   protected static void computeIndices(String dbType, String h2DatabaseName) throws Throwable {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
@@ -239,6 +241,7 @@ public class BitcoinIngestSubGraph {
    * @throws Throwable
    * @throws Exception
    * @throws IOException
+   * @see #computeIndices(String, String)
    */
   private static void computeIndices(String bitcoinDirectory,
                                      DBConnection dbConnection) throws Throwable, Exception, IOException {
@@ -250,7 +253,7 @@ public class BitcoinIngestSubGraph {
 
     // Load graph into topk-subgraph Graph object
     Graph g = new Graph();
-    g.loadGraph(dbConnection, "MARGINAL_GRAPH", "NUM_TRANS");
+    g.loadGraph(dbConnection, MARGINAL_GRAPH, "NUM_TRANS");
     MultipleIndexConstructor.setGraph(g);
     logger.info("Loaded graph from database...");
 
@@ -361,19 +364,22 @@ public class BitcoinIngestSubGraph {
         SORTED_PAIR +
         " array;" +
 */
-
         " update " + TABLE_NAME +
         " set sorted_pair =" +
         " case when (source > target)" +
         " then (target,source) " +
         "else (source,target) end;";
 
-    String sqlPopulateMarginalGraph = "drop table if exists " + GRAPH_TABLE + ";" +
-        " create table " + GRAPH_TABLE + " as " +
+    String sqlPopulateMarginalGraph =
+        "drop table if exists " + GRAPH_TABLE + ";" +
+
+            " create table " + GRAPH_TABLE + " as " +
         " select sorted_pair, sum(usd) as TOT_USD, count(*) as NUM_TRANS" +
         " from " + TABLE_NAME + " group by sorted_pair;" +
-        " alter table " + GRAPH_TABLE + " add TOT_OUT decimal(20,8);" +
-        " alter table " + GRAPH_TABLE + " add TOT_IN decimal(20,8);";
+
+            " alter table " + GRAPH_TABLE + " add TOT_OUT decimal(20,8);" +
+
+            " alter table " + GRAPH_TABLE + " add TOT_IN decimal(20,8);";
 
     String sqlTotOutTemp = "drop table if exists tmp;" +
         " create temporary table tmp as select sorted_pair, sum(usd) as tot_out" +
@@ -399,13 +405,14 @@ public class BitcoinIngestSubGraph {
 
     String sqlDropTemp = "drop table tmp";
 
-    logger.info("generate sorted pairs");
-    doSQLUpdate(connection, sqlGenerateSortedPairs);
-    logger.info("populate marginal graph");
+    logger.info("generate sorted pairs ");
+    int i = doSQLUpdate(connection, sqlGenerateSortedPairs);
+    logger.info("populate marginal graph " + i);
+    logger.info("populate marginal graph sql " + sqlPopulateMarginalGraph);
 
-    doSQLUpdate(connection, sqlPopulateMarginalGraph);
+    i = doSQLUpdate(connection, sqlPopulateMarginalGraph);
 
-    logger.info("create sorted pair");
+    logger.info("create sorted pair " + i);
 
     doSQLUpdate(connection, sqlTotOutTemp);
 
@@ -583,11 +590,12 @@ public class BitcoinIngestSubGraph {
    * @throws SQLException
    * @see #filterForActivity(DBConnection)
    */
-  private static void doSQLUpdate(DBConnection connection, String createSQL) throws SQLException {
+  private static int doSQLUpdate(DBConnection connection, String createSQL) throws SQLException {
     Connection connection1 = connection.getConnection();
     PreparedStatement statement = connection1.prepareStatement(createSQL);
-    statement.executeUpdate();
+    int i = statement.executeUpdate();
     statement.close();
+    return i;
   }
 
   /**

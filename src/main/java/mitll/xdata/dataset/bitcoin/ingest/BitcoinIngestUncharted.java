@@ -83,25 +83,31 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       skipLoadTransactions = args[3].equals("skip");
       logger.debug("got skip load transactions " + skipLoadTransactions);
     }
+//    long limit = 20000000000l;
+    long limit = 20000l;
+    for (String arg : args) {
+      if (arg.startsWith("limit=")) {
+        try {
+          limit = Long.parseLong(arg.split("limit=")[1]);
+        } catch (NumberFormatException e) {
+          e.printStackTrace();
+        }
+      }
+    }
 
     new BitcoinIngestUncharted().doIngest(dataFilename, USERTRANSACTIONS_2013_LARGERTHANDOLLAR, dbName, writeDir,
-        skipLoadTransactions);
+        skipLoadTransactions, limit);
   }
 
   private void doIngest(String dataSourceJDBC, String transactionsTable, String destinationDbName, String writeDir,
-                        boolean skipLoadTransactions) throws Throwable {
+                        boolean skipLoadTransactions, long limit) throws Throwable {
     //
     // Raw Ingest (csv to database table + basic features)
     //
     long then = System.currentTimeMillis();
 
-//    Map<String, String> slotToCol = new HashMap<>();
-//    for (String col : Arrays.asList("TransactionId", "SenderId", "ReceiverId", "TxTime", "BTC", "USD")) {
-//      slotToCol.put(col, col);
-//    }
-
     // populate the transactions table
-    int limit = 1000000;
+   // int limit = 1000000;
     MysqlInfo info = new MysqlInfo();
     info.setJdbc(dataSourceJDBC);
     info.setTable(transactionsTable);

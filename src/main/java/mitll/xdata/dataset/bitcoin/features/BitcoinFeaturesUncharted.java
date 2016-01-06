@@ -29,15 +29,15 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
   public static final String FINENTITY = "FinEntity";
 
   /**
-   *
    * @param h2DatabaseFile
    * @param writeDirectory
    * @param info
    * @param limit
    * @throws Exception
    */
-  public BitcoinFeaturesUncharted(String h2DatabaseFile, String writeDirectory, MysqlInfo info, int limit,Collection<Integer> users) throws Exception {
-    this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory,info, false,limit, users);
+  public BitcoinFeaturesUncharted(String h2DatabaseFile, String writeDirectory, MysqlInfo info, long limit,
+                                  Collection<Integer> users) throws Exception {
+    this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory, info, false, limit, users);
   }
 
   /**
@@ -57,15 +57,15 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * Writes out four files -- pairs.txt, bitcoin_features.tsv, bitcoin_raw_features.tsv, and bitcoin_ids.tsv
    *
    * @param connection
-   * @paramz datafile   original flat file of data - transactions!
    * @throws Exception
+   * @paramz datafile   original flat file of data - transactions!
    * @see #main(String[])
    */
   private BitcoinFeaturesUncharted(DBConnection connection, String writeDirectory, MysqlInfo info,
-                                   boolean useSpectralFeatures, int limit,
+                                   boolean useSpectralFeatures, long limit,
                                    Collection<Integer> users) throws Exception {
     long then = System.currentTimeMillis();
-   // this.useSpectral = useSpectralFeatures;
+    // this.useSpectral = useSpectralFeatures;
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
     logger.debug("reading users from db " + connection);
@@ -94,7 +94,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     long then = System.currentTimeMillis();
 
 	  /*
-	   * Execute updates to figure out
+     * Execute updates to figure out
 	   */
     String filterUsers = "select " +
         ENTITYID +
@@ -135,7 +135,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
   private void writePairs(Collection<Integer> users,
                           MysqlInfo info,
                           String outfile,
-                          int limit) throws Exception {
+                          long limit) throws Exception {
     int count = 0;
     long t0 = System.currentTimeMillis();
     //int c = 0;
@@ -211,7 +211,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @throws Exception
    * @see #BitcoinFeatures(DBConnection, String, String, boolean)
    */
-  protected Map<Integer, UserFeatures> getTransForUsers(MysqlInfo info, Collection<Integer> users, int limit  ) throws Exception {
+  protected Map<Integer, UserFeatures> getTransForUsers(MysqlInfo info, Collection<Integer> users, long limit) throws Exception {
 
     int count = 0;
     long t0 = System.currentTimeMillis();
@@ -249,8 +249,8 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
       int source = resultSet.getInt(col++);
       int target = resultSet.getInt(col++);
 
- //     boolean onlyGetDailyData = period == PERIOD.DAY;
-    //  Calendar calendar = Calendar.getInstance();
+      //     boolean onlyGetDailyData = period == PERIOD.DAY;
+      //  Calendar calendar = Calendar.getInstance();
       if (users.contains(source) && users.contains(target)) {
         long time1 = resultSet.getTimestamp(col++).getTime();
         long time = (time1 / DAY_IN_MILLIS) * DAY_IN_MILLIS;

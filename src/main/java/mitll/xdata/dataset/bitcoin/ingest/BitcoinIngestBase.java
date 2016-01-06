@@ -8,6 +8,11 @@ import org.apache.log4j.Logger;
 public class BitcoinIngestBase {
 	private static final Logger logger = Logger.getLogger(BitcoinIngestBase.class);
 
+	/**
+	 * @see BitcoinIngestUncharted#doIngest(String, String, String, String, boolean, long)
+	 * @param dbName
+	 * @throws Throwable
+   */
 	void doSubgraphs(String dbName) throws Throwable {
 		long then;
 		/*
