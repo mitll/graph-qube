@@ -351,14 +351,14 @@ public class BitcoinIngestSubGraph {
 
     long then = System.currentTimeMillis();
     logger.info("extractUndirectedGraph start");
-    //Map<Long, Integer> edgeToWeight = extractUndirectedGraphInMemory(connection);
-      extractUndirectedGraph(connection);
+    Map<Long, Integer> edgeToWeight = extractUndirectedGraphInMemory(connection);
+    //  extractUndirectedGraph(connection);
     long now = System.currentTimeMillis();
 
     logger.info("extractUndirectedGraph end took " + (now - then) + " millis");
 
     connection.closeConnection();
-    return Collections.emptyMap();
+    return edgeToWeight;//Collections.emptyMap();
   }
 
   /**

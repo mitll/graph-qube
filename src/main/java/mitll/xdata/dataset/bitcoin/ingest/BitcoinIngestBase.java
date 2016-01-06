@@ -34,9 +34,9 @@ public class BitcoinIngestBase {
     Binding.logMemory();
 
 		//Do the indexing for the topk-subgraph algorithm
-  	BitcoinIngestSubGraph.computeIndices("h2", dbName);
+  	//BitcoinIngestSubGraph.computeIndices("h2", dbName);
 
-    //	BitcoinIngestSubGraph.computeIndicesFromMemory("h2", dbName, edgeToWeight);
+    BitcoinIngestSubGraph.computeIndicesFromMemory("h2", dbName, edgeToWeight);
 
     Binding.logMemory();
 

@@ -106,7 +106,8 @@ public class BitcoinFeaturesBase {
    * @param transForUsers
    * @throws Exception
    */
-  protected void writeFeatures(DBConnection connection, String writeDirectory, long then, Collection<Integer> users,
+  protected void writeFeatures(DBConnection connection, String writeDirectory, long then,
+                               Collection<Integer> users,
                                Map<Integer, UserFeatures> transForUsers) throws Exception {
     long now = System.currentTimeMillis();
     logger.debug("took " + (now - then) + " to read " + transForUsers.size() + " user features");
@@ -270,7 +271,8 @@ public class BitcoinFeaturesBase {
    * @param standardizedFeatures
    * @throws Exception
    */
-  private void writeFeaturesToDatabase(DBConnection dbConnection, Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
+  private void writeFeaturesToDatabase(DBConnection dbConnection, Map<Integer, Features> userToFeatures,
+                                       Map<Integer, Integer> userToIndex,
                                        double[][] standardizedFeatures) throws Exception {
     logger.info("writeFeaturesToDatabase " + userToFeatures.size() + " users.");
 
