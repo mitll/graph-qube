@@ -15,6 +15,7 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.FeaturesSql;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
@@ -55,7 +56,7 @@ public class BitcoinIngestSubGraph {
   private static final List<Integer> BITCOIN_OUTLIERS = Arrays.asList(25, 39);
 
   private static final String TABLE_NAME = "transactions";
-  public static final String MARGINAL_GRAPH = "MARGINAL_GRAPH";
+  private static final String MARGINAL_GRAPH = "MARGINAL_GRAPH";
   private static final String GRAPH_TABLE = MARGINAL_GRAPH;
 
   private static final String USERS = "users";
@@ -90,8 +91,8 @@ public class BitcoinIngestSubGraph {
    * @throws Throwable
    * @throws NumberFormatException
    */
-  public static void executeQuery(String outDir, DBConnection connection) throws FileNotFoundException,
-      IOException, Throwable, NumberFormatException {
+  public static void executeQuery(String outDir, DBConnection connection) throws
+      Throwable {
 
 	    /*
        * Setup QueryExecutor object
@@ -119,7 +120,7 @@ public class BitcoinIngestSubGraph {
 
 		
 		/*
-		 * Load-in types, and count how many there are
+     * Load-in types, and count how many there are
 		 */
     executor.loadTypesFromDatabase(connection, USERS, USERID_COLUMN, TYPE_COLUMN);
     logger.info("Loaded-in types...");
@@ -133,10 +134,10 @@ public class BitcoinIngestSubGraph {
     File directory = new File(QueryExecutor.baseDir + QueryExecutor.resultDir);
     if (!directory.exists() && !directory.mkdirs())
       throw new IOException("Could not create directory: " + QueryExecutor.baseDir + QueryExecutor.resultDir);
-		
+
 		
 		/*
-		 * Execute queries
+     * Execute queries
 		 */
     String[] queries = new String[]{"FanOut", "FOFI"};
     for (int i = 0; i < queries.length; i++) {
@@ -228,10 +229,32 @@ public class BitcoinIngestSubGraph {
 
     logger.info("computeIndices end took " + (now - then) + " millis");
 
+    connection.closeConnection();
+  }
+
+  protected static void computeIndicesFromMemory(String dbType, String h2DatabaseName,
+                                                 Map<Long, Integer> edgeToWeight) throws Throwable {
+    DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
+
+    long then = System.currentTimeMillis();
+    logger.info("computeIndices start");
+
+    computeIndicesFromMemory(bitcoinDirectory, connection, edgeToWeight);
+    long now = System.currentTimeMillis();
+
+    logger.info("computeIndices end took " + (now - then) + " millis");
 
     connection.closeConnection();
   }
 
+  private static void computeIndicesFromMemory(String bitcoinDirectory,
+                                               DBConnection dbConnection,
+                                               Map<Long, Integer> edgeToWeight) throws Throwable {
+    // Load graph into topk-subgraph Graph object
+    Graph g = new Graph();
+    g.loadGraphFromMemory(edgeToWeight);
+    computeIndices(bitcoinDirectory, dbConnection, g);
+  }
 
   /**
    * Compute all indices needed for UIUC Top-K subgraph search algorithm
@@ -244,16 +267,21 @@ public class BitcoinIngestSubGraph {
    * @see #computeIndices(String, String)
    */
   private static void computeIndices(String bitcoinDirectory,
-                                     DBConnection dbConnection) throws Throwable, Exception, IOException {
-		/*
-		 * This is stuff is doing the actual topk-subgraph indexing
-		 */
-    MultipleIndexConstructor.outDir = bitcoinDirectory;
-    MultipleIndexConstructor.D = BitcoinBinding.SHORTLISTING_D;
-
+                                     DBConnection dbConnection) throws Throwable {
     // Load graph into topk-subgraph Graph object
     Graph g = new Graph();
     g.loadGraph(dbConnection, MARGINAL_GRAPH, "NUM_TRANS");
+    computeIndices(bitcoinDirectory, dbConnection, g);
+  }
+
+  private static void computeIndices(String bitcoinDirectory, DBConnection dbConnection, Graph g) throws Exception {
+  /*
+   * This is stuff is doing the actual topk-subgraph indexing
+   */
+    MultipleIndexConstructor.outDir = bitcoinDirectory;
+    MultipleIndexConstructor.D = BitcoinBinding.SHORTLISTING_D;
+
+
     MultipleIndexConstructor.setGraph(g);
     logger.info("Loaded graph from database...");
 
@@ -316,20 +344,72 @@ public class BitcoinIngestSubGraph {
    * @param dbType
    * @return
    * @throws Exception
+   * @see BitcoinIngestBase#doSubgraphs(String)
    */
-  protected static void extractUndirectedGraph(String dbType, String h2DatabaseName) throws Exception {
+  protected static Map<Long, Integer> extractUndirectedGraph(String dbType, String h2DatabaseName) throws Exception {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
     long then = System.currentTimeMillis();
     logger.info("extractUndirectedGraph start");
-    extractUndirectedGraph(connection);
+    //Map<Long, Integer> edgeToWeight = extractUndirectedGraphInMemory(connection);
+      extractUndirectedGraph(connection);
     long now = System.currentTimeMillis();
 
     logger.info("extractUndirectedGraph end took " + (now - then) + " millis");
 
     connection.closeConnection();
+    return Collections.emptyMap();
   }
 
+  /**
+   * Undirected graph - count transactions on each edge.
+   *
+   * @param connection
+   * @return
+   * @throws Exception
+   */
+  private static Map<Long, Integer> extractUndirectedGraphInMemory(DBConnection connection) throws Exception {
+    // Map<Integer, Map<Integer, Integer>> sourceToDestToValue = new HashMap<>();
+
+    ResultSet rs = doSQLQuery(connection,
+        "select " + IngestSql.SOURCE + "," + IngestSql.TARGET + " from " + TABLE_NAME
+    );
+    Map<Long, Integer> sourceToDest = new HashMap<>();
+
+    int c = 0;
+    while (rs.next()) {
+      int source = rs.getInt(1);
+      int target = rs.getInt(2);
+
+//      if (c < 20) logger.info("extractUndirectedGraphInMemory " +source + " -> " + target);
+
+      if (source > target) {
+        int tmp = source;
+        source = target;
+        target = tmp;
+       // if (c < 2000) logger.info("\tflip " + source + " -> " + target);
+      }
+//      source = source < target ? source : target;
+//      target = source < target ? target : source;
+
+
+      long key = BitcoinFeaturesBase.storeTwo(source, target);
+
+//      if (c < 20) {
+//        logger.info("extractUndirectedGraphInMemory " +key + " = " + BitcoinFeaturesBase.getLow(key) + " -> " +BitcoinFeaturesBase.getHigh(key));
+//      }
+
+      Integer orDefault = sourceToDest.getOrDefault(key, 0);
+      sourceToDest.put(key, orDefault + 1);
+
+      c++;
+    }
+
+    logger.info("map is " + sourceToDest.size());
+    rs.close();
+
+    return sourceToDest;
+  }
 
   /**
    * Overloaded {@link #extractUndirectedGraph(String, String)}
@@ -348,6 +428,7 @@ public class BitcoinIngestSubGraph {
    * @param connection
    * @return
    * @throws Exception
+   * @see #extractUndirectedGraph(String, String)
    */
   private static void extractUndirectedGraph(DBConnection connection) throws Exception {
 		
@@ -365,17 +446,17 @@ public class BitcoinIngestSubGraph {
         " array;" +
 */
         " update " + TABLE_NAME +
-        " set sorted_pair =" +
-        " case when (source > target)" +
-        " then (target,source) " +
-        "else (source,target) end;";
+            " set sorted_pair =" +
+            " case when (source > target)" +
+            " then (target,source) " +
+            "else (source,target) end;";
 
     String sqlPopulateMarginalGraph =
         "drop table if exists " + GRAPH_TABLE + ";" +
 
             " create table " + GRAPH_TABLE + " as " +
-        " select sorted_pair, sum(usd) as TOT_USD, count(*) as NUM_TRANS" +
-        " from " + TABLE_NAME + " group by sorted_pair;" +
+            " select sorted_pair, sum(usd) as TOT_USD, count(*) as NUM_TRANS" +
+            " from " + TABLE_NAME + " group by sorted_pair;" +
 
             " alter table " + GRAPH_TABLE + " add TOT_OUT decimal(20,8);" +
 
@@ -502,9 +583,9 @@ public class BitcoinIngestSubGraph {
 		/*
 		 * Do some initial clean-up
 		 */
-    logger.info("do remove account start from " +TABLE_NAME);
+    logger.info("do remove account start from " + TABLE_NAME);
     doSQLUpdate(connection, sqlRemoveAccount);
-    logger.info("did remove account start from " +TABLE_NAME);
+    logger.info("did remove account start from " + TABLE_NAME);
 
 /*
     logger.info("do remove self transactions " + sqlRemoveSelfTrans);
@@ -517,7 +598,7 @@ public class BitcoinIngestSubGraph {
     //deleteInactive(connection);
 
     //cleanup
-   // doSQLUpdate(connection, "drop table inactive");
+    // doSQLUpdate(connection, "drop table inactive");
   }
 
   private static void deleteInactive(DBConnection connection) throws SQLException {
@@ -605,6 +686,8 @@ public class BitcoinIngestSubGraph {
    * @param createSQL
    * @return
    * @throws SQLException
+   * @see #existsTable(DBConnection, String)
+   * @see #removeAccountsBelowThreshold(DBConnection)
    */
   private static ResultSet doSQLQuery(DBConnection connection, String createSQL) throws SQLException {
     Connection connection1 = connection.getConnection();
@@ -612,7 +695,6 @@ public class BitcoinIngestSubGraph {
     queryStatement = connection1.prepareStatement(createSQL);
     ResultSet rs = queryStatement.executeQuery();
     //statement.close();
-
     return rs;
   }
 

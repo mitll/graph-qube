@@ -1634,7 +1634,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		return shortlist.getShortlist(entities1, exemplarIDs, max);
 	}
 
-	protected void logMemory() {
+	public static void logMemory() {
 		Runtime rt = Runtime.getRuntime();
 		long free = rt.freeMemory();
 		long used = rt.totalMemory() - free;

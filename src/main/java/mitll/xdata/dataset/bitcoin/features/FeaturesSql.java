@@ -1,10 +1,12 @@
 package mitll.xdata.dataset.bitcoin.features;
 
+import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Map;
 
 /**
  * Created by go22670 on 8/7/15.
@@ -13,6 +15,11 @@ public class FeaturesSql {
   private static final Logger logger = Logger.getLogger(FeaturesSql.class);
   public static final String USERS = "USERS";
 
+  /**
+   * @see BitcoinFeaturesBase#writeFeaturesToDatabase(DBConnection, Map, Map, double[][])
+   * @param connection
+   * @throws SQLException
+   */
   public void createUsersTable(Connection connection) throws SQLException {
     logger.info("FeaturesSql create users table");
 
@@ -20,7 +27,7 @@ public class FeaturesSql {
    * Make USERS table
    */
     String createTable = getCreateSQL();
-    String sqlMakeTable = "drop table " +USERS+  " if exists;" +  createTable;
+    String sqlMakeTable = "drop table " + USERS + " if exists;" + createTable;
     PreparedStatement statement = connection.prepareStatement(sqlMakeTable);
     statement.executeUpdate();
     statement.close();

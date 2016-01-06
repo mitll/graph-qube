@@ -68,7 +68,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     // this.useSpectral = useSpectralFeatures;
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
-    logger.debug("reading users from db " + connection);
+    logger.debug("reading users from db " + connection + " users " + users.size());
 
     //Collection<Integer> users = getUsers(connection);
 
@@ -130,7 +130,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @param outfile
    * @throws Exception
    * @see BitcoinBinding#populateInMemoryAdjacency()
-   * @see #BitcoinFeatures(DBConnection, String, String, boolean)
+   * @see #BitcoinFeaturesUncharted(DBConnection, String, MysqlInfo, boolean, long, Collection)
    */
   private void writePairs(Collection<Integer> users,
                           MysqlInfo info,
@@ -151,7 +151,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
         info.getSlotToCol().get(MysqlInfo.RECEIVER_ID) +
         " from " + info.getTable() + " limit " + limit;
 
-    logger.debug("exec " + sql);
+    logger.debug("writePairs exec " + sql);
     PreparedStatement statement = uncharted.prepareStatement(sql);
     statement.setFetchSize(1000000);
     logMemory();
@@ -182,7 +182,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     resultSet.close();
     uncharted.close();
 
-    logger.debug("writePairs Got past result set ");
+    logger.debug("writePairs Got past result set - wrote " + count);
 
     //for (Long pair : connectedPairs) writer.write(pair+"\n");
     writePairs(outfile, stot);

@@ -17,6 +17,8 @@ import java.util.*;
 public class IngestSql {
   private static final Logger logger = Logger.getLogger(IngestSql.class);
   private static final Map<String, String> TYPE_TO_DB = new HashMap<>();
+  public static final String SOURCE = "SOURCE";
+  public static final String TARGET = "TARGET";
 
   static {
     TYPE_TO_DB.put("INTEGER", "INT");
@@ -66,7 +68,7 @@ public class IngestSql {
   }
 
   List<String> getColumnsForInsert() {
-    return Arrays.asList("TRANSID", "SOURCE", "TARGET", "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
+    return Arrays.asList("TRANSID", SOURCE, TARGET, "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
   }
 
   /**
@@ -132,7 +134,7 @@ public class IngestSql {
     doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "SOURCE" + ")");
     logger.debug("first  index complete in " + since(then) + " on " + tableName);
     then = System.currentTimeMillis();
-    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "TARGET" + ")");
+    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + TARGET + ")");
     logger.debug("second index complete in " + (since(then)) + " on " + tableName);
 
     then = System.currentTimeMillis();

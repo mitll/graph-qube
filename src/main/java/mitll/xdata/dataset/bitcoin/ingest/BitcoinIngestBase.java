@@ -1,6 +1,9 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.binding.Binding;
 import org.apache.log4j.Logger;
+
+import java.util.Map;
 
 /**
  * Created by go22670 on 8/6/15.
@@ -24,11 +27,18 @@ public class BitcoinIngestBase {
 		// Filter-out non-active nodes, self-transitions, heavy-hitters
 		BitcoinIngestSubGraph.filterForActivity("h2", dbName);
 
+		Binding.logMemory();
 		// Create marginalized graph data and various stats
-		BitcoinIngestSubGraph.extractUndirectedGraph("h2",dbName);
+		Map<Long, Integer> edgeToWeight = BitcoinIngestSubGraph.extractUndirectedGraph("h2", dbName);
+
+    Binding.logMemory();
 
 		//Do the indexing for the topk-subgraph algorithm
-		BitcoinIngestSubGraph.computeIndices("h2", dbName);
+  	BitcoinIngestSubGraph.computeIndices("h2", dbName);
+
+    //	BitcoinIngestSubGraph.computeIndicesFromMemory("h2", dbName, edgeToWeight);
+
+    Binding.logMemory();
 
 		long now = System.currentTimeMillis();
 		logger.debug("SubGraph Search Ingest (graph building, filtering, index construction) complete. Elapsed time: " +(now-then)/1000 + " seconds");

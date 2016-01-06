@@ -97,7 +97,17 @@ public class BitcoinFeaturesBase {
     writeFeatures(connection, writeDirectory, then, users, transForUsers);
   }*/
 
-  protected void writeFeatures(DBConnection connection, String writeDirectory, long then, Collection<Integer> users, Map<Integer, UserFeatures> transForUsers) throws Exception {
+  /**
+   * @see BitcoinFeaturesUncharted#BitcoinFeaturesUncharted(DBConnection, String, MysqlInfo, boolean, long, Collection)
+   * @param connection
+   * @param writeDirectory
+   * @param then
+   * @param users
+   * @param transForUsers
+   * @throws Exception
+   */
+  protected void writeFeatures(DBConnection connection, String writeDirectory, long then, Collection<Integer> users,
+                               Map<Integer, UserFeatures> transForUsers) throws Exception {
     long now = System.currentTimeMillis();
     logger.debug("took " + (now - then) + " to read " + transForUsers.size() + " user features");
 
@@ -631,10 +641,21 @@ public class BitcoinFeaturesBase {
    * @return
    * @see
    */
-  private long storeTwo(long low, long high) {
-    long combined = low;
-    combined += high << 32;
-    return combined;
+  public static long storeTwo(long low, long high) {
+//    long combined = low;
+//    combined += high << 32;
+//    return combined;
+
+    long l = (high << 32) | (low & 0xffffffffL);
+    return l;
+  }
+
+  public static int getLow(long combined) {
+    return (int) combined;
+  }
+
+  public static int getHigh(long combined) {
+    return (int)(combined >> 32);
   }
 
   /**

@@ -69,8 +69,11 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
 
     String dbName = "bitcoin";
     if (args.length > 1) {
-      dbName = args[1];
-      logger.debug("got db name " + dbName);
+      String second = args[1];
+      if (!second.contains("=")) {
+        dbName = second;
+        logger.debug("got db name '" + dbName + "'");
+      }
     }
 
     String writeDir = "outUncharted";
