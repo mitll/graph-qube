@@ -35,9 +35,14 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @param limit
    * @throws Exception
    */
-  public BitcoinFeaturesUncharted(String h2DatabaseFile, String writeDirectory, MysqlInfo info, long limit,
+/*  public BitcoinFeaturesUncharted(String h2DatabaseFile, String writeDirectory, MysqlInfo info, long limit,
                                   Collection<Integer> users) throws Exception {
     this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory, info, false, limit, users);
+  }*/
+
+  public Set<Integer> writeFeatures(String h2DatabaseFile, String writeDirectory, MysqlInfo info, long limit,
+                                  Collection<Integer> users) throws Exception {
+    return writeFeatures(new H2Connection(h2DatabaseFile, 38000000), writeDirectory, info, false, limit, users);
   }
 
   /**
@@ -61,7 +66,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @paramz datafile   original flat file of data - transactions!
    * @see #main(String[])
    */
-  private BitcoinFeaturesUncharted(DBConnection connection, String writeDirectory, MysqlInfo info,
+  private Set<Integer> writeFeatures(DBConnection connection, String writeDirectory, MysqlInfo info,
                                    boolean useSpectralFeatures, long limit,
                                    Collection<Integer> users) throws Exception {
     long then = System.currentTimeMillis();
@@ -78,7 +83,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
 
     Map<Integer, UserFeatures> transForUsers = getTransForUsers(info, users, limit);
 
-    writeFeatures(connection, writeDirectory, then, users, transForUsers);
+    return writeFeatures(connection, writeDirectory, then, users, transForUsers);
   }
 
   /**
@@ -156,9 +161,9 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     statement.setFetchSize(1000000);
     logMemory();
 
-    logger.debug("writePairs Getting result set --- ");
+//    logger.debug("writePairs Getting result set --- ");
     ResultSet resultSet = statement.executeQuery();
-    logger.debug("writePairs Got     result set --- ");
+//    logger.debug("writePairs Got     result set --- ");
 
     int mod = 1000000;
 
@@ -171,7 +176,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
       int source = resultSet.getInt(col++);
       int target = resultSet.getInt(col++);
 
-      skipped = getSkipped(users, stot, skipped, source, target);
+      if (getSkipped(users, stot, source, target)) skipped++;
 
       if (count % mod == 0) {
         logger.debug("writePairs transaction count = " + count + "; " + (System.currentTimeMillis() - t0) / count + " ms/read");
@@ -182,7 +187,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     resultSet.close();
     uncharted.close();
 
-    logger.debug("writePairs Got past result set - wrote " + count);
+    logger.debug("writePairs Got past result set - wrote " + count + " skipped " + skipped );
 
     //for (Long pair : connectedPairs) writer.write(pair+"\n");
     writePairs(outfile, stot);
@@ -212,7 +217,6 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @see #BitcoinFeatures(DBConnection, String, String, boolean)
    */
   protected Map<Integer, UserFeatures> getTransForUsers(MysqlInfo info, Collection<Integer> users, long limit) throws Exception {
-
     int count = 0;
     long t0 = System.currentTimeMillis();
 
@@ -234,14 +238,15 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     statement.setFetchSize(1000000);
     logMemory();
 
-    logger.debug("getTransForUsers Getting result set --- ");
+//    logger.debug("getTransForUsers Getting result set --- ");
     ResultSet resultSet = statement.executeQuery();
-    logger.debug("getTransForUsers Got     result set --- ");
+  //  logger.debug("getTransForUsers Got     result set --- ");
 
     int mod = 1000000;
 
     logMemory();
 
+    int skipped = 0;
     while (resultSet.next()) {
       count++;
 
@@ -259,10 +264,14 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
 
         addTransaction(idToStats, source, target, time, amount);
       }
+      else {
+        skipped++;
+      }
       if (count % 1000000 == 0) {
         logger.debug("read " + count + " transactions... " + (System.currentTimeMillis() - 1.0 * t0) / count + " ms/read");
       }
     }
+    logger.info("getTransForUsers skipped " + skipped + " out of " + count + " -> " + idToStats.size());
 
     return idToStats;
   }

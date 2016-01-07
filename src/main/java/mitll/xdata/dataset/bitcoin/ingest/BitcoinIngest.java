@@ -19,6 +19,7 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.util.Collections;
 
 
 /**
@@ -97,7 +98,7 @@ public class BitcoinIngest extends BitcoinIngestBase {
 
 		long now = System.currentTimeMillis();
 		logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " +(now-then)/1000 + " seconds");
-		doSubgraphs(dbName);
+		doSubgraphs(dbName, Collections.emptySet());
 	}
 
 }

@@ -141,7 +141,7 @@ public class BitcoinIngestSubGraph {
 		 */
     String[] queries = new String[]{"FanOut", "FOFI"};
     for (int i = 0; i < queries.length; i++) {
-			
+
 			/*
 			 * Setup and read-in query
 			 */
@@ -346,12 +346,13 @@ public class BitcoinIngestSubGraph {
    * @throws Exception
    * @see BitcoinIngestBase#doSubgraphs(String)
    */
-  protected static Map<Long, Integer> extractUndirectedGraph(String dbType, String h2DatabaseName) throws Exception {
+  protected static Map<Long, Integer> extractUndirectedGraphInMemory(String dbType, String h2DatabaseName,
+                                                                     Set<Integer> entityIds) throws Exception {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
     long then = System.currentTimeMillis();
-    logger.info("extractUndirectedGraph start");
-    Map<Long, Integer> edgeToWeight = extractUndirectedGraphInMemory(connection);
+    // logger.info("extractUndirectedGraph start");
+    Map<Long, Integer> edgeToWeight = extractUndirectedGraphInMemory(connection, entityIds);
     //  extractUndirectedGraph(connection);
     long now = System.currentTimeMillis();
 
@@ -365,10 +366,11 @@ public class BitcoinIngestSubGraph {
    * Undirected graph - count transactions on each edge.
    *
    * @param connection
+   * @param entityIds
    * @return
    * @throws Exception
    */
-  private static Map<Long, Integer> extractUndirectedGraphInMemory(DBConnection connection) throws Exception {
+  private static Map<Long, Integer> extractUndirectedGraphInMemory(DBConnection connection, Set<Integer> entityIds) throws Exception {
     // Map<Integer, Map<Integer, Integer>> sourceToDestToValue = new HashMap<>();
 
     ResultSet rs = doSQLQuery(connection,
@@ -377,35 +379,39 @@ public class BitcoinIngestSubGraph {
     Map<Long, Integer> sourceToDest = new HashMap<>();
 
     int c = 0;
+    int skipped = 0;
+    boolean check = !entityIds.isEmpty();
     while (rs.next()) {
       int source = rs.getInt(1);
       int target = rs.getInt(2);
-
+      if (check && entityIds.contains(source) && entityIds.contains(target)) {
 //      if (c < 20) logger.info("extractUndirectedGraphInMemory " +source + " -> " + target);
 
-      if (source > target) {
-        int tmp = source;
-        source = target;
-        target = tmp;
-       // if (c < 2000) logger.info("\tflip " + source + " -> " + target);
-      }
+        if (source > target) {
+          int tmp = source;
+          source = target;
+          target = tmp;
+          // if (c < 2000) logger.info("\tflip " + source + " -> " + target);
+        }
 //      source = source < target ? source : target;
 //      target = source < target ? target : source;
 
 
-      long key = BitcoinFeaturesBase.storeTwo(source, target);
+        long key = BitcoinFeaturesBase.storeTwo(source, target);
 
 //      if (c < 20) {
 //        logger.info("extractUndirectedGraphInMemory " +key + " = " + BitcoinFeaturesBase.getLow(key) + " -> " +BitcoinFeaturesBase.getHigh(key));
 //      }
 
-      Integer orDefault = sourceToDest.getOrDefault(key, 0);
-      sourceToDest.put(key, orDefault + 1);
-
+        Integer orDefault = sourceToDest.getOrDefault(key, 0);
+        sourceToDest.put(key, orDefault + 1);
+      } else {
+        skipped++;
+      }
       c++;
     }
 
-    logger.info("map is " + sourceToDest.size());
+    logger.info("extractUndirectedGraphInMemory map is " + sourceToDest.size() + " skipped " + skipped + " out of " + c);
     rs.close();
 
     return sourceToDest;
@@ -533,7 +539,7 @@ public class BitcoinIngestSubGraph {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
     long then = System.currentTimeMillis();
-    logger.info("filterForActivity start");
+//    logger.info("filterForActivity start");
     filterForActivity(connection);
     long now = System.currentTimeMillis();
 
@@ -558,7 +564,6 @@ public class BitcoinIngestSubGraph {
    * @throws Exception
    */
   private static void filterForActivity(DBConnection connection) throws Exception {
-		
 		/*
 		 * Setup SQL queries
 		 */
@@ -579,13 +584,12 @@ public class BitcoinIngestSubGraph {
 
     //  String sqlRemoveSelfTrans = "delete from " + TABLE_NAME + " where (source = target);";
 
-
 		/*
 		 * Do some initial clean-up
 		 */
-    logger.info("do remove account start from " + TABLE_NAME);
+//    logger.info("do remove account start from " + TABLE_NAME);
     doSQLUpdate(connection, sqlRemoveAccount);
-    logger.info("did remove account start from " + TABLE_NAME);
+//    logger.info("did remove account start from " + TABLE_NAME);
 
 /*
     logger.info("do remove self transactions " + sqlRemoveSelfTrans);

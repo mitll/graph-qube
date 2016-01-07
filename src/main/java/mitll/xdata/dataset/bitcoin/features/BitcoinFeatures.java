@@ -196,7 +196,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
       int source = Integer.parseInt(split[1]);
       int target = Integer.parseInt(split[2]);
 
-      skipped = getSkipped(users, stot, skipped, source, target);
+      if (getSkipped(users, stot, source, target)) skipped++;
       // long key = storeTwo(source, target);
       //if (!connectedPairs.contains(key)) connectedPairs.add(key);
       if (c++ % 1000000 == 0) logger.debug("read " + c + " from " + dataFilename);

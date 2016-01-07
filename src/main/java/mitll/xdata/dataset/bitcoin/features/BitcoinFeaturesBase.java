@@ -106,11 +106,11 @@ public class BitcoinFeaturesBase {
    * @param transForUsers
    * @throws Exception
    */
-  protected void writeFeatures(DBConnection connection, String writeDirectory, long then,
-                               Collection<Integer> users,
-                               Map<Integer, UserFeatures> transForUsers) throws Exception {
+  protected Set<Integer> writeFeatures(DBConnection connection, String writeDirectory, long then,
+                                       Collection<Integer> users,
+                                       Map<Integer, UserFeatures> transForUsers) throws Exception {
     long now = System.currentTimeMillis();
-    logger.debug("took " + (now - then) + " to read " + transForUsers.size() + " user features");
+    logger.debug("writeFeatures took " + (now - then) + " to read " + transForUsers.size() + " user features");
 
     //BufferedWriter writer = new BufferedWriter(new FileWriter("bitcoin_features.tsv"));
     BufferedWriter rawWriter = new BufferedWriter(new FileWriter(new File(writeDirectory, BITCOIN_RAW_FEATURES_TSV)));
@@ -147,6 +147,8 @@ public class BitcoinFeaturesBase {
     standardFeatureWriter.close();
 
     connection.closeConnection();
+
+    return userToIndex.keySet();
   }
 
   /**
@@ -157,6 +159,7 @@ public class BitcoinFeaturesBase {
    * @param features
    * @param userToFeatures
    * @param userToIndex
+   * @see #writeFeatures(DBConnection, String, long, Collection, Map)
    */
   private void populateUserToFeatures(Collection<Integer> users,
                                       Map<Integer, UserFeatures> transForUsers,
@@ -164,7 +167,8 @@ public class BitcoinFeaturesBase {
                                       Map<Integer, Features> userToFeatures,
                                       Map<Integer, Integer> userToIndex) {
     int skipped = 0;
-    int count = 0;
+    int count   = 0;
+    logger.info("populateUserToFeatures checking " + transForUsers.size() + " against " + users.size() + " users");
     for (Integer user : users) {
       // logger.debug("user " + user);
       Features featuresForUser = getFeaturesForUser(transForUsers, user);
@@ -183,7 +187,7 @@ public class BitcoinFeaturesBase {
         MIN_TRANSACTIONS +
         " credits and less than " +
         MIN_TRANSACTIONS +
-        " debits");
+        " debits -> " + userToFeatures.size());
   }
 
   private void getStandardizationStats() {
@@ -271,7 +275,8 @@ public class BitcoinFeaturesBase {
    * @param standardizedFeatures
    * @throws Exception
    */
-  private void writeFeaturesToDatabase(DBConnection dbConnection, Map<Integer, Features> userToFeatures,
+  private void writeFeaturesToDatabase(DBConnection dbConnection,
+                                       Map<Integer, Features> userToFeatures,
                                        Map<Integer, Integer> userToIndex,
                                        double[][] standardizedFeatures) throws Exception {
     logger.info("writeFeaturesToDatabase " + userToFeatures.size() + " users.");
@@ -609,15 +614,16 @@ public class BitcoinFeaturesBase {
    * @param target
    * @return
    */
-  protected int getSkipped(Collection<Integer> users, Map<Integer, Set<Integer>> stot, int skipped, int source, int target) {
+  protected boolean getSkipped(Collection<Integer> users, Map<Integer, Set<Integer>> stot, int source, int target) {
     if (users.contains(source) && users.contains(target)) {
       Set<Integer> integers = stot.get(source);
       if (integers == null) stot.put(source, integers = new HashSet<Integer>());
       if (!integers.contains(target)) integers.add(target);
+      return false;
     } else {
-      skipped++;
+      return true;
     }
-    return skipped;
+//    return skipped;
   }
 
   protected void writePairs(String outfile, Map<Integer, Set<Integer>> stot) throws IOException {
@@ -1147,12 +1153,20 @@ public class BitcoinFeaturesBase {
 
   private static final int MB = (1024 * 1024);
 
-  void logMemory() {
+  public static void logMemory() {
     Runtime rt = Runtime.getRuntime();
     long free = rt.freeMemory();
     long used = rt.totalMemory() - free;
     long max = rt.maxMemory();
-    logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
+    long l = max / MB;
+    long l1 = used / MB;
+
+    float fmax = (float)l;
+    float fused = (float) l1;
+
+    if (fused/fmax > 0.5) {
+      logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
+    }
   }
 
 /*  public static void main(String[] args) {

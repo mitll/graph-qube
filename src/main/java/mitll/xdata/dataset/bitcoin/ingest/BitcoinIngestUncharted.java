@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Set;
 
 
 /**
@@ -34,9 +35,9 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
   private static final Logger logger = Logger.getLogger(BitcoinIngestUncharted.class);
 
   private static final boolean USE_TIMESTAMP = false;
-  public static final String BITCOIN = "bitcoin";
-  public static final String USERTRANSACTIONS_2013_LARGERTHANDOLLAR = "usertransactions2013largerthandollar";
-  public static final String SKIP_TRUE = "skip=true";
+  private static final String BITCOIN = "bitcoin";
+  private static final String USERTRANSACTIONS_2013_LARGERTHANDOLLAR = "usertransactions2013largerthandollar";
+  private static final String SKIP_TRUE = "skip=true";
 
   /**
    * Remember to give lots of memory if running on fill bitcoin dataset -- more than 2G
@@ -126,11 +127,11 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     new File(writeDir).mkdirs();
 
    // int limit1 = 1000000;
-    new BitcoinFeaturesUncharted(destinationDbName, writeDir, info, limit, users);
+    Set<Integer> userIds = new BitcoinFeaturesUncharted().writeFeatures(destinationDbName, writeDir, info, limit, users);
 
     long now = System.currentTimeMillis();
     logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");
-    doSubgraphs(destinationDbName);
+    doSubgraphs(destinationDbName,userIds);
   }
 }
 

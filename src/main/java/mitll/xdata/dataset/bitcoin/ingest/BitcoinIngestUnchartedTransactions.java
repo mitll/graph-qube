@@ -14,6 +14,7 @@
 
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.MysqlConnection;
@@ -83,9 +84,9 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     statement.setFetchSize(1000000);
     logMemory();
 
-    logger.debug("Getting result set --- ");
+//    logger.debug("Getting result set --- ");
     ResultSet resultSet = statement.executeQuery();
-    logger.debug("Got     result set --- ");
+  //  logger.debug("Got     result set --- ");
 
     int count = 0;
     long t0 = System.currentTimeMillis();
@@ -95,7 +96,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     int mod = 1000000;
 
     logMemory();
-    logger.debug("Going through     result set --- ");
+    //logger.debug("Going through     result set --- ");
 
     while (resultSet.next()) {
       count++;
@@ -113,7 +114,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
         logMemory();
       }
     }
-    logger.debug("Got past result set ");
+//    logger.debug("Got past result set ");
 
     resultSet.close();
     statement.close();
@@ -129,8 +130,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     connection.closeConnection();
 
     long t1 = System.currentTimeMillis();
-    logger.debug("total count = " + count);
-    logger.debug("total time = " + ((t1 - t0) / 1000.0) + " s");
+    logger.debug("total count = " + count + " total time = " + ((t1 - t0) / 1000.0) + " s");
     logger.debug((t1 - 1.0 * t0) / count + " ms/insert");
     logger.debug((1000.0 * count / (t1 - 1.0 * t0)) + " inserts/s");
   }
@@ -170,7 +170,8 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       ids.add(rs.getInt(1));
     }
     long now = System.currentTimeMillis();
-    logger.debug("getUsers took " + (now - then) + " millis to read " + ids.size() + " users");
+    logger.debug("getUsers took " + (now - then) + " millis to read " + ids.size() +
+        " users with more than " +MIN_TRANSACTIONS + " transactions from " +FINENTITY);
 
     rs.close();
     statement.close();
@@ -181,11 +182,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   private static final int MB = (1024 * 1024);
 
   private void logMemory() {
-    Runtime rt = Runtime.getRuntime();
-    long free = rt.freeMemory();
-    long used = rt.totalMemory() - free;
-    long max = rt.maxMemory();
-    logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
+    BitcoinFeaturesBase.logMemory();
   }
 
   /**
@@ -275,7 +272,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
         }
       }
     }
-    logger.info("skipped " +countSelf + " self transactions");
+    logger.info("skipped " +countSelf + " self transactions out of " + count);
     rstatement.close();
     statement.close();
     return count;

@@ -238,7 +238,7 @@ public class MultipleIndexConstructor {
                 int aDash = p.get(j - 1);
                 totWeight += g.getEdge(a, aDash).weight;
                 int b = g.nodeId2NodeMap.get(a);
-                types += node2Type.get(b);
+                types += node2Type.get(b); // TODO : string concatenation...
               }
             }
             if ((spd.containsKey(types) && spd.get(types) < totWeight) || !spd.containsKey(types))
@@ -306,14 +306,12 @@ public class MultipleIndexConstructor {
    * Figure out how many types there are (in the case where we're not loading everything from file)
    */
   public static void computeTotalTypes() {
-
     for (int key : node2Type.keySet()) {
       int type = node2Type.get(key);
       if (type > totalTypes)
         totalTypes = type;
     }
   }
-
 
   /**
    * Save out sorted edge list
@@ -399,6 +397,8 @@ public class MultipleIndexConstructor {
       logger.info("node2Type size " + node2Type.size());
     }
 
+    int skipped = 0;
+
     for (Edge e : g.edges) {
       //get internal node-ids for
       int from = g.nodeId2NodeMap.get(e.src);
@@ -409,21 +409,36 @@ public class MultipleIndexConstructor {
       if (from > to)
         continue;
 
-      int fromType = node2Type.get(from);
-      int toType = node2Type.get(to);
-      if (fromType > toType) {
-        int tmp = fromType;
-        fromType = toType;
-        toType = tmp;
-        tmp = from;
-        from = to;
-        to = tmp;
+
+      Integer fromInt = node2Type.get(from);
+      Integer toInt = node2Type.get(to);
+      if (fromInt != null && toInt != null) {
+        int fromType = fromInt;
+        int toType = toInt;
+        if (fromType > toType) {
+          int tmp = fromType;
+          fromType = toType;
+          toType = tmp;
+          tmp = from;
+          from = to;
+          to = tmp;
+        }
+        ArrayList<Edge> arr = sortedEdgeLists.get(fromType + "#" + toType);
+        arr.add(new Edge(from, to, weight));
+        sortedEdgeLists.put(fromType + "#" + toType, arr);
       }
-      ArrayList<Edge> arr = sortedEdgeLists.get(fromType + "#" + toType);
-      arr.add(new Edge(from, to, weight));
-      sortedEdgeLists.put(fromType + "#" + toType, arr);
+      else {
+        skipped++;
+        if (skipped < 20) {
+          logger.warn("skipping missing user " +
+              (fromInt == null ? " from " + from : "") +
+              (toInt == null ? " to " + to : "")
+          );
+        }
+      }
     }
 
+    logger.warn("skipped " +skipped + " out of " + g.node2NodeIdMap.size());
     //sort the arraylists in descending order
     for (String key : sortedEdgeLists.keySet())
       Collections.sort(sortedEdgeLists.get(key), new EdgeComparator());
@@ -454,7 +469,7 @@ public class MultipleIndexConstructor {
    * @throws IOException
    */
   public static void loadTypesFile()
-      throws FileNotFoundException, IOException {
+      throws IOException {
 
     //load types file
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, typesFile)));
@@ -490,7 +505,7 @@ public class MultipleIndexConstructor {
 
     String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName + ";";
 
-    logger.info("sql " + sqlQuery + " on " + connection);
+    logger.info("loadTypesFromDatabase sql " + sqlQuery + " on " + connection);
 
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();
