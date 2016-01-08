@@ -284,7 +284,7 @@ public class BitcoinIngestSubGraph {
 
 
     MultipleIndexConstructor.setGraph(g);
-    logger.info("Loaded graph from database...");
+    logger.info("Loaded graph from database... with D = " +MultipleIndexConstructor.D);
 
 //	    //iterate through hashmap test
 //	    int c=0;

@@ -22,6 +22,7 @@ public class Graph {
   public int numEdges = 0;
   public HashSet<Edge> edges;
   public HashMap<Integer, ArrayList<Edge>> inLinks;
+  public HashMap<Integer, Map<Integer, Edge>> inLinks2;
 
   private static final Logger logger = Logger.getLogger(Graph.class);
 
@@ -43,7 +44,8 @@ public class Graph {
    */
   public Graph() {
     edges = new HashSet<Edge>();
-    inLinks = new HashMap<Integer, ArrayList<Edge>>();
+    inLinks = new HashMap<>();
+    inLinks2 = new HashMap<>();
   }
 
   @SuppressWarnings("unchecked")
@@ -223,14 +225,14 @@ public class Graph {
     double dist[] = new double[numNodes];
     int prev[] = new int[numNodes];
     FibonacciHeap<Integer> fh = new FibonacciHeap<Integer>();
-		/* Initialization: set every distance to INFINITY until we discover a path */
+    /* Initialization: set every distance to INFINITY until we discover a path */
     for (int i = 0; i < numNodes; i++) {
       dist[i] = Double.MAX_VALUE;
       prev[i] = -1;
     }
 
     HashMap<Integer, FibonacciHeapNode<Integer>> map = new HashMap<Integer, FibonacciHeapNode<Integer>>();
-		/* The distance from the source to the source is defined to be zero */
+    /* The distance from the source to the source is defined to be zero */
     dist[node] = 0;
     for (int i = 0; i < numNodes; i++) {
       FibonacciHeapNode<Integer> fhn = new FibonacciHeapNode<Integer>(i, dist[i]);
@@ -319,6 +321,15 @@ public class Graph {
     return null;
   }
 
+  public Edge getEdgeFast(int node1, int node2) {
+    if (inLinks2.containsKey(node2)) {
+      Map<Integer, Edge> integerEdgeMap = inLinks2.get(node2);
+      return integerEdgeMap.get(node1);
+    } else {
+      return null;
+    }
+  }
+
   /**
    * Adds edge to graph considering direction from a to b
    *
@@ -335,6 +346,13 @@ public class Graph {
         al = inLinks.get(b);
       al.add(e);
       inLinks.put(b, al);
+
+      Map<Integer, Edge> integerEdgeMap = inLinks2.get(b);
+      if (integerEdgeMap == null) {
+        integerEdgeMap = new HashMap<>();
+        inLinks2.put(b, integerEdgeMap);
+      }
+      integerEdgeMap.put(a, e);
     }
   }
 
@@ -455,8 +473,8 @@ public class Graph {
     for (Map.Entry<Long, Integer> edgeAndCount : edgeToWeight.entrySet()) {
       Long key = edgeAndCount.getKey();
 
-      int from   = BitcoinFeaturesBase.getLow(key);
-      int to     = BitcoinFeaturesBase.getHigh(key);
+      int from = BitcoinFeaturesBase.getLow(key);
+      int to = BitcoinFeaturesBase.getHigh(key);
       int weight = edgeAndCount.getValue();
 
       //if (c < 20) logger.info(from + " -> " + to + " = " +weight);

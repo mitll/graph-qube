@@ -121,6 +121,7 @@ public class MultipleIndexConstructor {
    * Compute SPD, Topology and SPath Indices
    *
    * @throws IOException
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection, Graph)
    */
   public static void computeIndices() throws IOException {
 
@@ -144,7 +145,10 @@ public class MultipleIndexConstructor {
     String topologyFilename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".topology";
     BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
     String spdFilename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".spd";
-    BufferedWriter outSPD = new BufferedWriter(new FileWriter(new File(outDir, spdFilename)));
+    File file = new File(outDir, spdFilename);
+    BufferedWriter outSPD = new BufferedWriter(new FileWriter(file));
+
+    logger.info("Writing to " + file.getAbsolutePath());
 
     //for(int i=1;i<=g.numNodes;i++)
     for (int i = 0; i < g.numNodes; i++) {
@@ -226,54 +230,8 @@ public class MultipleIndexConstructor {
         out.write(" ");
 
         //process pathsq
-        HashMap<String, ArrayList<Integer>> topo = new HashMap<String, ArrayList<Integer>>();
-        HashMap<String, Double> spd = new HashMap<String, Double>();
-        for (int ii : paths.keySet()) {
-          for (ArrayList<Integer> p : paths.get(ii)) {
-            String types = "";
-            double totWeight = 0;
-            for (int j = 0; j < p.size(); j++) {
-              int a = p.get(j);
-              if (j != 0) {
-                int aDash = p.get(j - 1);
-                totWeight += g.getEdge(a, aDash).weight;
-                int b = g.nodeId2NodeMap.get(a);
-                types += node2Type.get(b); // TODO : string concatenation...
-              }
-            }
-            if ((spd.containsKey(types) && spd.get(types) < totWeight) || !spd.containsKey(types))
-              spd.put(types, totWeight);
-            int lastNode = ii;
-            ArrayList<Integer> l = new ArrayList<Integer>();
-            if (topo.containsKey(types))
-              l = topo.get(types);
-            if (!l.contains(lastNode))
-              l.add(lastNode);
-            topo.put(types, l);
-          }
-        }
-
-        //write out topology index.
-        for (String o : ordering.get(d + 1)) {
-          if (!topo.containsKey(o))
-            outTopology.write("0;");
-          else {
-            int t = topo.get(o).size();
-            outTopology.write(t + ";");
-          }
-        }
-        //outTopology.write(" ");
-
-        //write out spd index.
-        for (String o : ordering.get(d + 1)) {
-          if (!spd.containsKey(o))
-            outSPD.write("0.;");
-          else {
-            double t = spd.get(o);
-            outSPD.write(Double.valueOf(twoDForm.format(t)) + ";");
-          }
-        }
-        //outSPD.write(" ");
+//        logger.info("node #" + i + " ---------- ");
+        processPathsq(outTopology, outSPD, d);
       }
       out.write("\n");
       outTopology.write("\n");
@@ -284,14 +242,155 @@ public class MultipleIndexConstructor {
     outSPD.close();
   }
 
+  private static void processPathsq(Writer outTopology, Writer outSPD, int d) throws IOException {
+    Map<String, Collection<Integer>> topo = new HashMap<>();
+
+    //  Map<Integer, List<Integer>> topo2 = new HashMap<>();
+
+    Map<String, Double> spd = new HashMap<>();
+//    Map<Integer, Double> spd2 = new HashMap<>();
+
+ //   logger.info("running with  " + d + " and " + paths.size() + " paths ");
+
+    int [] typeSequence = new int[D];
+
+    for (int ii : paths.keySet()) {
+      for (List<Integer> p : paths.get(ii)) {
+        String types = "";
+//        int typesTotal = 0;
+        //logger.info("From " + ii + " p " + p);
+
+        double totWeight = 0;
+
+        for (int j = 0; j < p.size(); j++) {
+          int a = p.get(j);
+
+          if (j != 0) {
+            int aDash = p.get(j - 1);
+          //  Edge edge = g.getEdge(a, aDash);
+            Edge edge = g.getEdgeFast(a, aDash);
+
+            //if (edge != edgeFast) logger.info("err -- not the same " + edge + " vs " +edgeFast);
+
+            totWeight += edge.weight;
+            int b = g.nodeId2NodeMap.get(a);
+            Integer typeOfDestNode = node2Type.get(b);
+           // types += typeOfDestNode; // TODO : string concatenation...
+
+            typeSequence[j-1] = typeOfDestNode-1;
+//            typesTotal++;
+          }
+
+          if (j == 1) {
+            types = oneHop[typeSequence[0]];
+          }
+          else if (j == 2) {
+            types = twoHop[typeSequence[0]][typeSequence[1]];
+          }
+        }
+
+     //   logger.info("From " + ii + " p " + p + " types " + types);
+
+        if ((spd.containsKey(types) && spd.get(types) < totWeight) || !spd.containsKey(types))
+          spd.put(types, totWeight);
+
+/*
+        if ((spd2.containsKey(typesTotal) && spd2.get(typesTotal) < totWeight) || !spd2.containsKey(typesTotal))
+          spd2.put(typesTotal, totWeight);
+*/
+
+        updateTopo(topo, ii, types);
+
+        // updateTopo2(topo2, ii, typesTotal);
+      }
+    }
+
+    //write out topology index.
+    for (String o : ordering.get(d + 1)) {
+      String toWrite;
+
+     // String toWrite2;
+
+      if (!topo.containsKey(o)) {
+        toWrite = "0;";
+      } else {
+        int t = topo.get(o).size();
+//        outTopology.write(t + ";");
+        toWrite = t + ";";
+      }
+
+/*      if (!topo2.containsKey(o)) {
+        toWrite2 ="0;";
+      }
+      else {
+        int t = topo2.get(o).size();
+//        outTopology.write(t + ";");
+        toWrite2 =t + ";";
+      }
+      */
+      outTopology.write(toWrite);
+    }
+    //outTopology.write(" ");
+
+    //write out spd index.
+    for (String o : ordering.get(d + 1)) {
+      String str = "0.;";
+      if (!spd.containsKey(o)) {
+        // outSPD.write("0.;");
+        str = "0.;";
+      } else {
+        double t = spd.get(o);
+        String format = twoDForm.format(t);
+        str = Double.valueOf(format) + ";";
+/*        String str2 = format + ";";
+        if (!str.equals(str2)) {
+          logger.warn("huh? " + str + " != " + str2);
+        }*/
+      }
+
+      outSPD.write(str);
+    }
+    //outSPD.write(" ");
+  }
+
+  private static void updateTopo(Map<String, Collection<Integer>> topo, int ii, String types) {
+//    int lastNode = ii;
+    Collection<Integer> l;
+
+    if (topo.containsKey(types)) {
+      l = topo.get(types);
+    }
+    else {
+      l = new HashSet<Integer>();
+      topo.put(types, l);
+    }
+
+    if (!l.contains(ii)) {
+      l.add(ii);
+    }
+  }
+
+/*  private static void updateTopo2(Map<Integer, List<Integer>> topo, int lastNode, int types) {
+    //int lastNode = ii;
+    List<Integer> l = new ArrayList<Integer>();
+    if (topo.containsKey(types))
+      l = topo.get(types);
+    if (!l.contains(lastNode))
+      l.add(lastNode);
+    topo.put(types, l);
+  }*/
+
   /**
    * Compute all EdgeType Paths of length d, put in hash map
+   *
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection, Graph)
    */
   public static void computeEdgeTypePathOrdering() {
     for (int d = 1; d <= D; d++)
       ordering.put(d, new ArrayList<String>());
     for (int i = 1; i <= totalTypes; i++)
       ordering.get(1).add(i + "");
+
     for (int d = 2; d <= D; d++) {
       for (int i = 1; i <= totalTypes; i++) {
         for (String s : ordering.get(d - 1)) {
@@ -300,6 +399,9 @@ public class MultipleIndexConstructor {
         }
       }
     }
+
+    logger.info("computeEdgeTypePathOrdering ordering " + ordering);
+
   }
 
   /**
@@ -316,8 +418,8 @@ public class MultipleIndexConstructor {
   /**
    * Save out sorted edge list
    *
-   * @param graphFile
    * @throws IOException
+   * @paramx graphFile
    */
   public static void saveSortedEdgeList() throws IOException {
 
@@ -342,9 +444,9 @@ public class MultipleIndexConstructor {
   /**
    * Load and sort edges from Graph transactions file
    *
-   * @param graphFile
    * @throws FileNotFoundException
    * @throws IOException
+   * @paramx graphFile
    */
   public static void loadAndSortEdges()
       throws FileNotFoundException, IOException {
@@ -388,7 +490,7 @@ public class MultipleIndexConstructor {
    * --Does the same thing, just from the graph file loaded in
    * --as a IndexConstruction.Graph data structure
    *
-   * @param None (except it expects class variables g and node2Type have been populated)
+   * @paramx None (except it expects class variables g and node2Type have been populated)
    */
   public static void populateSortedEdgeLists() {
     if (node2Type.isEmpty()) {
@@ -426,8 +528,7 @@ public class MultipleIndexConstructor {
         ArrayList<Edge> arr = sortedEdgeLists.get(fromType + "#" + toType);
         arr.add(new Edge(from, to, weight));
         sortedEdgeLists.put(fromType + "#" + toType, arr);
-      }
-      else {
+      } else {
         skipped++;
         if (skipped < 20) {
           logger.warn("skipping missing user " +
@@ -438,7 +539,7 @@ public class MultipleIndexConstructor {
       }
     }
 
-    logger.warn("skipped " +skipped + " out of " + g.node2NodeIdMap.size());
+    logger.warn("skipped " + skipped + " out of " + g.node2NodeIdMap.size());
     //sort the arraylists in descending order
     for (String key : sortedEdgeLists.keySet())
       Collections.sort(sortedEdgeLists.get(key), new EdgeComparator());
@@ -447,7 +548,7 @@ public class MultipleIndexConstructor {
   /**
    * Create "typed edges" i.e. node of type i is connected to node of type j
    *
-   * @param totalTypes
+   * @paramx totalTypes
    */
   public static void createTypedEdges() {
 
@@ -463,10 +564,10 @@ public class MultipleIndexConstructor {
   /**
    * Load types file
    *
-   * @param typesFile
    * @return
    * @throws FileNotFoundException
    * @throws IOException
+   * @paramx typesFile
    */
   public static void loadTypesFile()
       throws IOException {
@@ -510,7 +611,10 @@ public class MultipleIndexConstructor {
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();
 
-		/*
+    long then = System.currentTimeMillis();
+
+    Set<Integer> types = new HashSet<>();
+    /*
      * Loop-through result set, populate node2Type
 		 */
     int c = 0;
@@ -526,14 +630,38 @@ public class MultipleIndexConstructor {
 
       //logger.info("UID: "+guid+"\tTYPE: "+type);
       node2Type.put(guid, type);
+      types.add(type);
       if (type > totalTypes)
         totalTypes = type;
     }
+    long now = System.currentTimeMillis();
+
+    logger.info("loadTypesFromDatabase : took " + (now - then) +
+        " to populate node2Type, size " + node2Type.size() + " with " + c + " total types " + totalTypes + " count types " + types.size() + " types " + types);
 
     rs.close();
     queryStatement.close();
     //connection.close();
+
+    oneHop = new String[types.size()];
+    twoHop = new String[types.size()][types.size()];
+
+    int i = 0;
+    for (Integer t : types) {
+      String firstType = Integer.toString(t);
+      oneHop[i] = firstType;
+      int j = 0;
+      for (Integer tt : types) {
+        String secondType = Integer.toString(tt);
+    //    twoHop[i][j++] = firstType+"_"+secondType;
+        twoHop[i][j++] = firstType+secondType;
+      }
+      i++;
+    }
   }
+
+  static String[] oneHop;
+  static String[][] twoHop;
 
   /**
    * Setter for pre-loaded node2Type HashMap
