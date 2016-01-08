@@ -307,8 +307,8 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
         }
       }
     }
-    logger.info("skipped " + countSelf + " self transactions out of " + count);
-    logger.info("and skipped " + skipped + " missing users out of " + count);
+    logger.info("insertRowsInTable skipped " + countSelf + " self transactions out of " + count);
+    logger.info("insertRowsInTable skipped " + skipped + " missing users out of " + count + " and found " + knownUsers.size() + " known users");
     rstatement.close();
     statement.close();
     return count;

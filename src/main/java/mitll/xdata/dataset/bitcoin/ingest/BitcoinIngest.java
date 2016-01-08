@@ -101,7 +101,6 @@ public class BitcoinIngest extends BitcoinIngestBase {
 		logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " +(now-then)/1000 + " seconds");
 		doSubgraphs(dbName, Collections.emptySet());
 	}
-
 }
 
 
