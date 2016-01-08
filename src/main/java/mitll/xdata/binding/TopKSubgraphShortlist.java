@@ -16,6 +16,8 @@
 package mitll.xdata.binding;
 
 import influent.idl.*;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
@@ -43,6 +45,7 @@ import java.util.regex.Pattern;
  */
 public class TopKSubgraphShortlist extends Shortlist {
   private static final Logger logger = Logger.getLogger(TopKSubgraphShortlist.class);
+  public static final String MARGINAL_GRAPH = "MARGINAL_GRAPH";
 
   private int K = 500;
   private int D = 2;
@@ -55,10 +58,14 @@ public class TopKSubgraphShortlist extends Shortlist {
   private String pairIDColumn = "sorted_pairr";
   private HashMap<String, String> edgeAttributeName2Type;
 
-  private QueryExecutor executor;
+  private final QueryExecutor executor;
 
   private static PreparedStatement queryStatement;
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(DBConnection, boolean, String)
+   * @param binding
+   */
   public TopKSubgraphShortlist(Binding binding) {
     super(binding);
 
@@ -75,7 +82,8 @@ public class TopKSubgraphShortlist extends Shortlist {
     logger.info("Loading graph. This should only happen once...");
     Graph g = new Graph();
     try {
-      g.loadGraph(binding.connection, "MARGINAL_GRAPH", "NUM_TRANS");
+    //  g.loadGraph(binding.connection, "MARGINAL_GRAPH", "NUM_TRANS");
+      g.loadGraphAgain(binding.connection, MARGINAL_GRAPH, "NUM_TRANS");
     } catch (Exception e) {
       logger.info("Got: " + e);
     }
@@ -104,7 +112,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    */
   public void loadTypesAndIndices() {
     /*
-		 * Load-in types, and count how many there are
+     * Load-in types, and count how many there are
 		 */
     try {
       logger.info("Loading in types...");
@@ -135,11 +143,16 @@ public class TopKSubgraphShortlist extends Shortlist {
   }
 
 
+  /**
+   * @param entityMatchDescriptorsIgnored
+   * @param exemplarIDs
+   * @param max
+   * @return
+   * @see Binding#getShortlist(FL_PatternDescriptor, long)
+   */
   @Override
-  public List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entities1,
+  public List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entityMatchDescriptorsIgnored,
                                                    List<String> exemplarIDs, long max) {
-
-
     // which binding are we bound to?
     logger.info(this.binding.toString());
     logger.info(this.binding.connection);
@@ -161,12 +174,17 @@ public class TopKSubgraphShortlist extends Shortlist {
     Edge edg;
     int e1, e2;
     String pair;
+
+    logger.info("ran on " + exemplarIDs);
+
     if (exemplarIDs.size() > 1) {
       for (int i = 0; i < exemplarIDs.size(); i++) {
         for (int j = i + 1; j < exemplarIDs.size(); j++) {
-          e1 = Integer.parseInt(exemplarIDs.get(i));
-          e2 = Integer.parseInt(exemplarIDs.get(j));
-          if (Integer.parseInt(exemplarIDs.get(i)) <= Integer.parseInt(exemplarIDs.get(j))) {
+          String e1ID = exemplarIDs.get(i);
+          e1 = Integer.parseInt(e1ID);
+          String e2ID = exemplarIDs.get(j);
+          e2 = Integer.parseInt(e2ID);
+          if (Integer.parseInt(e1ID) <= Integer.parseInt(e2ID)) {
             pair = "(" + e1 + "," + e2 + ")";
             edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
           } else {
@@ -174,8 +192,13 @@ public class TopKSubgraphShortlist extends Shortlist {
             edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
           }
 
-          if (existsPair(graphTable, pairIDColumn, pair))
+         // if (existsPair(graphTable, pairIDColumn, pair)) {
+          if (existsPairTransactions(BitcoinBinding.TRANSACTIONS, e1ID, e2ID)) {
             queryEdges.add(edg);
+          }
+          else {
+            logger.warn("no edge between " + e1ID + " and " + e2ID);
+          }
         }
       }
     }
@@ -280,11 +303,36 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
   }
 
-  /**
-   * @param tableName
-   * @param pairID
-   * @return
-   */
+  private boolean existsPairTransactions(String tableName, String source, String target) {
+    try {
+      String sql = "select count(*) as CNT from " + tableName +
+          " where " + "("+
+          "SOURCE" + " = " + source + " AND "+
+          "TARGET" + " = " + target + ")" +
+          " OR " +
+          "("+
+          "TARGET" + " = " + source + " AND "+
+          "SOURCE" + " = " + target + ")" +
+          " limit 1;";
+
+      ResultSet rs = doSQLQuery(sql);
+      rs.next();
+      int cnt = rs.getInt("CNT");
+      rs.close();
+      queryStatement.close();
+
+      return cnt > 0;
+    } catch (SQLException e) {
+      logger.info("got e: " + e);
+      return false;
+    }
+  }
+
+    /**
+     * @param tableName
+     * @param pairID
+     * @return
+     */
   private boolean existsPair(String tableName, String pairIdCol, String pair) {
     try {
       String sql = "select count(*) as CNT from " + tableName + " where " + pairIdCol + " = " + pair + " limit 1;";
@@ -889,7 +937,10 @@ public class TopKSubgraphShortlist extends Shortlist {
     return linkProperties;
   }
 
-
+  /**
+   * @see #loadTypesAndIndices()
+   * @return
+   */
   private HashMap<String, String> getGraphEdgeAttributeName2Type() {
 
     HashMap<String, String> graphEdgeAttributeName2Type = new HashMap<String, String>();

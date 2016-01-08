@@ -97,6 +97,7 @@ public class BitcoinBinding extends Binding {
 	 * @param useFastBitcoinConnectedTest
 	 * @param resourceDir
 	 * @throws Exception
+	 * @see #BitcoinBinding(DBConnection, boolean, String)
 	 */
 	private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
 		super(connection);
@@ -110,18 +111,18 @@ public class BitcoinBinding extends Binding {
 		shortlist = new TopKSubgraphShortlist(this);
 
 		// Set and update all TopKSubgraphShortlist specific parameters
-		if (shortlist instanceof TopKSubgraphShortlist) {
-			((TopKSubgraphShortlist)shortlist).setK(DEFAULT_SHORTLIST_SIZE);
-			((TopKSubgraphShortlist)shortlist).setD(SHORTLISTING_D);
-			((TopKSubgraphShortlist)shortlist).refreshQueryExecutorParameters();
-			((TopKSubgraphShortlist)shortlist).setUsersTable(USER_FEATURES_TABLE);
-			((TopKSubgraphShortlist)shortlist).setUserIdColumn(USERID_COLUMN);
-			((TopKSubgraphShortlist)shortlist).setTypeColumn(TYPE_COLUMN);
-			((TopKSubgraphShortlist)shortlist).setGraphTable(GRAPH_TABLE);
-			((TopKSubgraphShortlist)shortlist).setPairIDColumn(PAIRID_COLUMN);
+		if (getShortlist() instanceof TopKSubgraphShortlist) {
+			((TopKSubgraphShortlist) getShortlist()).setK(DEFAULT_SHORTLIST_SIZE);
+			((TopKSubgraphShortlist) getShortlist()).setD(SHORTLISTING_D);
+			((TopKSubgraphShortlist) getShortlist()).refreshQueryExecutorParameters();
+			((TopKSubgraphShortlist) getShortlist()).setUsersTable(USER_FEATURES_TABLE);
+			((TopKSubgraphShortlist) getShortlist()).setUserIdColumn(USERID_COLUMN);
+			((TopKSubgraphShortlist) getShortlist()).setTypeColumn(TYPE_COLUMN);
+			((TopKSubgraphShortlist) getShortlist()).setGraphTable(GRAPH_TABLE);
+			((TopKSubgraphShortlist) getShortlist()).setPairIDColumn(PAIRID_COLUMN);
 
 			//load types and indices
-			((TopKSubgraphShortlist)shortlist).loadTypesAndIndices();
+			((TopKSubgraphShortlist) getShortlist()).loadTypesAndIndices();
 		}
 
 

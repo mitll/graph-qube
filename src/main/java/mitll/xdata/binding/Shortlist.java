@@ -105,6 +105,7 @@ public abstract class Shortlist {
 
 	/**
 	 * @return FL_Property for edge metadata key (key into table with additional edge attributes)
+	 * @see Binding#getShortlist(FL_PatternDescriptor, long)
 	 */
 	protected abstract List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entities1, 
 			List<String> exemplarIDs, long max);

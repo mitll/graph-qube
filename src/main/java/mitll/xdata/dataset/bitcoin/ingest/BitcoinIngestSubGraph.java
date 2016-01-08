@@ -63,7 +63,13 @@ public class BitcoinIngestSubGraph {
   private static final String USERS = "users";
   private static final String TYPE_COLUMN = "type";
   private static final String USERID_COLUMN = "user";
+  /**
+   * @deprecated
+   */
   public static final String SORTED_PAIR = "SORTED_PAIR";
+  public static final String NUM_TRANS = "NUM_TRANS";
+  public static final String SOURCE = "source".toUpperCase();
+  public static final String TARGET = "target".toUpperCase();
 
 
   private static PreparedStatement queryStatement;
@@ -144,7 +150,7 @@ public class BitcoinIngestSubGraph {
     for (int i = 0; i < queries.length; i++) {
 
 			/*
-			 * Setup and read-in query
+       * Setup and read-in query
 			 */
       QueryExecutor.queryFile = "queries/queryGraph." + queries[i] + ".txt";
       QueryExecutor.queryTypesFile = "queries/queryTypes." + queries[i] + ".txt";
@@ -179,7 +185,7 @@ public class BitcoinIngestSubGraph {
 
 
 			/*
-			 * Populate all required HashMaps relating edges to edge-types 
+       * Populate all required HashMaps relating edges to edge-types
 			 */
 
       // compute edge types for all edges in query
@@ -217,9 +223,9 @@ public class BitcoinIngestSubGraph {
    * @param h2DatabaseName
    * @throws Throwable
    * @throws Exception
-   * @see BitcoinIngestBase#doSubgraphs(String)
+   * @see BitcoinIngestBase#doSubgraphs
    */
-  protected static void computeIndices(String dbType, String h2DatabaseName) throws Throwable {
+/*  protected static void computeIndices(String dbType, String h2DatabaseName) throws Throwable {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
     long then = System.currentTimeMillis();
@@ -231,8 +237,15 @@ public class BitcoinIngestSubGraph {
     logger.info("computeIndices end took " + (now - then) + " millis");
 
     connection.closeConnection();
-  }
+  }*/
 
+  /**
+   * @param dbType
+   * @param h2DatabaseName
+   * @param edgeToWeight
+   * @throws Throwable
+   * @see BitcoinIngestBase#doSubgraphs(String, Set)
+   */
   protected static void computeIndicesFromMemory(String dbType, String h2DatabaseName,
                                                  Map<Long, Integer> edgeToWeight) throws Throwable {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
@@ -246,6 +259,61 @@ public class BitcoinIngestSubGraph {
     logger.info("computeIndices end took " + (now - then) + " millis");
 
     connection.closeConnection();
+  }
+
+  /**
+   * @see BitcoinIngestBase#doSubgraphs(String, Set)
+   * @param dbType
+   * @param h2DatabaseName
+   * @param edgeToWeight
+   */
+  public static void makeMarginalGraph(String dbType, String h2DatabaseName,
+                                       Map<Long, Integer> edgeToWeight) {
+    try {
+      DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
+
+      int i = doSQLUpdate(connection, "drop table " + MARGINAL_GRAPH);
+
+      String createSQL = "create table " + MARGINAL_GRAPH + " (" +
+          SOURCE +
+          " int, " +
+          TARGET +
+          " int, " +
+          NUM_TRANS + " int" +
+          ")";
+      i = doSQLUpdate(connection, createSQL);
+
+      logger.info("create sql " + i);
+
+      Connection connection1 = connection.getConnection();
+
+      PreparedStatement statement = connection1.prepareStatement("INSERT INTO " +
+          MARGINAL_GRAPH +
+          "(" +
+          SOURCE +
+          "," +
+          TARGET +
+          "," +
+          NUM_TRANS +
+          ") VALUES(?,?,?)");
+
+
+      for (Map.Entry<Long, Integer> pair : edgeToWeight.entrySet()) {
+        Long key = pair.getKey();
+        int low = BitcoinFeaturesBase.getLow(key);
+        int high = BitcoinFeaturesBase.getHigh(key);
+
+        int j = 1;
+        statement.setInt(j++, low);
+        statement.setInt(j++, high);
+        statement.setInt(j++, pair.getValue());
+        statement.executeUpdate();
+      }
+
+      statement.close();
+    } catch (Exception e) {
+      logger.error("got " + e, e);
+    }
   }
 
   private static void computeIndicesFromMemory(String bitcoinDirectory,
@@ -271,7 +339,7 @@ public class BitcoinIngestSubGraph {
                                      DBConnection dbConnection) throws Throwable {
     // Load graph into topk-subgraph Graph object
     Graph g = new Graph();
-    g.loadGraph(dbConnection, MARGINAL_GRAPH, "NUM_TRANS");
+    g.loadGraph(dbConnection, MARGINAL_GRAPH, NUM_TRANS);
     computeIndices(bitcoinDirectory, dbConnection, g);
   }
 
@@ -284,7 +352,7 @@ public class BitcoinIngestSubGraph {
 
 
     MultipleIndexConstructor.setGraph(g);
-    logger.info("Loaded graph from database... with D = " +MultipleIndexConstructor.D);
+    logger.info("Loaded graph from database... with D = " + MultipleIndexConstructor.D);
 
 //	    //iterate through hashmap test
 //	    int c=0;
@@ -345,7 +413,7 @@ public class BitcoinIngestSubGraph {
    * @param dbType
    * @return
    * @throws Exception
-   * @see BitcoinIngestBase#doSubgraphs(String)
+   * @see BitcoinIngestBase#doSubgraphs
    */
   protected static Map<Long, Integer> extractUndirectedGraphInMemory(String dbType, String h2DatabaseName,
                                                                      Set<Integer> entityIds) throws Exception {
@@ -370,6 +438,7 @@ public class BitcoinIngestSubGraph {
    * @param entityIds
    * @return
    * @throws Exception
+   * @see #extractUndirectedGraphInMemory(String, String, Set)
    */
   private static Map<Long, Integer> extractUndirectedGraphInMemory(DBConnection connection, Set<Integer> entityIds) throws Exception {
     // Map<Integer, Map<Integer, Integer>> sourceToDestToValue = new HashMap<>();
@@ -382,11 +451,17 @@ public class BitcoinIngestSubGraph {
     int c = 0;
     int skipped = 0;
     boolean check = !entityIds.isEmpty();
+
+    Set<Integer> unique = new HashSet<>();
+
     while (rs.next()) {
       int source = rs.getInt(1);
       int target = rs.getInt(2);
+
       if (check && entityIds.contains(source) && entityIds.contains(target)) {
 //      if (c < 20) logger.info("extractUndirectedGraphInMemory " +source + " -> " + target);
+        unique.add(source);
+        unique.add(target);
 
         if (source > target) {
           int tmp = source;
@@ -394,9 +469,6 @@ public class BitcoinIngestSubGraph {
           target = tmp;
           // if (c < 2000) logger.info("\tflip " + source + " -> " + target);
         }
-//      source = source < target ? source : target;
-//      target = source < target ? target : source;
-
 
         long key = BitcoinFeaturesBase.storeTwo(source, target);
 
@@ -407,12 +479,13 @@ public class BitcoinIngestSubGraph {
         Integer orDefault = sourceToDest.getOrDefault(key, 0);
         sourceToDest.put(key, orDefault + 1);
       } else {
+        if (source ==253977 || target == 253977) logger.warn("---> extractUndirectedGraphInMemory skipped " +source + " " + target);
         skipped++;
       }
       c++;
     }
 
-    logger.info("extractUndirectedGraphInMemory map is " + sourceToDest.size() + " skipped " + skipped + " out of " + c);
+    logger.info("extractUndirectedGraphInMemory map is " + sourceToDest.size() + " skipped " + skipped + " out of " + c + " unique " + unique.size());
     rs.close();
 
     return sourceToDest;

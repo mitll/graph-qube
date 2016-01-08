@@ -45,10 +45,10 @@ public class MultipleIndexConstructor {
   public static String typesFile = "";
   public static int D = 1;
 
-  public static HashMap<Integer, Integer> node2Type = new HashMap<Integer, Integer>();
-  public static HashMap<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<String, ArrayList<Edge>>();
-  public static HashMap<Integer, ArrayList<String>> ordering = new HashMap<Integer, ArrayList<String>>();
-  public static HashMap<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
+  public static Map<Integer, Integer> node2Type = new HashMap<Integer, Integer>();
+  public static Map<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<String, ArrayList<Edge>>();
+  public static Map<Integer, ArrayList<String>> ordering = new HashMap<Integer, ArrayList<String>>();
+  public static Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
   public static DecimalFormat twoDForm = new DecimalFormat("#.####");
   public static Graph g = new Graph();
 
@@ -172,6 +172,7 @@ public class MultipleIndexConstructor {
       HashSet<ArrayList<Integer>> hs = new HashSet<ArrayList<Integer>>();
       hs.add(ll);
       paths.put(n, hs);
+
       for (int d = 0; d < D; d++) {
         //perform BFS from each node.
         HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
@@ -187,22 +188,28 @@ public class MultipleIndexConstructor {
               newQueue.add(qDash);
               newSumWeight.put(qDash, sumWeight.get(q) + e.weight);
             }
+
             if (newSumWeight.containsKey(qDash) || (!newSumWeight.containsKey(qDash) && !considered.contains(qDash))) {
-              HashSet<ArrayList<Integer>> hsai = new HashSet<ArrayList<Integer>>();
-              if (newPaths.containsKey(qDash))
+              HashSet<ArrayList<Integer>> hsai;// = new HashSet<ArrayList<Integer>>();
+              if (newPaths.containsKey(qDash)) {
                 hsai = newPaths.get(qDash);
+              }
+              else {
+                hsai = new HashSet<>();
+                newPaths.put(qDash, hsai);
+              }
               for (ArrayList<Integer> ai : paths.get(q)) {
                 ArrayList<Integer> nali = new ArrayList<Integer>(ai);
                 nali.add(qDash);
                 hsai.add(nali);
               }
-              newPaths.put(qDash, hsai);
             }
           }
         }
         queue = newQueue;
         sumWeight = newSumWeight;
         paths = newPaths;
+
         HashMap<Integer, ArrayList<Integer>> map = new HashMap<Integer, ArrayList<Integer>>();
         for (int q : queue) {
           int actualID = g.nodeId2NodeMap.get(q);
@@ -217,16 +224,8 @@ public class MultipleIndexConstructor {
         //processing for SPath index.
         for (Integer s : map.keySet())
           Collections.sort(map.get(s));
-        for (int s = 1; s <= totalTypes; s++) {
-          if (map.containsKey(s)) {
-            out.write(map.get(s).size() + "#");
-            for (int t : map.get(s))
-              out.write(t + ",");
-          } else {
-            out.write("0#,");
-          }
-          out.write(";");
-        }
+
+        writeSPath(out, map);
         out.write(" ");
 
         //process pathsq
@@ -240,6 +239,20 @@ public class MultipleIndexConstructor {
     out.close();
     outTopology.close();
     outSPD.close();
+  }
+
+  private static void writeSPath(BufferedWriter out, HashMap<Integer, ArrayList<Integer>> map) throws IOException {
+    for (int s = 1; s <= totalTypes; s++) {
+      if (map.containsKey(s)) {
+        List<Integer> integers = map.get(s);
+        out.write(integers.size() + "#");
+        for (int t : integers)
+          out.write(t + ",");
+      } else {
+        out.write("0#,");
+      }
+      out.write(";");
+    }
   }
 
   private static void processPathsq(Writer outTopology, Writer outSPD, int d) throws IOException {

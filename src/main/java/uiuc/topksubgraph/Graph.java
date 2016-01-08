@@ -453,6 +453,7 @@ public class Graph {
    * @param dbConnection
    * @throws Throwable
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection)
+   * @deprecated
    */
   public void loadGraph(DBConnection dbConnection, String tableName, String edgeName) throws SQLException {
     loadGraph(dbConnection.getConnection(), tableName, edgeName);
@@ -462,7 +463,7 @@ public class Graph {
    * Loads the graph from an h2 database
    *
    * @throws SQLException
-   * @see Graph#loadGraph(DBConnection, String, String)
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndicesFromMemory(String, DBConnection, Map)
    */
   public void loadGraphFromMemory(Map<Long, Integer> edgeToWeight) {
     int nodeCount = node2NodeIdMap.size();
@@ -507,6 +508,71 @@ public class Graph {
     numEdges = c;
   }
 
+
+  /**
+   * Loads the graph from an h2 database
+   *
+   * @param connection
+   * @param tableName
+   * @param edgeName
+   * @throws SQLException
+   * @see Graph#loadGraph(DBConnection, String, String)
+   */
+  public void loadGraphAgain(Connection connection, String tableName, String edgeName) throws SQLException {
+    int nodeCount = node2NodeIdMap.size();
+    numNodes = 0;
+    numEdges = 0;
+
+		/*
+		 * Do database query
+		 */
+    //Connection connection = dbConnection.getConnection();
+
+    String sqlQuery = "select * from " + tableName ;
+
+    PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
+    ResultSet rs = queryStatement.executeQuery();
+
+		/*
+		 * Loop through database table rows...
+		 */
+    int c = 0;
+    while (rs.next()) {
+      c++;
+      if (c % 100000 == 0) logger.debug("read  " + c);
+
+      int i = 1;
+      int from = rs.getInt(i++);
+      int to = rs.getInt(i++);
+      int weight = rs.getInt(i++);
+
+      if (node2NodeIdMap.containsKey(from))
+        from = node2NodeIdMap.get(from);
+      else {
+        node2NodeIdMap.put(from, nodeCount);
+        nodeId2NodeMap.put(nodeCount, from);
+        from = nodeCount;
+        nodeCount++;
+      }
+      if (node2NodeIdMap.containsKey(to))
+        to = node2NodeIdMap.get(to);
+      else {
+        node2NodeIdMap.put(to, nodeCount);
+        nodeId2NodeMap.put(nodeCount, to);
+        to = nodeCount;
+        nodeCount++;
+      }
+
+      this.addEdge(from, to, weight);
+      this.addEdge(to, from, weight);
+    }
+
+    rs.close();
+    queryStatement.close();
+
+    numNodes = nodeCount;
+    numEdges = c;
+  }
 
   /**
    * Loads the graph from an h2 database

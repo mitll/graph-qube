@@ -24,14 +24,8 @@ import java.util.Map;
  */
 public class BitcoinIngestTransactions {
   private static final Logger logger = Logger.getLogger(BitcoinIngestTransactions.class);
-  public static final int DEBUG_OUTPUT_MAX = 5;
+  public static final int DEBUG_OUTPUT_MAX = 2;
   IngestSql ingestSql = new IngestSql();
-
-  private static UserStats getUserStats(Map<Integer, UserStats> userToStats, int sourceid) {
-    UserStats userStats = userToStats.get(sourceid);
-    if (userStats == null) userToStats.put(sourceid, userStats = new UserStats());
-    return userStats;
-  }
 
   protected double[] addAvgDollarFeatures(Map<Integer, UserStats> userToStats,
                                           double avgUSD,
@@ -72,4 +66,11 @@ public class BitcoinIngestTransactions {
     userStats2.addCredit(usd);
     return usd;
   }
+
+  private static UserStats getUserStats(Map<Integer, UserStats> userToStats, int sourceid) {
+    UserStats userStats = userToStats.get(sourceid);
+    if (userStats == null) userToStats.put(sourceid, userStats = new UserStats());
+    return userStats;
+  }
+
 }

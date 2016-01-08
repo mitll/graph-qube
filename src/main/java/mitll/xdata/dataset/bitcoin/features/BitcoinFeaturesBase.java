@@ -55,6 +55,7 @@ public class BitcoinFeaturesBase {
   //public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
   private static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
   private static final String BITCOIN_FEATURES_STANDARDIZED_TSV = "bitcoin_features_standardized.tsv";
+  public static final String USERS = "users";
   // private static final boolean USE_SPECTRAL_FEATURES = true;
   // double specWeight = 1.0;
   // private final double statWeight = 15.0;
@@ -324,7 +325,9 @@ public class BitcoinFeaturesBase {
         }
       }
 
-      String sqlInsertVector = "insert into users " + columnLabelText + " values " + featValueText;
+      String sqlInsertVector = "insert into " +
+          USERS +
+          " " + columnLabelText + " values " + featValueText;
       statement = connection.prepareStatement(sqlInsertVector);
       statement.executeUpdate();
       statement.close();

@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 
@@ -51,7 +52,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
    * @throws Exception
    */
   public static void main(String[] args) throws Throwable {
-    logger.debug("Starting Ingest...");
+  //  logger.debug("Starting Ingest...");
 
     //
     // Parse Arguments...
@@ -62,8 +63,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       String first = args[0];
       if (first.startsWith("skip=")) {
         skipLoadTransactions = first.equals(SKIP_TRUE);
-      }
-      else {
+      } else {
         logger.debug("got data file " + dataFilename);
         dataFilename = first;
       }
@@ -112,29 +112,32 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     long then = System.currentTimeMillis();
 
     // populate the transactions table
-   // int limit = 1000000;
+    // int limit = 1000000;
     MysqlInfo info = new MysqlInfo();
     info.setJdbc(dataSourceJDBC);
     info.setTable(transactionsTable);
 
-    if (!skipLoadTransactions) {
-      new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
-          "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit);
-    }
-
     Collection<Integer> users = new BitcoinIngestUnchartedTransactions().getUsers(info);
+    Collection<Integer> usersInTranscations = users;
+    if (!skipLoadTransactions) {
+      logger.info("doIngest userIds size " + users.size());
+
+      users = new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
+          "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit, users);
+
+      logger.info("doIngest after userIds size " + users.size()  + " includes " + users.contains(253479) + " or " + users.contains(12329212));
+    }
 
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-   // int limit1 = 1000000;
+    // int limit1 = 1000000;
     Set<Integer> userIds = new BitcoinFeaturesUncharted().writeFeatures(destinationDbName, writeDir, info, limit, users);
+
+    logger.info("userIds size " + userIds.size());
 
     long now = System.currentTimeMillis();
     logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");
-    doSubgraphs(destinationDbName,userIds);
+    doSubgraphs(destinationDbName, userIds);
   }
 }
-
-
-

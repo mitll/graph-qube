@@ -46,7 +46,7 @@ public class GraphQuBEServer {
 
   private static final int DEFAULT_MAX = 5;
   //private static final boolean USE_KIVA = false;
-  private static final String DEFAULT_BITCOIN_FEATURE_DIR = "bitcoin_small_feats_tsv";
+  public static final String DEFAULT_BITCOIN_FEATURE_DIR = "bitcoin_small_feats_tsv";
   private static final boolean USE_IN_MEMORY_ADJACENCY_DEFAULT = true;
   private static final int PORT = 8085;
 

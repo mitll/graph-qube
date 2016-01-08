@@ -35,24 +35,29 @@ public class BitcoinIngestBase {
   void doSubgraphs(String dbName, Set<Integer> entityIds) throws Throwable {
     long then;
     /*
-		 * Pre-processing the transaction data to prepare it for topk-subgraph search:
+     * Pre-processing the transaction data to prepare it for topk-subgraph search:
 		 * - Graph construction, filtering and indexing
 		 */
     then = System.currentTimeMillis();
 
     // Filter-out non-active nodes, self-transitions, heavy-hitters
-    BitcoinIngestSubGraph.filterForActivity("h2", dbName);
+    String h2 = "h2";
+    BitcoinIngestSubGraph.filterForActivity(h2, dbName);
 
     Binding.logMemory();
     // Create marginalized graph data and various stats
-    Map<Long, Integer> edgeToWeight = BitcoinIngestSubGraph.extractUndirectedGraphInMemory("h2", dbName, entityIds);
+
+    logger.info("doSubgraphs " +entityIds.size());
+    Map<Long, Integer> edgeToWeight = BitcoinIngestSubGraph.extractUndirectedGraphInMemory(h2, dbName, entityIds);
+
 
     Binding.logMemory();
 
+    BitcoinIngestSubGraph.makeMarginalGraph(h2, dbName, edgeToWeight);
     //Do the indexing for the topk-subgraph algorithm
     //BitcoinIngestSubGraph.computeIndices("h2", dbName);
 
-    BitcoinIngestSubGraph.computeIndicesFromMemory("h2", dbName, edgeToWeight);
+    BitcoinIngestSubGraph.computeIndicesFromMemory(h2, dbName, edgeToWeight);
 
     Binding.logMemory();
 

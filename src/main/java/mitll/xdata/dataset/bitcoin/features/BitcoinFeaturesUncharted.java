@@ -80,6 +80,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @throws Exception
    * @paramz datafile   original flat file of data - transactions!
    * @see #main(String[])
+   * @see #writeFeatures(String, String, MysqlInfo, long, Collection)
    */
   private Set<Integer> writeFeatures(DBConnection connection, String writeDirectory, MysqlInfo info,
                                    boolean useSpectralFeatures, long limit,
@@ -88,7 +89,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     // this.useSpectral = useSpectralFeatures;
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
-    logger.debug("reading users from db " + connection + " users " + users.size());
+    logger.debug("writeFeatures reading users from db " + connection + " users " + users.size());
 
     //Collection<Integer> users = getUsers(connection);
 

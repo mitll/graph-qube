@@ -742,6 +742,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		//return prefixToTable.toString();
 	}
 
+	public Shortlist getShortlist() {
+		return shortlist;
+	}
+
 	public static class Triple {
 		final String key;
 		final String value;
@@ -1643,10 +1647,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 		//return new CartesianShortlist(this).getShortlist(entities1, exemplarIDs, max);
 		//return new BreadthFirstShortlist(this).getShortlist(entities1, exemplarIDs, max);
 		//return new TopKSubgraphShortlist(this).getShortlist(entities1, exemplarIDs, max);
-		shortlist.numQueries += 1;
+		getShortlist().numQueries += 1;
 		logger.info("-------------------ALERT--------------------------------");
-		logger.info("This is pattern query number "+shortlist.numQueries+" of this session.");
-		return shortlist.getShortlist(entities1, exemplarIDs, max);
+		logger.info("This is pattern query number "+ getShortlist().numQueries+" of this session.");
+		return getShortlist().getShortlist(entities1, exemplarIDs, max);
 	}
 
 	public static void logMemory() {
