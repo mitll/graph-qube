@@ -36,7 +36,7 @@ public class FeaturesSql {
    * @throws SQLException
    */
   public void createUsersTable(Connection connection) throws SQLException {
-    logger.info("FeaturesSql create users table");
+ //   logger.info("FeaturesSql create users table");
 
   /*
    * Make USERS table
@@ -67,7 +67,7 @@ public class FeaturesSql {
   }
 
   public void createUsersTableNoDrop(Connection connection) throws SQLException {
-    logger.info("create users table");
+  //  logger.info("create users table");
 
   /*
    * Make USERS table

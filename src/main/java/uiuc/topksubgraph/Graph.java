@@ -526,10 +526,9 @@ public class Graph {
 		/*
 		 * Do database query
 		 */
-    //Connection connection = dbConnection.getConnection();
-
     String sqlQuery = "select * from " + tableName ;
 
+    logger.info("loadGraphAgain doing " +sqlQuery);
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();
 
@@ -572,6 +571,8 @@ public class Graph {
 
     numNodes = nodeCount;
     numEdges = c;
+
+    logger.info("read " + c+ " found " + numNodes + " nodes and " + numEdges + " edges");
   }
 
   /**

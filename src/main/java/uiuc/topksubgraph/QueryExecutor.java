@@ -1346,7 +1346,6 @@ public class QueryExecutor {
    */
   public void loadTypesFromDatabase(Connection connection, String tableName, String uidColumn, String typeColumn)
       throws Exception {
-		
 		/*
 		 * Do query
 		 */
@@ -1378,7 +1377,6 @@ public class QueryExecutor {
     logger.info("loadTypesFromDatabase got " + node2Type.size() + " from " + sqlQuery);
     rs.close();
     queryStatement.close();
-    //connection.close();
   }
 
   /**

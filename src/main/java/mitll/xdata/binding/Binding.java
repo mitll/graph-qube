@@ -17,6 +17,7 @@ package mitll.xdata.binding;
 
 import influent.idl.*;
 import mitll.xdata.AvroUtils;
+import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.kiva.binding.KivaBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.hmm.*;
@@ -1654,11 +1655,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	}
 
 	public static void logMemory() {
-		Runtime rt = Runtime.getRuntime();
-		long free = rt.freeMemory();
-		long used = rt.totalMemory() - free;
-		long max = rt.maxMemory();
-		logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
+		//BitcoinBinding.logMemory();
+//		Runtime rt = Runtime.getRuntime();
+//		long free = rt.freeMemory();
+//		long used = rt.totalMemory() - free;
+//		long max = rt.maxMemory();
+//		logger.debug("heap info free " + free / MB + "M used " + used / MB + "M max " + max / MB + "M");
 	}
 
 	public boolean isNodeId(String id) { return stot.containsKey(id); }

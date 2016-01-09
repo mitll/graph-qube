@@ -54,7 +54,7 @@ public class TopKSubgraphShortlist extends Shortlist {
   private String userIdColumn = "user";
   private String typeColumn = "type";
 
-  private String graphTable = "MARGINAL_GRAPHH";
+  private String graphTable = "MARGINAL_GRAPH";
   private String pairIDColumn = "sorted_pairr";
   private HashMap<String, String> edgeAttributeName2Type;
 

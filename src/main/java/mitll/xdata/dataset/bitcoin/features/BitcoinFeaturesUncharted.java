@@ -57,7 +57,11 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
 
   public Set<Integer> writeFeatures(String h2DatabaseFile, String writeDirectory, MysqlInfo info, long limit,
                                   Collection<Integer> users) throws Exception {
-    return writeFeatures(new H2Connection(h2DatabaseFile, 38000000), writeDirectory, info, false, limit, users);
+    return writeFeatures(getConnection(h2DatabaseFile), writeDirectory, info, false, limit, users);
+  }
+
+  public H2Connection getConnection(String h2DatabaseFile) {
+    return new H2Connection(h2DatabaseFile, 38000000);
   }
 
   /**

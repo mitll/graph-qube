@@ -152,7 +152,7 @@ public class MultipleIndexConstructor {
 
     //for(int i=1;i<=g.numNodes;i++)
     for (int i = 0; i < g.numNodes; i++) {
-      if (i % 100 == 0)
+      if (i % 1000 == 0)
         //System.err.println("Nodes processed: "+i+" out of "+g.numNodes);
         logger.debug("Nodes processed: " + i + " out of " + g.numNodes);
       out.write(i + "\t");
@@ -509,7 +509,7 @@ public class MultipleIndexConstructor {
     if (node2Type.isEmpty()) {
       logger.warn("node2Type is empty?");
     } else {
-      logger.info("node2Type size " + node2Type.size());
+      logger.info("populateSortedEdgeLists node2Type size " + node2Type.size());
     }
 
     int skipped = 0;
@@ -552,7 +552,7 @@ public class MultipleIndexConstructor {
       }
     }
 
-    logger.warn("skipped " + skipped + " out of " + g.node2NodeIdMap.size());
+    logger.warn("populateSortedEdgeLists skipped " + skipped + " out of " + g.node2NodeIdMap.size());
     //sort the arraylists in descending order
     for (String key : sortedEdgeLists.keySet())
       Collections.sort(sortedEdgeLists.get(key), new EdgeComparator());

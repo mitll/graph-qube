@@ -58,6 +58,9 @@ public class TopKTest {
       Shortlist shortlist = bitcoinBinding.getShortlist();
       List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, Arrays.asList("555261", "400046", "689982", "251593"), 10);
 
+      if (shortlist1.size() > 10) {
+        shortlist1 = shortlist1.subList(0,10);
+      }
       for (FL_PatternSearchResult result:shortlist1) logger.info("got " + result);
 
     } catch (Exception e) {

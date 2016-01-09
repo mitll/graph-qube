@@ -91,7 +91,7 @@ public class FeatureNormalizer {
 				return arr[(int) k];
 			}
 
-			logger.info("numExemplars: "+numExemplars+" k: "+k+" f: "+f+" c: "+c);
+//			logger.info("numExemplars: "+numExemplars+" k: "+k+" f: "+f+" c: "+c);
 
 			double d0 = arr[(int) f] * (c - k);
 			double d1 = arr[(int) c] * (k - f);
@@ -154,7 +154,7 @@ public class FeatureNormalizer {
 						stdFeats[j][i] = (rawFeats[j][i] - b[0]) / b[1];
 					}
 				}
-				logger.info("b[0]: "+b[0]+" b[1]: "+b[1]);
+//				logger.info("b[0]: "+b[0]+" b[1]: "+b[1]);
 
 			} else {
 				for (int j = 0; j < numSamples; ++j) {

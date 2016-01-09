@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -147,6 +148,8 @@ public class BitcoinFeaturesBase {
     Map<Integer, Integer> userToIndex = new HashMap<Integer, Integer>();
 
     populateUserToFeatures(users, transForUsers, features, userToFeatures, userToIndex);
+
+    logger.debug("writeFeatures populateUserToFeatures " + userToFeatures.size() + " user features");
 
     // copy features into a matrix
 
@@ -342,6 +345,21 @@ public class BitcoinFeaturesBase {
     statement.close();*/
 
     connection.close();
+  }
+
+  public void pruneUsers(DBConnection dbConnection,Set<Integer> toRemove) {
+    Connection connection = dbConnection.getConnection();
+    try {
+      PreparedStatement  statement = connection.prepareStatement("delete from " + FeaturesSql.USERS + " where USER=?");
+      for (Integer id : toRemove) {
+        statement.setInt(1, id);
+        int i = statement.executeUpdate();
+        if (i != 1) logger.warn("huh? didn't delete " + id + " from users.");
+      }
+      statement.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 
   private static String getDoubles(double[] arr) {

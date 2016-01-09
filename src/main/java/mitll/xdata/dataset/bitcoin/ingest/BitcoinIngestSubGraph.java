@@ -267,8 +267,8 @@ public class BitcoinIngestSubGraph {
    * @param h2DatabaseName
    * @param edgeToWeight
    */
-  public static void makeMarginalGraph(String dbType, String h2DatabaseName,
-                                       Map<Long, Integer> edgeToWeight) {
+  public static Set<Integer> makeMarginalGraph(String dbType, String h2DatabaseName,
+                                               Map<Long, Integer> edgeToWeight) {
     try {
       DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
@@ -298,22 +298,29 @@ public class BitcoinIngestSubGraph {
           ") VALUES(?,?,?)");
 
 
+      Set<Integer> unique = new HashSet<>();
       for (Map.Entry<Long, Integer> pair : edgeToWeight.entrySet()) {
         Long key = pair.getKey();
         int low = BitcoinFeaturesBase.getLow(key);
         int high = BitcoinFeaturesBase.getHigh(key);
 
+        unique.add(low);
+        unique.add(high);
+
         int j = 1;
         statement.setInt(j++, low);
         statement.setInt(j++, high);
+
         statement.setInt(j++, pair.getValue());
         statement.executeUpdate();
       }
 
       statement.close();
+      return unique;
     } catch (Exception e) {
       logger.error("got " + e, e);
     }
+    return null;
   }
 
   private static void computeIndicesFromMemory(String bitcoinDirectory,
@@ -416,7 +423,7 @@ public class BitcoinIngestSubGraph {
    * @see BitcoinIngestBase#doSubgraphs
    */
   protected static Map<Long, Integer> extractUndirectedGraphInMemory(String dbType, String h2DatabaseName,
-                                                                     Set<Integer> entityIds) throws Exception {
+                                                                     Collection<Integer> entityIds) throws Exception {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
     long then = System.currentTimeMillis();
@@ -440,9 +447,10 @@ public class BitcoinIngestSubGraph {
    * @throws Exception
    * @see #extractUndirectedGraphInMemory(String, String, Set)
    */
-  private static Map<Long, Integer> extractUndirectedGraphInMemory(DBConnection connection, Set<Integer> entityIds) throws Exception {
+  private static Map<Long, Integer> extractUndirectedGraphInMemory(DBConnection connection, Collection<Integer> entityIds) throws Exception {
     // Map<Integer, Map<Integer, Integer>> sourceToDestToValue = new HashMap<>();
 
+    logger.info("extractUndirectedGraphInMemory - " + entityIds.size());
     ResultSet rs = doSQLQuery(connection,
         "select " + IngestSql.SOURCE + "," + IngestSql.TARGET + " from " + TABLE_NAME
     );

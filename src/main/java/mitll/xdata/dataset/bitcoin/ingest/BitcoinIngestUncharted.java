@@ -131,13 +131,18 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-    // int limit1 = 1000000;
-    Set<Integer> userIds = new BitcoinFeaturesUncharted().writeFeatures(destinationDbName, writeDir, info, limit, users);
+    BitcoinFeaturesUncharted bitcoinFeaturesUncharted = new BitcoinFeaturesUncharted();
+    Set<Integer> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir, info, limit, users);
 
-    logger.info("userIds size " + userIds.size());
+    logger.info("doIngest userIds size " + userIds.size());
 
     long now = System.currentTimeMillis();
     logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");
-    doSubgraphs(destinationDbName, userIds);
+    Set<Integer> validUsers = doSubgraphs(destinationDbName, userIds);
+
+    boolean b = userIds.removeAll(validUsers);
+    logger.info("to remove " +userIds.size());
+
+    bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName),userIds);
   }
 }
