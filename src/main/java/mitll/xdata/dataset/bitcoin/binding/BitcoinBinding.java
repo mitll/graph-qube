@@ -195,7 +195,8 @@ public class BitcoinBinding extends Binding {
 			}
 			count += 1;
 		}
-		sql += " from "+GRAPH_TABLE+" where "+PAIRID_COLUMN+" = ("+src+","+dest+");";
+//    sql += " from "+GRAPH_TABLE+" where "+PAIRID_COLUMN+" = ("+src+","+dest+");";
+    sql += " from "+GRAPH_TABLE+" where "+"SOURCE="+ src+" AND TARGET="+dest;
 
 		PreparedStatement queryStatement;
 

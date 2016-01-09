@@ -63,8 +63,8 @@ public class TopKSubgraphShortlist extends Shortlist {
   private static PreparedStatement queryStatement;
 
   /**
-   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(DBConnection, boolean, String)
    * @param binding
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(DBConnection, boolean, String)
    */
   public TopKSubgraphShortlist(Binding binding) {
     super(binding);
@@ -82,7 +82,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     logger.info("Loading graph. This should only happen once...");
     Graph g = new Graph();
     try {
-    //  g.loadGraph(binding.connection, "MARGINAL_GRAPH", "NUM_TRANS");
+      //  g.loadGraph(binding.connection, "MARGINAL_GRAPH", "NUM_TRANS");
       g.loadGraphAgain(binding.connection, MARGINAL_GRAPH, "NUM_TRANS");
     } catch (Exception e) {
       logger.info("Got: " + e);
@@ -167,7 +167,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
 
 		/*
-		 * Get all pairs of query nodes...
+     * Get all pairs of query nodes...
 		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
 		 */
     HashSet<Edge> queryEdges = new HashSet<Edge>();
@@ -192,11 +192,10 @@ public class TopKSubgraphShortlist extends Shortlist {
             edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
           }
 
-         // if (existsPair(graphTable, pairIDColumn, pair)) {
+          // if (existsPair(graphTable, pairIDColumn, pair)) {
           if (existsPairTransactions(BitcoinBinding.TRANSACTIONS, e1ID, e2ID)) {
             queryEdges.add(edg);
-          }
-          else {
+          } else {
             logger.warn("no edge between " + e1ID + " and " + e2ID);
           }
         }
@@ -306,12 +305,12 @@ public class TopKSubgraphShortlist extends Shortlist {
   private boolean existsPairTransactions(String tableName, String source, String target) {
     try {
       String sql = "select count(*) as CNT from " + tableName +
-          " where " + "("+
-          "SOURCE" + " = " + source + " AND "+
+          " where " + "(" +
+          "SOURCE" + " = " + source + " AND " +
           "TARGET" + " = " + target + ")" +
           " OR " +
-          "("+
-          "TARGET" + " = " + source + " AND "+
+          "(" +
+          "TARGET" + " = " + source + " AND " +
           "SOURCE" + " = " + target + ")" +
           " limit 1;";
 
@@ -328,11 +327,11 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
   }
 
-    /**
-     * @param tableName
-     * @param pairID
-     * @return
-     */
+  /**
+   * @param tableName
+   * @param pairID
+   * @return
+   */
   private boolean existsPair(String tableName, String pairIdCol, String pair) {
     try {
       String sql = "select count(*) as CNT from " + tableName + " where " + pairIdCol + " = " + pair + " limit 1;";
@@ -938,16 +937,19 @@ public class TopKSubgraphShortlist extends Shortlist {
   }
 
   /**
-   * @see #loadTypesAndIndices()
    * @return
+   * @see #loadTypesAndIndices()
    */
   private HashMap<String, String> getGraphEdgeAttributeName2Type() {
 
     HashMap<String, String> graphEdgeAttributeName2Type = new HashMap<String, String>();
 
-    String sql = "";
-    sql += "select column_name, type_name from INFORMATION_SCHEMA.columns";
-    sql += " where table_name = '" + graphTable + "' and COLUMN_NAME <> '" + pairIDColumn + "'";
+    String sql = "select column_name, type_name from INFORMATION_SCHEMA.columns";
+    sql += " where table_name = '" + graphTable + "' " +
+        "and COLUMN_NAME <> '" + pairIDColumn + "' " +
+        "and COLUMN_NAME <> '" + "SOURCE" + "' " +
+        "and COLUMN_NAME <> '" + "TARGET" + "'"
+    ;
 
     try {
       queryStatement = binding.connection.prepareStatement(sql);
