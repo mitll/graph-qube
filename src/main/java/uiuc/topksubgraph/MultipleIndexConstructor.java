@@ -40,6 +40,7 @@ import java.util.*;
 public class MultipleIndexConstructor {
 
   private static final Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
+  public static final int NOTICE_MOD = 10000;
 
   public static String baseDir = "data/bitcoin/graphs";
   public static String outDir = "data/bitcoin/indices";
@@ -156,7 +157,7 @@ public class MultipleIndexConstructor {
 
     //for(int i=1;i<=graph.numNodes;i++)
     for (int i = 0; i < graph.getNumNodes(); i++) {
-      if (i % 1000 == 0) {
+      if (i % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
         logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
         BitcoinFeaturesBase.logMemory();
@@ -251,7 +252,8 @@ public class MultipleIndexConstructor {
     outSPD.close();
 
     long now = System.currentTimeMillis();
-    logger.info("took " + ((now - then)/1000) + " seconds to do graph of size " + graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges");
+    logger.info("took " + ((now - then)/1000) + " seconds to do graph of size " +
+        graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges");
     BitcoinFeaturesBase.logMemory();
 
   }
@@ -638,7 +640,7 @@ public class MultipleIndexConstructor {
   public static void loadTypesFromDatabase(DBConnection dbConnection, String tableName, String uidColumn, String typeColumn)
       throws Exception {
 
-    logger.info("loadTypesFromDatabase " + tableName + " " + uidColumn + " " + typeColumn);
+//    logger.info("loadTypesFromDatabase " + tableName + " " + uidColumn + " " + typeColumn);
 
 		/*
      * Do query
@@ -647,7 +649,7 @@ public class MultipleIndexConstructor {
 
     String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName + ";";
 
-    logger.info("loadTypesFromDatabase sql " + sqlQuery + " on " + connection);
+  //  logger.info("loadTypesFromDatabase sql " + sqlQuery + " on " + connection);
 
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();

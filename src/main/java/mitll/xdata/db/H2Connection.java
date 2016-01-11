@@ -120,7 +120,7 @@ public class H2Connection implements DBConnection {
 
   public void closeConnection() {
     try {
-      logger.info("closing connection " + conn);
+   //   logger.info("closing connection " + conn);
       if (conn != null) {
         conn.close();
       }

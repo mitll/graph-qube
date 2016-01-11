@@ -383,7 +383,7 @@ public class BitcoinIngestSubGraph {
     new FeaturesSql().createUsersTableNoDrop(dbConnection.getConnection());
     // Load types into topk-subgraph object...
     MultipleIndexConstructor.loadTypesFromDatabase(dbConnection, USERS, USERID_COLUMN, TYPE_COLUMN);
-    logger.info("Loaded types from database...");
+//    logger.info("Loaded types from database...");
     logger.debug("Number of types: " + MultipleIndexConstructor.totalTypes);
 
     // Create Typed Edges

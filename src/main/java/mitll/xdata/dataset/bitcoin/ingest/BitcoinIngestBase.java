@@ -16,6 +16,7 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.binding.Binding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -45,21 +46,23 @@ public class BitcoinIngestBase {
     String h2 = "h2";
     BitcoinIngestSubGraph.filterForActivity(h2, dbName);
 
-    Binding.logMemory();
+    BitcoinFeaturesBase.rlogMemory();
     // Create marginalized graph data and various stats
 
     logger.info("doSubgraphs " +entityIds.size());
     Map<Long, Integer> edgeToWeight = BitcoinIngestSubGraph.extractUndirectedGraphInMemory(h2, dbName, entityIds);
 
-    Binding.logMemory();
+    BitcoinFeaturesBase.rlogMemory();
 
     Set<Integer> uniqueids = BitcoinIngestSubGraph.makeMarginalGraph(h2, dbName, edgeToWeight);
     //Do the indexing for the topk-subgraph algorithm
     //BitcoinIngestSubGraph.computeIndices("h2", dbName);
 
+    BitcoinFeaturesBase.rlogMemory();
+
     BitcoinIngestSubGraph.computeIndicesFromMemory(h2, dbName, edgeToWeight);
 
-    Binding.logMemory();
+    BitcoinFeaturesBase.rlogMemory();
 
     long now = System.currentTimeMillis();
     logger.debug("SubGraph Search Ingest (graph building, filtering, index construction) complete. Elapsed time: " +

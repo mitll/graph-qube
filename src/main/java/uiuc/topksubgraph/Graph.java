@@ -73,6 +73,12 @@ public class Graph {
     return null;
   }
 
+  /**
+   * @see MultipleIndexConstructor#processPathsq(Writer, Writer, Graph, int)
+   * @param node1
+   * @param node2
+   * @return
+   */
   public Edge getEdgeFast(int node1, int node2) {
     if (inLinks2.containsKey(node2)) {
       Map<Integer, Edge> integerEdgeMap = inLinks2.get(node2);

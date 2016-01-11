@@ -15,6 +15,7 @@
 
 package mitll.xdata.binding;
 
+import influent.idl.FL_Entity;
 import influent.idl.FL_EntityMatchResult;
 import influent.idl.FL_PatternSearchResult;
 import mitll.xdata.GraphQuBEServer;
@@ -25,16 +26,13 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
-import org.apache.batik.css.engine.SystemColorSupport;
 import org.apache.log4j.Logger;
-import org.apache.log4j.net.SyslogAppender;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -61,17 +59,26 @@ public class TopKTest {
       BitcoinBinding bitcoinBinding = new BitcoinBinding(dbConnection, bitcoinFeatureDirectory);
       patternSearch.setBitcoinBinding(bitcoinBinding);
       Shortlist shortlist = bitcoinBinding.getShortlist();
-      List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, Arrays.asList("555261", "400046", "689982", "251593"), 10);
+      int max = 20;
 
-      if (shortlist1.size() > 10) {
-        shortlist1 = shortlist1.subList(0,10);
+      long then = System.currentTimeMillis();
+      List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, Arrays.asList("555261", "400046", "689982", "251593"), max);
+      long now = System.currentTimeMillis();
+      logger.info("time to do a search " + (now-then) + " millis ");
+
+      if (shortlist1.size() > max) {
+        shortlist1 = shortlist1.subList(0, max);
       }
 
       for (FL_PatternSearchResult result:shortlist1) {
-        logger.info("got " + result);
+       // logger.info("got " + result);
+        Collection<String> matches = new ArrayList<>();
         for (FL_EntityMatchResult entity : result.getEntities()) {
-          logger.info("got " + entity);
+          FL_Entity entity1 = entity.getEntity();
+          matches.add(entity1.getUid());
+          //logger.info("got " + entity1.getUid()+ " " + entity.getScore());
         }
+        logger.info("got match " + matches);
       }
 
     } catch (Exception e) {
@@ -129,12 +136,20 @@ public class TopKTest {
   @Test
   public void testGraph() {
     logger.debug("ENTER testSearch()");
-    ServerProperties props = new ServerProperties();
-    int n = 100000;
-    int neighbors = 40;
+    int n = 400000;
+    //int neighbors = 100;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, neighbors);
+    for (int i = 10; i< 50; i+=10) {
+      Map<Long, Integer> edgeToWeight = getGraph(n, i);
+      ingest(n, edgeToWeight);
+    }
 
+    sleep();
+
+    logger.debug("EXIT testSearch()");
+  }
+
+  private void ingest(int n, Map<Long, Integer> edgeToWeight) {
     try {
       long time1 = System.currentTimeMillis();
 
@@ -145,9 +160,6 @@ public class TopKTest {
 
       Graph graph = new Graph(edgeToWeight);
 
-      BitcoinFeaturesBase.logMemory();
-
-      MultipleIndexConstructor.populateSortedEdgeLists(graph);
       BitcoinFeaturesBase.logMemory();
 
       //load types file
@@ -196,10 +208,6 @@ public class TopKTest {
     } catch (Exception e) {
       logger.error("got " +e,e);
     }
-
-    sleep();
-
-    logger.debug("EXIT testSearch()");
   }
 
   private Map<Long, Integer> getGraph(int n, int neighbors) {

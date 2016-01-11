@@ -160,11 +160,10 @@ public class TopKSubgraphShortlist extends Shortlist {
 
     //check to see if we can connect to anything....
     if (existsTable(graphTable)) {
-      logger.info("we can connect to the right database...");
+//      logger.info("we can connect to the right database...");
     } else {
       logger.info("table " + graphTable + " does not yet exist.");
     }
-
 
 		/*
      * Get all pairs of query nodes...
