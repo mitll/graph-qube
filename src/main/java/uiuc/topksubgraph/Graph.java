@@ -142,7 +142,10 @@ public class Graph {
       //if (c < 20) logger.info(from + " -> " + to + " = " +weight);
 
       c++;
-      if (c % 100000 == 0) logger.debug("loadGraphFromMemory read  " + c);
+      if (c % 1000000 == 0) {
+        logger.debug("loadGraphFromMemory read  " + c);
+        BitcoinFeaturesBase.rlogMemory();
+      }
 
       if (node2NodeIdMap.containsKey(from))
         from = node2NodeIdMap.get(from);

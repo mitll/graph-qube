@@ -15,6 +15,7 @@
 
 package mitll.xdata.binding;
 
+import influent.idl.FL_EntityMatchResult;
 import influent.idl.FL_PatternSearchResult;
 import mitll.xdata.GraphQuBEServer;
 import mitll.xdata.ServerProperties;
@@ -65,7 +66,13 @@ public class TopKTest {
       if (shortlist1.size() > 10) {
         shortlist1 = shortlist1.subList(0,10);
       }
-      for (FL_PatternSearchResult result:shortlist1) logger.info("got " + result);
+
+      for (FL_PatternSearchResult result:shortlist1) {
+        logger.info("got " + result);
+        for (FL_EntityMatchResult entity : result.getEntities()) {
+          logger.info("got " + entity);
+        }
+      }
 
     } catch (Exception e) {
       logger.error("got " + e,e);
@@ -108,6 +115,10 @@ public class TopKTest {
     }
 
     logger.debug("EXIT testSearch()");
+    sleep();
+  }
+
+  private void sleep() {
     try {
       Thread.sleep(1000000);
     } catch (InterruptedException e) {
@@ -120,8 +131,7 @@ public class TopKTest {
     logger.debug("ENTER testSearch()");
     ServerProperties props = new ServerProperties();
     int n = 100000;
-    int neighbors = 100;
-
+    int neighbors = 40;
 
     Map<Long, Integer> edgeToWeight = getGraph(n, neighbors);
 
@@ -176,9 +186,9 @@ public class TopKTest {
       MultipleIndexConstructor.makeTypeIDs(types);
 
       long then = System.currentTimeMillis();
-      BitcoinFeaturesBase.logMemory();
+      BitcoinFeaturesBase.rlogMemory();
       MultipleIndexConstructor.computeIndices(graph);
-      BitcoinFeaturesBase.logMemory();
+      BitcoinFeaturesBase.rlogMemory();
 
       long time2 = new Date().getTime();
       logger.info("Time:" + (time2 - time1));
@@ -187,6 +197,7 @@ public class TopKTest {
       logger.error("got " +e,e);
     }
 
+    sleep();
 
     logger.debug("EXIT testSearch()");
   }

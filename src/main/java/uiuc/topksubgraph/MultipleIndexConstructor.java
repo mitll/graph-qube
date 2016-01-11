@@ -181,9 +181,9 @@ public class MultipleIndexConstructor {
 
       for (int d = 0; d < D; d++) {
         //perform BFS from each node.
-        HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
-        HashSet<Integer> newQueue = new HashSet<Integer>();
-        HashMap<Integer, Double> newSumWeight = new HashMap<Integer, Double>();
+        HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths = new HashMap<>();
+        HashSet<Integer> newQueue = new HashSet<>();
+        HashMap<Integer, Double> newSumWeight = new HashMap<>();
         for (int q : queue) {
         //  ArrayList<Edge> nbrs = graph.getInLinks().get(q);
           Collection<Edge> nbrs = graph.getNeighbors(q);
@@ -193,17 +193,17 @@ public class MultipleIndexConstructor {
             if ((newSumWeight.containsKey(qDash) && newSumWeight.get(qDash) < newWt) || (!newSumWeight.containsKey(qDash) && !considered.contains(qDash))) {
               considered.add(qDash);
               newQueue.add(qDash);
-              newSumWeight.put(qDash, sumWeight.get(q) + e.getWeight());
+              newSumWeight.put(qDash, newWt);//sumWeight.get(q) + e.getWeight());
             }
 
             if (newSumWeight.containsKey(qDash) || (!newSumWeight.containsKey(qDash) && !considered.contains(qDash))) {
-              HashSet<ArrayList<Integer>> hsai;// = new HashSet<ArrayList<Integer>>();
-              if (newPaths.containsKey(qDash)) {
-                hsai = newPaths.get(qDash);
-              } else {
+              HashSet<ArrayList<Integer>> hsai = newPaths.get(qDash);
+
+              if (hsai == null) {
                 hsai = new HashSet<>();
                 newPaths.put(qDash, hsai);
               }
+
               for (ArrayList<Integer> ai : paths.get(q)) {
                 ArrayList<Integer> nali = new ArrayList<Integer>(ai);
                 nali.add(qDash);
@@ -220,11 +220,15 @@ public class MultipleIndexConstructor {
         for (int q : queue) {
           int actualID = graph.nodeId2NodeMap.get(q);
           int label = node2Type.get(actualID);
-          ArrayList<Integer> al = new ArrayList<Integer>();
-          if (map.containsKey(label))
-            al = map.get(label);
+
+          ArrayList<Integer> al = map.get(label);
+
+          if (al == null) {
+            al = new ArrayList<>();
+            map.put(label, al);
+          }
+
           al.add(actualID);
-          map.put(label, al);
         }
 
         //processing for SPath index.
