@@ -1204,6 +1204,21 @@ public class BitcoinFeaturesBase {
       logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
     }
   }
+  public static void rlogMemory() {
+    Runtime rt = Runtime.getRuntime();
+    long free = rt.freeMemory();
+    long used = rt.totalMemory() - free;
+    long max = rt.maxMemory();
+    long l = max / MB;
+    long l1 = used / MB;
+
+    float fmax = (float)l;
+    float fused = (float) l1;
+
+
+      logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
+
+  }
 
 /*  public static void main(String[] args) {
     try {

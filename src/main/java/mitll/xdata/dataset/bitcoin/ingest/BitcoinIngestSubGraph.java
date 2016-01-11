@@ -340,7 +340,8 @@ public class BitcoinIngestSubGraph {
    * @throws Throwable
    * @throws Exception
    * @throws IOException
-   * @see #computeIndices(String, String)
+   * @see #main(String[])
+   * @see #computeIndices
    */
   private static void computeIndices(String bitcoinDirectory,
                                      DBConnection dbConnection) throws Throwable {
@@ -350,7 +351,7 @@ public class BitcoinIngestSubGraph {
     computeIndices(bitcoinDirectory, dbConnection, g);
   }
 
-  private static void computeIndices(String bitcoinDirectory, DBConnection dbConnection, Graph g) throws Exception {
+  private static void computeIndices(String bitcoinDirectory, DBConnection dbConnection, Graph graph) throws Exception {
   /*
    * This is stuff is doing the actual topk-subgraph indexing
    */
@@ -358,15 +359,15 @@ public class BitcoinIngestSubGraph {
     MultipleIndexConstructor.D = BitcoinBinding.SHORTLISTING_D;
 
 
-    MultipleIndexConstructor.setGraph(g);
+    MultipleIndexConstructor.setGraph(graph);
     logger.info("Loaded graph from database... with D = " + MultipleIndexConstructor.D);
 
 //	    //iterate through hashmap test
 //	    int c=0;
 //	    int max_val = 0;
-//	    for (Integer key : g.node2NodeIdMap.keySet()) {
-//	        if (g.node2NodeIdMap.get(key) > max_val) {
-//	        	max_val = g.node2NodeIdMap.get(key);
+//	    for (Integer key : graph.node2NodeIdMap.keySet()) {
+//	        if (graph.node2NodeIdMap.get(key) > max_val) {
+//	        	max_val = graph.node2NodeIdMap.get(key);
 //	        }
 //	        c++;
 //	    }
@@ -390,7 +391,7 @@ public class BitcoinIngestSubGraph {
 
     // Load and Sort Edges from Graph
     //MultipleIndexConstructor.loadAndSortEdges();
-    MultipleIndexConstructor.populateSortedEdgeLists();
+    MultipleIndexConstructor.populateSortedEdgeLists(graph);
 
     //save the sorted edge lists
     MultipleIndexConstructor.saveSortedEdgeList();
@@ -401,7 +402,7 @@ public class BitcoinIngestSubGraph {
     MultipleIndexConstructor.computeEdgeTypePathOrdering();
 
     logger.info("Computing SPD, Topology and SPath Indices...");
-    MultipleIndexConstructor.computeIndices();
+    MultipleIndexConstructor.computeIndices(graph);
   }
 
 
@@ -687,7 +688,7 @@ public class BitcoinIngestSubGraph {
     // doSQLUpdate(connection, "drop table inactive");
   }
 
-  private static void deleteInactive(DBConnection connection) throws SQLException {
+/*  private static void deleteInactive(DBConnection connection) throws SQLException {
     if (existsTable(connection, BitcoinBinding.USER_FEATURES_TABLE)) {
       String sqlDeleteInactiveUsers = "delete from " + BitcoinBinding.USER_FEATURES_TABLE +
           " where user not in" +
@@ -696,9 +697,9 @@ public class BitcoinIngestSubGraph {
     } else {
       logger.info("table " + BitcoinBinding.USER_FEATURES_TABLE + " does not yet exist.");
     }
-  }
+  }*/
 
-  private static void removeAccountsBelowThreshold(DBConnection connection) throws SQLException {
+/*  private static void removeAccountsBelowThreshold(DBConnection connection) throws SQLException {
 
     String sqlFindInactive =
         "drop table if exists inactive;" +
@@ -720,9 +721,9 @@ public class BitcoinIngestSubGraph {
     String sqlDeleteInactiveUsers = "delete from " + BitcoinBinding.USER_FEATURES_TABLE +
         " where user not in" +
         " (select source from " + TABLE_NAME + " union select target from " + TABLE_NAME + ");";
-  /*
+  *//*
    * Find and remove non-active accounts until only active accounts remain in transactions table
-   */
+   *//*
     int numInactive = 1;
     while (numInactive != 0) {
       //find inactive
@@ -746,7 +747,7 @@ public class BitcoinIngestSubGraph {
       doSQLUpdate(connection, sqlRemoveInactiveAccounts);
       logger.info("do removed inactive");
     }
-  }
+  }*/
 
 
   /**

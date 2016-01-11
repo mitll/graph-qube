@@ -15,6 +15,7 @@
 package uiuc.topksubgraph;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -35,9 +36,10 @@ import java.util.*;
  *         <p>
  *         extending code from @author Manish Gupta (gupta58@illinois.edu)
  */
+@SuppressWarnings("CanBeFinal")
 public class MultipleIndexConstructor {
 
-  private static Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
+  private static final Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
 
   public static String baseDir = "data/bitcoin/graphs";
   public static String outDir = "data/bitcoin/indices";
@@ -45,12 +47,12 @@ public class MultipleIndexConstructor {
   public static String typesFile = "";
   public static int D = 1;
 
-  public static Map<Integer, Integer> node2Type = new HashMap<Integer, Integer>();
-  public static Map<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<String, ArrayList<Edge>>();
-  public static Map<Integer, ArrayList<String>> ordering = new HashMap<Integer, ArrayList<String>>();
-  public static Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
-  public static DecimalFormat twoDForm = new DecimalFormat("#.####");
-  public static Graph g = new Graph();
+  private static Map<Integer, Integer> node2Type = new HashMap<Integer, Integer>();
+  private static final Map<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<String, ArrayList<Edge>>();
+  private static final Map<Integer, ArrayList<String>> ordering = new HashMap<Integer, ArrayList<String>>();
+  private static Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
+  private static final DecimalFormat twoDForm = new DecimalFormat("#.####");
+  private static Graph graph = new Graph();
 
   public static int totalTypes = 0;
 
@@ -78,7 +80,7 @@ public class MultipleIndexConstructor {
     logger.info("Building Sorted Edge List Index...");
 
     //load the graph
-    g.loadGraph(new File(baseDir, graphFile));
+    graph.loadGraph(new File(baseDir, graphFile));
 
     //load types file
     loadTypesFile();
@@ -88,7 +90,7 @@ public class MultipleIndexConstructor {
 
     // Load and Sort Edges from Graph
     //loadAndSortEdges();
-    populateSortedEdgeLists();
+    populateSortedEdgeLists(graph);
 
     //save the sorted edge lists
     saveSortedEdgeList();
@@ -109,7 +111,7 @@ public class MultipleIndexConstructor {
 
     logger.info("Computing SPD, Topology and SPath Indices...");
 
-    computeIndices();
+    computeIndices(graph);
 
     long time2 = new Date().getTime();
     logger.info("Time:" + (time2 - time1));
@@ -123,7 +125,7 @@ public class MultipleIndexConstructor {
    * @throws IOException
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection, Graph)
    */
-  public static void computeIndices() throws IOException {
+  public static void computeIndices(Graph graph) throws IOException {
 
     //Make outDir if neccessary
     File directory = new File(outDir);
@@ -149,16 +151,20 @@ public class MultipleIndexConstructor {
     BufferedWriter outSPD = new BufferedWriter(new FileWriter(file));
 
     logger.info("Writing to " + file.getAbsolutePath());
+    long then = System.currentTimeMillis();
+    BitcoinFeaturesBase.logMemory();
 
-    //for(int i=1;i<=g.numNodes;i++)
-    for (int i = 0; i < g.numNodes; i++) {
-      if (i % 1000 == 0)
-        //System.err.println("Nodes processed: "+i+" out of "+g.numNodes);
-        logger.debug("Nodes processed: " + i + " out of " + g.numNodes);
+    //for(int i=1;i<=graph.numNodes;i++)
+    for (int i = 0; i < graph.getNumNodes(); i++) {
+      if (i % 1000 == 0) {
+        //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
+        logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
+        BitcoinFeaturesBase.logMemory();
+      }
       out.write(i + "\t");
       outTopology.write(i + "\t");
       outSPD.write(i + "\t");
-      //int n=g.node2NodeIdMap.get(i);//this is a big-bug fixed...
+      //int n=graph.node2NodeIdMap.get(i);//this is a big-bug fixed...
       int n = i;//internalID
       HashSet<Integer> queue = new HashSet<Integer>();
       HashMap<Integer, Double> sumWeight = new HashMap<Integer, Double>();
@@ -179,22 +185,22 @@ public class MultipleIndexConstructor {
         HashSet<Integer> newQueue = new HashSet<Integer>();
         HashMap<Integer, Double> newSumWeight = new HashMap<Integer, Double>();
         for (int q : queue) {
-          ArrayList<Edge> nbrs = g.inLinks.get(q);
+        //  ArrayList<Edge> nbrs = graph.getInLinks().get(q);
+          Collection<Edge> nbrs = graph.getNeighbors(q);
           for (Edge e : nbrs) {
-            int qDash = e.src;
-            double newWt = sumWeight.get(q) + e.weight;
+            int qDash = e.getSrc();
+            double newWt = sumWeight.get(q) + e.getWeight();
             if ((newSumWeight.containsKey(qDash) && newSumWeight.get(qDash) < newWt) || (!newSumWeight.containsKey(qDash) && !considered.contains(qDash))) {
               considered.add(qDash);
               newQueue.add(qDash);
-              newSumWeight.put(qDash, sumWeight.get(q) + e.weight);
+              newSumWeight.put(qDash, sumWeight.get(q) + e.getWeight());
             }
 
             if (newSumWeight.containsKey(qDash) || (!newSumWeight.containsKey(qDash) && !considered.contains(qDash))) {
               HashSet<ArrayList<Integer>> hsai;// = new HashSet<ArrayList<Integer>>();
               if (newPaths.containsKey(qDash)) {
                 hsai = newPaths.get(qDash);
-              }
-              else {
+              } else {
                 hsai = new HashSet<>();
                 newPaths.put(qDash, hsai);
               }
@@ -212,7 +218,7 @@ public class MultipleIndexConstructor {
 
         HashMap<Integer, ArrayList<Integer>> map = new HashMap<Integer, ArrayList<Integer>>();
         for (int q : queue) {
-          int actualID = g.nodeId2NodeMap.get(q);
+          int actualID = graph.nodeId2NodeMap.get(q);
           int label = node2Type.get(actualID);
           ArrayList<Integer> al = new ArrayList<Integer>();
           if (map.containsKey(label))
@@ -230,7 +236,7 @@ public class MultipleIndexConstructor {
 
         //process pathsq
 //        logger.info("node #" + i + " ---------- ");
-        processPathsq(outTopology, outSPD, d);
+        processPathsq(outTopology, outSPD, graph, d);
       }
       out.write("\n");
       outTopology.write("\n");
@@ -239,6 +245,11 @@ public class MultipleIndexConstructor {
     out.close();
     outTopology.close();
     outSPD.close();
+
+    long now = System.currentTimeMillis();
+    logger.info("took " + ((now - then)/1000) + " seconds to do graph of size " + graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges");
+    BitcoinFeaturesBase.logMemory();
+
   }
 
   private static void writeSPath(BufferedWriter out, HashMap<Integer, ArrayList<Integer>> map) throws IOException {
@@ -255,7 +266,7 @@ public class MultipleIndexConstructor {
     }
   }
 
-  private static void processPathsq(Writer outTopology, Writer outSPD, int d) throws IOException {
+  private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d) throws IOException {
     Map<String, Collection<Integer>> topo = new HashMap<>();
 
     //  Map<Integer, List<Integer>> topo2 = new HashMap<>();
@@ -263,9 +274,9 @@ public class MultipleIndexConstructor {
     Map<String, Double> spd = new HashMap<>();
 //    Map<Integer, Double> spd2 = new HashMap<>();
 
- //   logger.info("running with  " + d + " and " + paths.size() + " paths ");
+    //   logger.info("running with  " + d + " and " + paths.size() + " paths ");
 
-    int [] typeSequence = new int[D];
+    int[] typeSequence = new int[D];
 
     for (int ii : paths.keySet()) {
       for (List<Integer> p : paths.get(ii)) {
@@ -280,29 +291,28 @@ public class MultipleIndexConstructor {
 
           if (j != 0) {
             int aDash = p.get(j - 1);
-          //  Edge edge = g.getEdge(a, aDash);
-            Edge edge = g.getEdgeFast(a, aDash);
+            //  Edge edge = graph.getEdge(a, aDash);
+            Edge edge = graph.getEdgeFast(a, aDash);
 
             //if (edge != edgeFast) logger.info("err -- not the same " + edge + " vs " +edgeFast);
 
-            totWeight += edge.weight;
-            int b = g.nodeId2NodeMap.get(a);
+            totWeight += edge.getWeight();
+            int b = graph.nodeId2NodeMap.get(a);
             Integer typeOfDestNode = node2Type.get(b);
-           // types += typeOfDestNode; // TODO : string concatenation...
+            // types += typeOfDestNode; // TODO : string concatenation...
 
-            typeSequence[j-1] = typeOfDestNode-1;
+            typeSequence[j - 1] = typeOfDestNode - 1;
 //            typesTotal++;
           }
 
           if (j == 1) {
             types = oneHop[typeSequence[0]];
-          }
-          else if (j == 2) {
+          } else if (j == 2) {
             types = twoHop[typeSequence[0]][typeSequence[1]];
           }
         }
 
-     //   logger.info("From " + ii + " p " + p + " types " + types);
+        //   logger.info("From " + ii + " p " + p + " types " + types);
 
         if ((spd.containsKey(types) && spd.get(types) < totWeight) || !spd.containsKey(types))
           spd.put(types, totWeight);
@@ -319,10 +329,19 @@ public class MultipleIndexConstructor {
     }
 
     //write out topology index.
+    writeTopology(outTopology, d, topo);
+    //outTopology.write(" ");
+
+    //write out spd index.
+    writeSPDIndex(outSPD, d, spd);
+    //outSPD.write(" ");
+  }
+
+  private static void writeTopology(Writer outTopology, int d, Map<String, Collection<Integer>> topo) throws IOException {
     for (String o : ordering.get(d + 1)) {
       String toWrite;
 
-     // String toWrite2;
+      // String toWrite2;
 
       if (!topo.containsKey(o)) {
         toWrite = "0;";
@@ -343,9 +362,9 @@ public class MultipleIndexConstructor {
       */
       outTopology.write(toWrite);
     }
-    //outTopology.write(" ");
+  }
 
-    //write out spd index.
+  private static void writeSPDIndex(Writer outSPD, int d, Map<String, Double> spd) throws IOException {
     for (String o : ordering.get(d + 1)) {
       String str = "0.;";
       if (!spd.containsKey(o)) {
@@ -363,7 +382,6 @@ public class MultipleIndexConstructor {
 
       outSPD.write(str);
     }
-    //outSPD.write(" ");
   }
 
   private static void updateTopo(Map<String, Collection<Integer>> topo, int ii, String types) {
@@ -372,8 +390,7 @@ public class MultipleIndexConstructor {
 
     if (topo.containsKey(types)) {
       l = topo.get(types);
-    }
-    else {
+    } else {
       l = new HashSet<Integer>();
       topo.put(types, l);
     }
@@ -449,7 +466,7 @@ public class MultipleIndexConstructor {
       BufferedWriter out = new BufferedWriter(new FileWriter(new File(outDir, fileName)));
       ArrayList<Edge> arr = sortedEdgeLists.get(key);
       for (Edge e : arr)
-        out.write(e.src + "#" + e.dst + "#" + e.weight + "\n");
+        out.write(e.getSrc() + "#" + e.getDst() + "#" + e.getWeight() + "\n");
       out.close();
     }
   }
@@ -461,8 +478,9 @@ public class MultipleIndexConstructor {
    * @throws IOException
    * @paramx graphFile
    */
+/*
   public static void loadAndSortEdges()
-      throws FileNotFoundException, IOException {
+      throws IOException {
 
     //load edges
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, graphFile)));
@@ -497,15 +515,16 @@ public class MultipleIndexConstructor {
     for (String key : sortedEdgeLists.keySet())
       Collections.sort(sortedEdgeLists.get(key), new EdgeComparator());
   }
+*/
 
   /**
    * Sister method to loadAndSortEdges.
    * --Does the same thing, just from the graph file loaded in
    * --as a IndexConstruction.Graph data structure
    *
-   * @paramx None (except it expects class variables g and node2Type have been populated)
+   * @paramx None (except it expects class variables graph and node2Type have been populated)
    */
-  public static void populateSortedEdgeLists() {
+  public static void populateSortedEdgeLists(Graph graph) {
     if (node2Type.isEmpty()) {
       logger.warn("node2Type is empty?");
     } else {
@@ -514,11 +533,11 @@ public class MultipleIndexConstructor {
 
     int skipped = 0;
 
-    for (Edge e : g.edges) {
+    for (Edge e : graph.getEdges()) {
       //get internal node-ids for
-      int from = g.nodeId2NodeMap.get(e.src);
-      int to = g.nodeId2NodeMap.get(e.dst);
-      double weight = e.weight;
+      int from = graph.nodeId2NodeMap.get(e.getSrc());
+      int to = graph.nodeId2NodeMap.get(e.getDst());
+      double weight = e.getWeight();
       //logger.info("from index is: "+from);
       //logger.info("to index is: "+to);
       if (from > to)
@@ -552,7 +571,7 @@ public class MultipleIndexConstructor {
       }
     }
 
-    logger.warn("populateSortedEdgeLists skipped " + skipped + " out of " + g.node2NodeIdMap.size());
+    logger.warn("populateSortedEdgeLists skipped " + skipped + " out of " + graph.node2NodeIdMap.size());
     //sort the arraylists in descending order
     for (String key : sortedEdgeLists.keySet())
       Collections.sort(sortedEdgeLists.get(key), new EdgeComparator());
@@ -597,6 +616,11 @@ public class MultipleIndexConstructor {
         totalTypes = type;
     }
     in.close();
+  }
+
+  public static void loadTypes(int n) {
+    for (int i = 0; i < n; i++) node2Type.put(i, 1);
+    totalTypes = 1;
   }
 
   /**
@@ -656,6 +680,10 @@ public class MultipleIndexConstructor {
     queryStatement.close();
     //connection.close();
 
+    makeTypeIDs(types);
+  }
+
+  public static void makeTypeIDs(Set<Integer> types) {
     oneHop = new String[types.size()];
     twoHop = new String[types.size()][types.size()];
 
@@ -666,15 +694,15 @@ public class MultipleIndexConstructor {
       int j = 0;
       for (Integer tt : types) {
         String secondType = Integer.toString(tt);
-    //    twoHop[i][j++] = firstType+"_"+secondType;
-        twoHop[i][j++] = firstType+secondType;
+        //    twoHop[i][j++] = firstType+"_"+secondType;
+        twoHop[i][j++] = firstType + secondType;
       }
       i++;
     }
   }
 
-  static String[] oneHop;
-  static String[][] twoHop;
+  private static String[] oneHop;
+  private static String[][] twoHop;
 
   /**
    * Setter for pre-loaded node2Type HashMap
@@ -684,16 +712,16 @@ public class MultipleIndexConstructor {
   }
 
   /**
-   * Setter for pre-loaded graph g
+   * Setter for pre-loaded graph graph
    */
   public static void setGraph(Graph in) {
-    g = in;
+    graph = in;
   }
 
   /**
-   * Getter for graph g
+   * Getter for graph graph
    */
   public static Graph getGraph() {
-    return g;
+    return graph;
   }
 }

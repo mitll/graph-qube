@@ -185,10 +185,10 @@ public class TopKSubgraphShortlist extends Shortlist {
           String e2ID = exemplarIDs.get(j);
           e2 = Integer.parseInt(e2ID);
           if (Integer.parseInt(e1ID) <= Integer.parseInt(e2ID)) {
-            pair = "(" + e1 + "," + e2 + ")";
+          //  pair = "(" + e1 + "," + e2 + ")";
             edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
           } else {
-            pair = "(" + e2 + "," + e1 + ")";
+          //  pair = "(" + e2 + "," + e1 + ")";
             edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
           }
 
@@ -453,7 +453,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     i = 0;
     for (Edge qe : queryEdges) {
       //assuming here qe.src and qe.dst are ordered properly (i.e. src < dst)
-      String edgeString = qe.src + "#" + qe.dst;
+      String edgeString = qe.getSrc() + "#" + qe.getDst();
       int uiucInd = uiucQueryEdgetoIndex.get(edgeString);
       uiucInd2InfluentInd.put(uiucInd, i);
       i++;

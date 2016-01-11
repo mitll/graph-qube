@@ -20,16 +20,21 @@ import mitll.xdata.GraphQuBEServer;
 import mitll.xdata.ServerProperties;
 import mitll.xdata.SimplePatternSearch;
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
+import org.apache.batik.css.engine.SystemColorSupport;
 import org.apache.log4j.Logger;
+import org.apache.log4j.net.SyslogAppender;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import uiuc.topksubgraph.Graph;
+import uiuc.topksubgraph.MultipleIndexConstructor;
 
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Created by go22670 on 1/8/16.
@@ -44,7 +49,6 @@ public class TopKTest {
     logger.debug("ENTER testSearch()");
     ServerProperties props = new ServerProperties();
 
-    String kivaDirectory = ".";
     String bitcoinDirectory = ".";
     String bitcoinFeatureDirectory = GraphQuBEServer.DEFAULT_BITCOIN_FEATURE_DIR;
 
@@ -71,6 +75,150 @@ public class TopKTest {
 //    Assert.assertEquals(sequence.getStates(), makeStates(1, 1, 1, 2, 2, 2));
 
     logger.debug("EXIT testSearch()");
+  }
+
+  @Test
+  public void testGraph1() {
+    logger.debug("ENTER testGraph1()");
+    ServerProperties props = new ServerProperties();
+    int n = 100000;
+    int neighbors = 10;
+    BitcoinFeaturesBase.rlogMemory();
+
+    try {
+      int max = 64;//128;
+      for (int i = 32; i < max; i *=2) {
+        long time1 = System.currentTimeMillis();
+        BitcoinFeaturesBase.rlogMemory();
+        logger.info(n + " and " + i + " -------------------- ");
+
+        Map<Long, Integer> edgeToWeight = getGraph(n, i);
+
+        Graph graph = new Graph(edgeToWeight);
+
+        Runtime.getRuntime().gc();
+
+        BitcoinFeaturesBase.rlogMemory();
+
+        long time2 = new Date().getTime();
+        logger.info("Time:" + (time2 - time1));
+      }
+    } catch (Exception e) {
+      logger.error("got " +e,e);
+    }
+
+    logger.debug("EXIT testSearch()");
+    try {
+      Thread.sleep(1000000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Test
+  public void testGraph() {
+    logger.debug("ENTER testSearch()");
+    ServerProperties props = new ServerProperties();
+    int n = 100000;
+    int neighbors = 100;
+
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, neighbors);
+
+    try {
+      long time1 = System.currentTimeMillis();
+
+      MultipleIndexConstructor.loadTypes(n);
+      MultipleIndexConstructor.createTypedEdges();
+
+      BitcoinFeaturesBase.logMemory();
+
+      Graph graph = new Graph(edgeToWeight);
+
+      BitcoinFeaturesBase.logMemory();
+
+      MultipleIndexConstructor.populateSortedEdgeLists(graph);
+      BitcoinFeaturesBase.logMemory();
+
+      //load types file
+  //    MultipleIndexConstructor.loadTypesFile();
+
+      // Create Typed Edges
+
+      // Load and Sort Edges from Graph
+      //loadAndSortEdges();
+      MultipleIndexConstructor.populateSortedEdgeLists(graph);
+      BitcoinFeaturesBase.logMemory();
+
+      //save the sorted edge lists
+      MultipleIndexConstructor.saveSortedEdgeList();
+      BitcoinFeaturesBase.logMemory();
+
+      //test method that computes totalTypes
+      // totalTypes = 0;
+      MultipleIndexConstructor. computeTotalTypes();
+      BitcoinFeaturesBase.logMemory();
+      // logger.debug("Computed number of types: " + totalTypes);
+
+      /**
+       * Functionality of SPDAndTopologyAndSPathIndexConstructor
+       */
+      //hash map for all possible "edge-type" paths: i.e. doubles,triples,...D-tuples
+      //this gets you the "official" ordering
+      logger.info("Computing Edge-Type Path Ordering...");
+      MultipleIndexConstructor.computeEdgeTypePathOrdering();
+
+
+      logger.info("Computing SPD, Topology and SPath Indices...");
+
+      Set<Integer> types = new HashSet<>(1);
+      types.add(1);
+      MultipleIndexConstructor.makeTypeIDs(types);
+
+      long then = System.currentTimeMillis();
+      BitcoinFeaturesBase.logMemory();
+      MultipleIndexConstructor.computeIndices(graph);
+      BitcoinFeaturesBase.logMemory();
+
+      long time2 = new Date().getTime();
+      logger.info("Time:" + (time2 - time1));
+      logger.info("Time to do computeIndices :" + (time2 - then));
+    } catch (Exception e) {
+      logger.error("got " +e,e);
+    }
+
+
+    logger.debug("EXIT testSearch()");
+  }
+
+  private Map<Long, Integer> getGraph(int n, int neighbors) {
+    Map<Long, Integer> edgeToWeight = new HashMap<>();
+
+    Random random = new Random();
+
+    for (int from = 0; from < n; from++) {
+      Set<Long> current = new HashSet<>();
+
+      for (int j = 0; j < neighbors; j++) {
+        long to = random.nextInt(n);
+        while (to == from || current.contains(to)) {
+          to = random.nextInt(n);
+        }
+
+        long l = BitcoinFeaturesBase.storeTwo(from, to);
+        current.add(to);
+    /*    int low = BitcoinFeaturesBase.getLow(l);
+        int high = BitcoinFeaturesBase.getHigh(l);
+        if (low != from) logger.error("huh?");
+        if (high != to) logger.error("huh?");
+    */
+        int w = random.nextInt(10);
+        edgeToWeight.put(l, w);
+      }
+    }
+
+    logger.info("made " + edgeToWeight.size() + " with " + edgeToWeight.keySet().size() + " and " + edgeToWeight.values().size());
+    return edgeToWeight;
   }
 }
 

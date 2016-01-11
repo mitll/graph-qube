@@ -14,10 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -778,16 +775,16 @@ public class QueryExecutor {
    * @return Edge Types for all edges in query
    */
   public HashSet<String> computeQueryEdgeTypes() {
-    HashSet<Edge> queryEdgeSet = query.edges;
+    HashSet<Edge> queryEdgeSet = query.getEdges();
     //actualQueryEdges= new ArrayList<String>();
     HashSet<String> queryEdgeTypes = new HashSet<String>();
     for (Edge e : queryEdgeSet) {
-      int n1 = query.nodeId2NodeMap.get(e.src);
-      int n2 = query.nodeId2NodeMap.get(e.dst);
+      int n1 = query.nodeId2NodeMap.get(e.getSrc());
+      int n2 = query.nodeId2NodeMap.get(e.getDst());
       if (n1 <= n2) {
         actualQueryEdges.add(n1 + "#" + n2);
-        int t1 = queryNodeID2Type.get(e.src);
-        int t2 = queryNodeID2Type.get(e.dst);
+        int t1 = queryNodeID2Type.get(e.getSrc());
+        int t2 = queryNodeID2Type.get(e.getDst());
         //if(t1<t2)
         queryEdgeTypes.add(t1 + "#" + t2);
       }
@@ -801,7 +798,7 @@ public class QueryExecutor {
   public int generateCandidates() {
     int prunedCandidateFiltering = 0;
 
-    for (int i = 0; i < query.numNodes; i++) {
+    for (int i = 0; i < query.getNumNodes(); i++) {
       HashSet<Integer> c1 = graphType2IDSet.get(queryNodeID2Type.get(i));
 
       if (c1 == null) {
@@ -850,7 +847,7 @@ public class QueryExecutor {
     query.loadGraph(new File(baseDir, queryFile));
 
     int isClique = 0;
-    if (query.numEdges == (query.numNodes * (query.numNodes - 1) / 2)) {
+    if (query.getNumEdges() == (query.getNumNodes() * (query.getNumNodes() - 1) / 2)) {
       System.err.println("Query is Clique");
       isClique = 1;
     }
@@ -888,7 +885,7 @@ public class QueryExecutor {
     query.loadGraph(queryEdges);
 
     int isClique = 0;
-    if (query.numEdges == (query.numNodes * (query.numNodes - 1) / 2)) {
+    if (query.getNumEdges() == (query.getNumNodes() * (query.getNumNodes() - 1) / 2)) {
       System.err.println("Query is Clique");
       isClique = 1;
     }
@@ -1145,8 +1142,8 @@ public class QueryExecutor {
   }
 
   public void getQuerySignatures() {
-    querySign = new int[query.numNodes][totalOrderingSize];
-    for (int i = 0; i < query.numNodes; i++) {
+    querySign = new int[query.getNumNodes()][totalOrderingSize];
+    for (int i = 0; i < query.getNumNodes(); i++) {
       HashSet<Path> set = getPaths(i, new HashSet<Edge>());
       HashMap<String, ArrayList<Integer>> topo = new HashMap<String, ArrayList<Integer>>();
       for (Path p : set) {
@@ -1266,13 +1263,14 @@ public class QueryExecutor {
       ArrayList<Integer> newList = new ArrayList<Integer>();
       HashSet<Integer> newListCopy = new HashSet<Integer>();
       for (int n : currList) {
-        ArrayList<Edge> nbrs = query.inLinks.get(n);
+     //   ArrayList<Edge> nbrs = query.inLinks.get(n);
+        Collection<Edge> nbrs = query.getNeighbors(n);
         for (Edge e : nbrs) {
-          if ((!considered.containsKey(e.src) && !newListCopy.contains(e.src)) || considered.get(e.src) == k + 1) {
-            if (!considered.containsKey(e.src) && !newListCopy.contains(e.src)) {
-              newList.add(e.src);
-              newListCopy.add(e.src);
-              considered.put(e.src, k + 1);
+          if ((!considered.containsKey(e.getSrc()) && !newListCopy.contains(e.getSrc())) || considered.get(e.getSrc()) == k + 1) {
+            if (!considered.containsKey(e.getSrc()) && !newListCopy.contains(e.getSrc())) {
+              newList.add(e.getSrc());
+              newListCopy.add(e.getSrc());
+              considered.put(e.getSrc(), k + 1);
             }
             if (coveredEdges.contains(e)) //if the edge has been covered already, you don't want to have a path containing that edge.
               continue;
@@ -1280,7 +1278,7 @@ public class QueryExecutor {
             for (Path p : set) {
               if (p.nodes.get(p.nodes.size() - 1) == n) {
                 Path q = p.copyPath();
-                q.nodes.add(e.src);
+                q.nodes.add(e.getSrc());
                 extras.add(q);
               }
             }

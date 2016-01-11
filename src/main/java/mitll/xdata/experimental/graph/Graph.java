@@ -27,6 +27,7 @@ import java.util.*;
  * Date: 6/27/13
  * Time: 4:53 PM
  * To change this template use File | Settings | File Templates.
+ * @deprecated don't confuse this with the UIUC graph
  */
 public class Graph {
   private List<Edge> emptyList = Collections.emptyList();
