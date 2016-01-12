@@ -279,13 +279,13 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
         countSelf++;
       } else if (!knownUsers.contains(sourceid) || !knownUsers.contains(targetID)) {
         skipped++;
-        if (sourceid == 253977 || targetID == 253977) {
-          logger.warn("1 ---> insertRowsInTable skipped " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
-        }
+//        if (sourceid == 253977 || targetID == 253977) {
+//          logger.warn("1 ---> insertRowsInTable skipped " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
+//        }
       } else {
-        if (sourceid == 253977 || targetID == 253977) {
-          logger.warn("2 ---> insertRowsInTable inserted " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
-        }
+//        if (sourceid == 253977 || targetID == 253977) {
+//          logger.warn("2 ---> insertRowsInTable inserted " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
+//        }
 
         usersInTransactions.add(sourceid);
         usersInTransactions.add(targetID);

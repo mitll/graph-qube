@@ -98,7 +98,7 @@ public class IngestSql {
     long t = System.currentTimeMillis();
   //  logger.debug("dropping current " + tableName);
     doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
-    logger.debug("took " + (since(t)) + " millis to drop " + tableName);
+  //  logger.debug("took " + (since(t)) + " millis to drop " + tableName);
     doSQL(connection, createCreateSQL(tableName, cnames, types, false));
   }
 

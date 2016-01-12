@@ -283,7 +283,7 @@ public class BitcoinIngestSubGraph {
           ")";
       i = doSQLUpdate(connection, createSQL);
 
-      logger.info("create sql " + i);
+//      logger.info("create sql " + i);
 
       Connection connection1 = connection.getConnection();
 

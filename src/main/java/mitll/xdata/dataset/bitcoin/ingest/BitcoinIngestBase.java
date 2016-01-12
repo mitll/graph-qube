@@ -49,7 +49,8 @@ public class BitcoinIngestBase {
     BitcoinFeaturesBase.rlogMemory();
     // Create marginalized graph data and various stats
 
-    logger.info("doSubgraphs " +entityIds.size());
+    logger.info("doSubgraphs on " +entityIds.size() + " entities");
+
     Map<Long, Integer> edgeToWeight = BitcoinIngestSubGraph.extractUndirectedGraphInMemory(h2, dbName, entityIds);
 
     BitcoinFeaturesBase.rlogMemory();

@@ -40,7 +40,7 @@ import java.util.*;
 public class MultipleIndexConstructor {
 
   private static final Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
-  public static final int NOTICE_MOD = 10000;
+  private static final int NOTICE_MOD = 10000;
 
   public static String baseDir = "data/bitcoin/graphs";
   public static String outDir = "data/bitcoin/indices";
@@ -48,10 +48,10 @@ public class MultipleIndexConstructor {
   public static String typesFile = "";
   public static int D = 1;
 
-  private static Map<Integer, Integer> node2Type = new HashMap<Integer, Integer>();
-  private static final Map<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<String, ArrayList<Edge>>();
-  private static final Map<Integer, ArrayList<String>> ordering = new HashMap<Integer, ArrayList<String>>();
-  private static Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
+  private static Map<Integer, Integer> node2Type = new HashMap<>();
+  private static final Map<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<>();
+  private static final Map<Integer, ArrayList<String>> ordering = new HashMap<>();
+  private static Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<>();
   private static final DecimalFormat twoDForm = new DecimalFormat("#.####");
   private static Graph graph = new Graph();
 
@@ -150,11 +150,17 @@ public class MultipleIndexConstructor {
     String spdFilename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".spd";
     File file = new File(outDir, spdFilename);
     BufferedWriter outSPD = new BufferedWriter(new FileWriter(file));
+    BufferedWriter counts = new BufferedWriter(new FileWriter(new File(outDir, "counts_"+spdFilename)));
 
     logger.info("Writing to " + file.getAbsolutePath());
     long then = System.currentTimeMillis();
     BitcoinFeaturesBase.logMemory();
 
+    int traversed = 0;
+    long totalNeighbors = 0;
+    long totalQueued = 0;
+    long totalPaths = 0;
+    long pathsCopied = 0;
     //for(int i=1;i<=graph.numNodes;i++)
     for (int i = 0; i < graph.getNumNodes(); i++) {
       if (i % NOTICE_MOD == 0) {
@@ -162,54 +168,51 @@ public class MultipleIndexConstructor {
         logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
         BitcoinFeaturesBase.logMemory();
       }
+      counts.write(i + "," + graph.nodeId2NodeMap.get(i) + "," +graph.getNeighbors(i).size() +
+          "\n");
       out.write(i + "\t");
       outTopology.write(i + "\t");
       outSPD.write(i + "\t");
       //int n=graph.node2NodeIdMap.get(i);//this is a big-bug fixed...
       int n = i;//internalID
-      HashSet<Integer> queue = new HashSet<Integer>();
-      HashMap<Integer, Double> sumWeight = new HashMap<Integer, Double>();
+      Set<Integer> queue = new HashSet<>();
+      Map<Integer, Double> sumWeight = new HashMap<>();
       queue.add(n);
       sumWeight.put(n, 0.);
-      HashSet<Integer> considered = new HashSet<Integer>();
+      Set<Integer> considered = new HashSet<>();
       considered.add(n);
-      paths = new HashMap<Integer, HashSet<ArrayList<Integer>>>();
-      ArrayList<Integer> ll = new ArrayList<Integer>();
+      paths = new HashMap<>();
+      ArrayList<Integer> ll = new ArrayList<>();
       ll.add(n);
-      HashSet<ArrayList<Integer>> hs = new HashSet<ArrayList<Integer>>();
+      HashSet<ArrayList<Integer>> hs = new HashSet<>();
       hs.add(ll);
       paths.put(n, hs);
 
       for (int d = 0; d < D; d++) {
         //perform BFS from each node.
         HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths = new HashMap<>();
-        HashSet<Integer> newQueue = new HashSet<>();
-        HashMap<Integer, Double> newSumWeight = new HashMap<>();
+        Set<Integer> newQueue = new HashSet<>();
+        Map<Integer, Double> newSumWeight = new HashMap<>();
+
+        totalQueued += queue.size();
         for (int q : queue) {
-        //  ArrayList<Edge> nbrs = graph.getInLinks().get(q);
           Collection<Edge> nbrs = graph.getNeighbors(q);
+          totalNeighbors += nbrs.size();
           for (Edge e : nbrs) {
+            traversed++;
             int qDash = e.getSrc();
             double newWt = sumWeight.get(q) + e.getWeight();
-            if ((newSumWeight.containsKey(qDash) && newSumWeight.get(qDash) < newWt) || (!newSumWeight.containsKey(qDash) && !considered.contains(qDash))) {
+
+            Double currentWeight = newSumWeight.get(qDash);
+            if ((currentWeight != null && currentWeight < newWt) || (currentWeight == null && !considered.contains(qDash))) {
               considered.add(qDash);
               newQueue.add(qDash);
               newSumWeight.put(qDash, newWt);//sumWeight.get(q) + e.getWeight());
             }
 
-            if (newSumWeight.containsKey(qDash) || (!newSumWeight.containsKey(qDash) && !considered.contains(qDash))) {
-              HashSet<ArrayList<Integer>> hsai = newPaths.get(qDash);
-
-              if (hsai == null) {
-                hsai = new HashSet<>();
-                newPaths.put(qDash, hsai);
-              }
-
-              for (ArrayList<Integer> ai : paths.get(q)) {
-                ArrayList<Integer> nali = new ArrayList<Integer>(ai);
-                nali.add(qDash);
-                hsai.add(nali);
-              }
+            boolean hasWeight = newSumWeight.containsKey(qDash);
+            if (hasWeight || !considered.contains(qDash)) {
+              pathsCopied = getPathsCopied(pathsCopied, newPaths, q, qDash);
             }
           }
         }
@@ -217,30 +220,18 @@ public class MultipleIndexConstructor {
         sumWeight = newSumWeight;
         paths = newPaths;
 
-        HashMap<Integer, ArrayList<Integer>> map = new HashMap<Integer, ArrayList<Integer>>();
-        for (int q : queue) {
-          int actualID = graph.nodeId2NodeMap.get(q);
-          int label = node2Type.get(actualID);
-
-          ArrayList<Integer> al = map.get(label);
-
-          if (al == null) {
-            al = new ArrayList<>();
-            map.put(label, al);
-          }
-
-          al.add(actualID);
-        }
+        Map<Integer, List<Integer>> map = getSPathMap(graph, queue);
 
         //processing for SPath index.
-        for (Integer s : map.keySet())
-          Collections.sort(map.get(s));
+//        for (Integer s : map.keySet())
+//          Collections.sort(map.get(s));
 
         writeSPath(out, map);
         out.write(" ");
 
         //process pathsq
 //        logger.info("node #" + i + " ---------- ");
+        totalPaths += paths.size();
         processPathsq(outTopology, outSPD, graph, d);
       }
       out.write("\n");
@@ -250,18 +241,60 @@ public class MultipleIndexConstructor {
     out.close();
     outTopology.close();
     outSPD.close();
+    counts.close();
 
     long now = System.currentTimeMillis();
     logger.info("took " + ((now - then)/1000) + " seconds to do graph of size " +
-        graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges");
+        graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges, " +
+        " traversed " + traversed +
+        " neighbors " + totalNeighbors +
+        " queued " + totalQueued + " copied " + pathsCopied + " total paths " + totalPaths
+    );
     BitcoinFeaturesBase.logMemory();
-
   }
 
-  private static void writeSPath(BufferedWriter out, HashMap<Integer, ArrayList<Integer>> map) throws IOException {
+  private static long getPathsCopied(long pathsCopied, HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths, int q, int qDash) {
+    HashSet<ArrayList<Integer>> hsai = newPaths.get(qDash);
+
+    if (hsai == null) {
+      hsai = new HashSet<>();
+      newPaths.put(qDash, hsai);
+    }
+
+    for (ArrayList<Integer> ai : paths.get(q)) {
+      ArrayList<Integer> nali = new ArrayList<>(ai);
+      pathsCopied++;
+      nali.add(qDash);
+      hsai.add(nali);
+    }
+    return pathsCopied;
+  }
+
+  private static Map<Integer, List<Integer>> getSPathMap(Graph graph, Set<Integer> queue) {
+    Map<Integer, List<Integer>> map = new HashMap<>();
+    for (int q : queue) {
+      int actualID = graph.nodeId2NodeMap.get(q);
+      int label = node2Type.get(actualID);
+
+      List<Integer> al = map.get(label);
+
+      if (al == null) {
+        al = new ArrayList<>();
+        map.put(label, al);
+      }
+
+      al.add(actualID);
+    }
+    return map;
+  }
+
+  private static void writeSPath(BufferedWriter out, Map<Integer, List<Integer>> map) throws IOException {
+    //for (List<Integer> ids : map.values()) ;
+
     for (int s = 1; s <= totalTypes; s++) {
-      if (map.containsKey(s)) {
-        List<Integer> integers = map.get(s);
+      List<Integer> integers = map.get(s);
+      if (integers != null) {
+        Collections.sort(integers);
         out.write(integers.size() + "#");
         for (int t : integers)
           out.write(t + ",");
@@ -274,12 +307,10 @@ public class MultipleIndexConstructor {
 
   private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d) throws IOException {
     Map<String, Collection<Integer>> topo = new HashMap<>();
-
     //  Map<Integer, List<Integer>> topo2 = new HashMap<>();
 
     Map<String, Double> spd = new HashMap<>();
 //    Map<Integer, Double> spd2 = new HashMap<>();
-
     //   logger.info("running with  " + d + " and " + paths.size() + " paths ");
 
     int[] typeSequence = new int[D];
@@ -320,8 +351,10 @@ public class MultipleIndexConstructor {
 
         //   logger.info("From " + ii + " p " + p + " types " + types);
 
-        if ((spd.containsKey(types) && spd.get(types) < totWeight) || !spd.containsKey(types))
+        Double currentWeight = spd.get(types);
+        if ((currentWeight != null && currentWeight < totWeight) || currentWeight == null) {
           spd.put(types, totWeight);
+        }
 
 /*
         if ((spd2.containsKey(typesTotal) && spd2.get(typesTotal) < totWeight) || !spd2.containsKey(typesTotal))
@@ -392,12 +425,10 @@ public class MultipleIndexConstructor {
 
   private static void updateTopo(Map<String, Collection<Integer>> topo, int ii, String types) {
 //    int lastNode = ii;
-    Collection<Integer> l;
+    Collection<Integer>  l = topo.get(types);
 
-    if (topo.containsKey(types)) {
-      l = topo.get(types);
-    } else {
-      l = new HashSet<Integer>();
+    if (l == null) {
+      l = new HashSet<>();
       topo.put(types, l);
     }
 
@@ -423,7 +454,7 @@ public class MultipleIndexConstructor {
    */
   public static void computeEdgeTypePathOrdering() {
     for (int d = 1; d <= D; d++)
-      ordering.put(d, new ArrayList<String>());
+      ordering.put(d, new ArrayList<>());
     for (int i = 1; i <= totalTypes; i++)
       ordering.get(1).add(i + "");
 
@@ -594,7 +625,7 @@ public class MultipleIndexConstructor {
     for (int t = 1; t <= totalTypes; t++) {
       for (int t2 = t; t2 <= totalTypes; t2++) {
         String key = t + "#" + t2;
-        sortedEdgeLists.put(key, new ArrayList<Edge>());
+        sortedEdgeLists.put(key, new ArrayList<>());
       }
     }
   }
@@ -607,7 +638,7 @@ public class MultipleIndexConstructor {
    * @throws IOException
    * @paramx typesFile
    */
-  public static void loadTypesFile()
+  private static void loadTypesFile()
       throws IOException {
 
     //load types file
