@@ -38,9 +38,8 @@ import java.util.*;
  */
 @SuppressWarnings("CanBeFinal")
 public class MultipleIndexConstructor {
-
   private static final Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
-  private static final int NOTICE_MOD = 10000;
+  private static final int NOTICE_MOD = 5000;
 
   public static String baseDir = "data/bitcoin/graphs";
   public static String outDir = "data/bitcoin/indices";
@@ -51,7 +50,6 @@ public class MultipleIndexConstructor {
   private static Map<Integer, Integer> node2Type = new HashMap<>();
   private static final Map<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<>();
   private static final Map<Integer, ArrayList<String>> ordering = new HashMap<>();
-  private static Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<>();
   private static final DecimalFormat twoDForm = new DecimalFormat("#.####");
   private static Graph graph = new Graph();
 
@@ -143,14 +141,15 @@ public class MultipleIndexConstructor {
 //		String spdFilename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".spd";
 //		BufferedWriter outSPD = new BufferedWriter(new FileWriter(new File(outDir, spdFilename)));
 
-    String filename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".spath";
-    BufferedWriter out = new BufferedWriter(new FileWriter(new File(outDir, filename)));
+//    String filename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".spath";
+//    BufferedWriter out = new BufferedWriter(new FileWriter(new File(outDir, filename)));
+
     String topologyFilename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".topology";
     BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
     String spdFilename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".spd";
     File file = new File(outDir, spdFilename);
     BufferedWriter outSPD = new BufferedWriter(new FileWriter(file));
-    BufferedWriter counts = new BufferedWriter(new FileWriter(new File(outDir, "counts_"+spdFilename)));
+    BufferedWriter counts = new BufferedWriter(new FileWriter(new File(outDir, "counts_" + spdFilename)));
 
     logger.info("Writing to " + file.getAbsolutePath());
     long then = System.currentTimeMillis();
@@ -168,9 +167,9 @@ public class MultipleIndexConstructor {
         logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
         BitcoinFeaturesBase.logMemory();
       }
-      counts.write(i + "," + graph.nodeId2NodeMap.get(i) + "," +graph.getNeighbors(i).size() +
+      counts.write(i + "," + graph.nodeId2NodeMap.get(i) + "," + graph.getNeighbors(i).size() +
           "\n");
-      out.write(i + "\t");
+      //out.write(i + "\t");
       outTopology.write(i + "\t");
       outSPD.write(i + "\t");
       //int n=graph.node2NodeIdMap.get(i);//this is a big-bug fixed...
@@ -181,7 +180,7 @@ public class MultipleIndexConstructor {
       sumWeight.put(n, 0.);
       Set<Integer> considered = new HashSet<>();
       considered.add(n);
-      paths = new HashMap<>();
+      Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<>();
       ArrayList<Integer> ll = new ArrayList<>();
       ll.add(n);
       HashSet<ArrayList<Integer>> hs = new HashSet<>();
@@ -210,9 +209,9 @@ public class MultipleIndexConstructor {
               newSumWeight.put(qDash, newWt);//sumWeight.get(q) + e.getWeight());
             }
 
-            boolean hasWeight = newSumWeight.containsKey(qDash);
+           boolean hasWeight = newSumWeight.containsKey(qDash);
             if (hasWeight || !considered.contains(qDash)) {
-              pathsCopied = getPathsCopied(pathsCopied, newPaths, q, qDash);
+              pathsCopied = getPathsCopied(pathsCopied, newPaths, q, qDash, paths);
             }
           }
         }
@@ -220,31 +219,31 @@ public class MultipleIndexConstructor {
         sumWeight = newSumWeight;
         paths = newPaths;
 
-        Map<Integer, List<Integer>> map = getSPathMap(graph, queue);
+        // Map<Integer, List<Integer>> map = getSPathMap(graph, queue);
 
         //processing for SPath index.
 //        for (Integer s : map.keySet())
 //          Collections.sort(map.get(s));
 
-        writeSPath(out, map);
-        out.write(" ");
+        //    writeSPath(out, map);
+        //    out.write(" ");
 
         //process pathsq
 //        logger.info("node #" + i + " ---------- ");
         totalPaths += paths.size();
-        processPathsq(outTopology, outSPD, graph, d);
+        processPathsq(outTopology, outSPD, graph, d, paths);
       }
-      out.write("\n");
+      //    out.write("\n");
       outTopology.write("\n");
       outSPD.write("\n");
     }
-    out.close();
+//    out.close();
     outTopology.close();
     outSPD.close();
     counts.close();
 
     long now = System.currentTimeMillis();
-    logger.info("took " + ((now - then)/1000) + " seconds to do graph of size " +
+    logger.info("took " + ((now - then) / 1000) + " seconds to do graph of size " +
         graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges, " +
         " traversed " + traversed +
         " neighbors " + totalNeighbors +
@@ -253,7 +252,9 @@ public class MultipleIndexConstructor {
     BitcoinFeaturesBase.logMemory();
   }
 
-  private static long getPathsCopied(long pathsCopied, HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths, int q, int qDash) {
+  private static long getPathsCopied(long pathsCopied,
+                                     HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths, int q, int qDash,
+                                     Map<Integer, HashSet<ArrayList<Integer>>> paths) {
     HashSet<ArrayList<Integer>> hsai = newPaths.get(qDash);
 
     if (hsai == null) {
@@ -288,6 +289,7 @@ public class MultipleIndexConstructor {
     return map;
   }
 
+/*
   private static void writeSPath(BufferedWriter out, Map<Integer, List<Integer>> map) throws IOException {
     //for (List<Integer> ids : map.values()) ;
 
@@ -304,8 +306,10 @@ public class MultipleIndexConstructor {
       out.write(";");
     }
   }
+*/
 
-  private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d) throws IOException {
+  private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d,
+                                    Map<Integer, HashSet<ArrayList<Integer>>> paths) throws IOException {
     Map<String, Collection<Integer>> topo = new HashMap<>();
     //  Map<Integer, List<Integer>> topo2 = new HashMap<>();
 
@@ -425,7 +429,7 @@ public class MultipleIndexConstructor {
 
   private static void updateTopo(Map<String, Collection<Integer>> topo, int ii, String types) {
 //    int lastNode = ii;
-    Collection<Integer>  l = topo.get(types);
+    Collection<Integer> l = topo.get(types);
 
     if (l == null) {
       l = new HashSet<>();
@@ -680,7 +684,7 @@ public class MultipleIndexConstructor {
 
     String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName + ";";
 
-  //  logger.info("loadTypesFromDatabase sql " + sqlQuery + " on " + connection);
+    //  logger.info("loadTypesFromDatabase sql " + sqlQuery + " on " + connection);
 
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();

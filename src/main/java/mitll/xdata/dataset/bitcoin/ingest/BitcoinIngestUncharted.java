@@ -112,13 +112,12 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     long then = System.currentTimeMillis();
 
     // populate the transactions table
-    // int limit = 1000000;
     MysqlInfo info = new MysqlInfo();
     info.setJdbc(dataSourceJDBC);
     info.setTable(transactionsTable);
 
     Collection<Integer> users = new BitcoinIngestUnchartedTransactions().getUsers(info);
-    Collection<Integer> usersInTranscations = users;
+    //Collection<Integer> usersInTranscations = users;
     if (!skipLoadTransactions) {
       logger.info("doIngest userIds size " + users.size());
 
