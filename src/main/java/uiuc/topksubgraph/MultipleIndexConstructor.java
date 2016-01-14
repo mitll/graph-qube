@@ -162,6 +162,7 @@ public class MultipleIndexConstructor {
     long totalQueued = 0;
     long totalPaths = 0;
     long pathsCopied = 0;
+    Map<Edge,Integer> edgeToVisit = new HashMap<>();
     //for(int i=1;i<=graph.numNodes;i++)
     for (int i = 0; i < graph.getNumNodes(); i++) {
       if (i % NOTICE_MOD == 0) {
@@ -201,9 +202,11 @@ public class MultipleIndexConstructor {
           Collection<Edge> nbrs = graph.getNeighbors(q);
           totalNeighbors += nbrs.size();
 
-          if (DEBUG) logger.info("nbrs " + nbrs);
+          if (DEBUG) logger.info("nbrs of " +q + " : " + nbrs);
 
           for (Edge e : nbrs) {
+            Integer integer = edgeToVisit.get(e);
+            edgeToVisit.put(e,integer == null ? 1:integer+1);
             traversed++;
             int qDash = e.getSrc();
             double newWt = sumWeight.get(q) + e.getWeight();
@@ -212,7 +215,7 @@ public class MultipleIndexConstructor {
             if ((currentWeight != null && currentWeight < newWt) || (currentWeight == null && !considered.contains(qDash))) {
               considered.add(qDash);
               newQueue.add(qDash);
-              newSumWeight.put(qDash, newWt);//sumWeight.get(q) + e.getWeight());
+              newSumWeight.put(qDash, newWt);
             } else {
               if (DEBUG) logger.info("\tskip " + qDash + " since current weight " + currentWeight + " > " + newWt + " considered " + considered.size());
             }
@@ -256,6 +259,9 @@ public class MultipleIndexConstructor {
         " neighbors " + totalNeighbors +
         " queued " + totalQueued + " copied " + pathsCopied + " total paths " + totalPaths
     );
+
+    if (DEBUG) logger.info("edge to visit " + edgeToVisit);
+
     BitcoinFeaturesBase.logMemory();
   }
 
