@@ -1,6 +1,8 @@
 package uiuc.topksubgraph;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 
 /**
  * This class will represent an edge in the graph
@@ -11,7 +13,7 @@ import java.util.Comparator;
 public class Edge {
   private final int src;
   private final int dst;
-  private double weight;
+  private float weight;
 
   /**
    * Constructor
@@ -19,11 +21,14 @@ public class Edge {
    * @param src
    * @param dst
    * @param weight
+   * @see Graph#addEdge(int, int, double)
+   * @see MultipleIndexConstructor#populateSortedEdgeLists(Graph)
+   * @see QueryExecutor#getUpperbound(HashSet, ArrayList)
    */
   public Edge(int src, int dst, double weight) {
     this.src = src;
     this.dst = dst;
-    this.setWeight(weight);
+    this.weight = (float)weight;
   }
 
   @Override
@@ -60,9 +65,9 @@ public class Edge {
     return weight;
   }
 
-  public void setWeight(double weight) {
-    this.weight = weight;
-  }
+//  public void setWeight(double weight) {
+//    this.weight = weight;
+//  }
 }
 
 class EdgeComparator implements Comparator<Edge> {

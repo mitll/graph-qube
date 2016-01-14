@@ -134,6 +134,20 @@ public class TopKTest {
   }
 
   @Test
+  public void testIngest() {
+    logger.debug("ENTER testIngest()");
+    int n = 10;
+    //int neighbors = 100;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    ingest(n, edgeToWeight);
+
+    //sleep();
+
+    logger.debug("EXIT testIngest()");
+  }
+
+  @Test
   public void testGraph() {
     logger.debug("ENTER testSearch()");
     int n = 400000;
@@ -193,7 +207,7 @@ public class TopKTest {
 
       logger.info("Computing SPD, Topology and SPath Indices...");
 
-      Set<Integer> types = new HashSet<>(1);
+      Set<Integer> types = new HashSet<>(2);
       types.add(1);
       MultipleIndexConstructor.makeTypeIDs(types);
 
@@ -213,7 +227,7 @@ public class TopKTest {
   private Map<Long, Integer> getGraph(int n, int neighbors) {
     Map<Long, Integer> edgeToWeight = new HashMap<>();
 
-    Random random = new Random();
+    Random random = new Random(123456789l);
 
     for (int from = 0; from < n; from++) {
       Set<Long> current = new HashSet<>();
@@ -231,7 +245,8 @@ public class TopKTest {
         if (low != from) logger.error("huh?");
         if (high != to) logger.error("huh?");
     */
-        int w = random.nextInt(10);
+        int w = 1+random.nextInt(9);
+        logger.info(from + "->" + to + " : " + w);
         edgeToWeight.put(l, w);
       }
     }
