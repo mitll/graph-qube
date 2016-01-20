@@ -36,8 +36,10 @@ public class Graph {
    * TODO: this is dumb - this is just an integer array!!!
    */
   final HashMap<Integer, Integer> nodeId2NodeMap = new HashMap<>();
+
   /**
    * Maps node id to the number of times it appears in the changed edges
+   * @see ExtraGraph#addMoreEdges(boolean, int)
    */
   final HashMap<Integer, Integer> nodeFreqInNewEdges = new HashMap<>();
 
@@ -105,7 +107,7 @@ public class Graph {
     Edge e = new Edge(a, b, weight);
     if (!edges.contains(e)) {
       edges.add(e);
-      logger.info("adding " + e);
+     // logger.info("adding " + e);
       ArrayList<Edge> al = new ArrayList<>();
       if (inLinks.get(b) != null)
         al = inLinks.get(b);
@@ -154,7 +156,8 @@ public class Graph {
       int to = BitcoinFeaturesBase.getHigh(key);
       int weight = edgeAndCount.getValue();
 
-      if (c < 20) logger.info("loadGraphFromMemory " + from + " -> " + to + " = " + weight);
+     // if (c < 20)
+       logger.info("loadGraphFromMemory " + from + " -> " + to + " = " + weight);
 
       c++;
       if (c % 1000000 == 0) {

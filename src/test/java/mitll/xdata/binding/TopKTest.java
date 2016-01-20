@@ -53,7 +53,7 @@ public class TopKTest {
     String bitcoinFeatureDirectory = GraphQuBEServer.DEFAULT_BITCOIN_FEATURE_DIR;
 
     try {
-      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlBitcoinJDBC()) : new H2Connection(bitcoinDirectory,"bitcoin");
+      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlBitcoinJDBC()) : new H2Connection(bitcoinDirectory, "bitcoin");
       final SimplePatternSearch patternSearch;
       patternSearch = new SimplePatternSearch();
 
@@ -65,14 +65,14 @@ public class TopKTest {
       long then = System.currentTimeMillis();
       List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, Arrays.asList("555261", "400046", "689982", "251593"), max);
       long now = System.currentTimeMillis();
-      logger.info("time to do a search " + (now-then) + " millis ");
+      logger.info("time to do a search " + (now - then) + " millis ");
 
       if (shortlist1.size() > max) {
         shortlist1 = shortlist1.subList(0, max);
       }
 
-      for (FL_PatternSearchResult result:shortlist1) {
-       // logger.info("got " + result);
+      for (FL_PatternSearchResult result : shortlist1) {
+        // logger.info("got " + result);
         Collection<String> matches = new ArrayList<>();
         for (FL_EntityMatchResult entity : result.getEntities()) {
           FL_Entity entity1 = entity.getEntity();
@@ -83,7 +83,7 @@ public class TopKTest {
       }
 
     } catch (Exception e) {
-      logger.error("got " + e,e);
+      logger.error("got " + e, e);
 
     }
 
@@ -102,7 +102,7 @@ public class TopKTest {
 
     try {
       int max = 64;//128;
-      for (int i = 32; i < max; i *=2) {
+      for (int i = 32; i < max; i *= 2) {
         long time1 = System.currentTimeMillis();
         BitcoinFeaturesBase.rlogMemory();
         logger.info(n + " and " + i + " -------------------- ");
@@ -119,7 +119,7 @@ public class TopKTest {
         logger.info("Time:" + (time2 - time1));
       }
     } catch (Exception e) {
-      logger.error("got " +e,e);
+      logger.error("got " + e, e);
     }
 
     logger.debug("EXIT testSearch()");
@@ -149,6 +149,21 @@ public class TopKTest {
   }
 
   @Test
+  public void testIngest2() {
+    logger.debug("ENTER testIngest()");
+    int n = 5;
+    //int neighbors = 100;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
+   // ingest2(n, edgeToWeight);
+    ingestFast2(n, edgeToWeight);
+
+    //sleep();
+
+    logger.debug("EXIT testIngest()");
+  }
+
+  @Test
   public void testIngestFast() {
     logger.debug("ENTER testIngestFast()");
     int n = 5;
@@ -163,12 +178,67 @@ public class TopKTest {
   }
 
   @Test
+  public void testIngestTwo() {
+    logger.debug("ENTER testIngestTwo()");
+    int n = 5;
+    //int neighbors = 100;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    ingest(n, edgeToWeight);
+    ingestFast(n, edgeToWeight);
+
+    //sleep();
+
+    logger.debug("EXIT testIngestTwo()");
+  }
+
+
+  @Test
+  public void testIngestTwoTypes() {
+    logger.debug("ENTER testIngestTwo()");
+    int n = 5;
+    //int neighbors = 100;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    ingest(n, edgeToWeight);
+    ingestFast(n, edgeToWeight);
+
+    //sleep();
+
+    logger.debug("EXIT testIngestTwo()");
+  }
+
+  @Test
+  public void testIngestLarger() {
+    logger.debug("ENTER testIngestTwo()");
+    int n = 400000;
+    //int neighbors = 100;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 8);
+
+    long then = System.currentTimeMillis();
+    ingest(n, edgeToWeight);
+
+    long then2 = System.currentTimeMillis();
+
+    logger.info("old " + (then2 - then));
+    ingestFast(n, edgeToWeight);
+    long now = System.currentTimeMillis();
+    logger.info("new " + (now - then2));
+
+    //sleep();
+
+    logger.debug("EXIT testIngestTwo()");
+  }
+
+
+  @Test
   public void testGraph() {
     logger.debug("ENTER testSearch()");
     int n = 400000;
     //int neighbors = 100;
 
-    for (int i = 10; i< 50; i+=10) {
+    for (int i = 10; i < 50; i += 10) {
       Map<Long, Integer> edgeToWeight = getGraph(n, i);
       ingest(n, edgeToWeight);
     }
@@ -178,23 +248,39 @@ public class TopKTest {
     logger.debug("EXIT testSearch()");
   }
 
+  private void ingest2(int n, Map<Long, Integer> edgeToWeight) {
+    try {
+      long time1 = System.currentTimeMillis();
+
+      Graph graph = beforeComputeIndices2(n, edgeToWeight);
+
+      computeIndices(time1, graph);
+    } catch (Exception e) {
+      logger.error("got " + e, e);
+    }
+  }
+
   private void ingest(int n, Map<Long, Integer> edgeToWeight) {
     try {
       long time1 = System.currentTimeMillis();
 
       Graph graph = beforeComputeIndices(n, edgeToWeight);
 
-      long then = System.currentTimeMillis();
-      BitcoinFeaturesBase.rlogMemory();
-      MultipleIndexConstructor.computeIndices(graph);
-      BitcoinFeaturesBase.rlogMemory();
-
-      long time2 = new Date().getTime();
-      logger.info("Time:" + (time2 - time1));
-      logger.info("Time to do computeIndices :" + (time2 - then));
+      computeIndices(time1, graph);
     } catch (Exception e) {
-      logger.error("got " +e,e);
+      logger.error("got " + e, e);
     }
+  }
+
+  private void computeIndices(long time1, Graph graph) throws IOException {
+    long then = System.currentTimeMillis();
+    BitcoinFeaturesBase.rlogMemory();
+    MultipleIndexConstructor.computeIndices(graph);
+    BitcoinFeaturesBase.rlogMemory();
+
+    long time2 = new Date().getTime();
+    logger.info("Time:" + (time2 - time1));
+    logger.info("Time to do computeIndices :" + (time2 - then));
   }
 
   private void ingestFast(int n, Map<Long, Integer> edgeToWeight) {
@@ -202,23 +288,45 @@ public class TopKTest {
       long time1 = System.currentTimeMillis();
 
       Graph graph = beforeComputeIndices(n, edgeToWeight);
-
-      long then = System.currentTimeMillis();
-      BitcoinFeaturesBase.rlogMemory();
-      MultipleIndexConstructor.computeIndicesFast(graph);
-      BitcoinFeaturesBase.rlogMemory();
-
-      long time2 = new Date().getTime();
-      logger.info("Time:" + (time2 - time1));
-      logger.info("Time to do computeIndices :" + (time2 - then));
+      computeIndicesFast(time1, graph);
     } catch (Exception e) {
-      logger.error("got " +e,e);
+      logger.error("got " + e, e);
     }
   }
 
+  private void ingestFast2(int n, Map<Long, Integer> edgeToWeight) {
+    try {
+      long time1 = System.currentTimeMillis();
+
+      Graph graph = beforeComputeIndices2(n, edgeToWeight);
+      computeIndicesFast(time1, graph);
+    } catch (Exception e) {
+      logger.error("got " + e, e);
+    }
+  }
+
+  private void computeIndicesFast(long time1, Graph graph) throws IOException {
+    long then = System.currentTimeMillis();
+    BitcoinFeaturesBase.rlogMemory();
+    MultipleIndexConstructor.computeIndicesFast(graph);
+    BitcoinFeaturesBase.rlogMemory();
+
+    long time2 = new Date().getTime();
+    logger.info("Time:" + (time2 - time1));
+    logger.info("Time to do computeIndices :" + (time2 - then));
+  }
+
+  private Graph beforeComputeIndices2(int n, Map<Long, Integer> edgeToWeight) throws IOException {
+    Collection<Integer> integers = MultipleIndexConstructor.loadTypes2(n);
+    return getGraphBeforeComputeIndices(edgeToWeight, integers);
+  }
 
   private Graph beforeComputeIndices(int n, Map<Long, Integer> edgeToWeight) throws IOException {
-    MultipleIndexConstructor.loadTypes(n);
+    Collection<Integer> integers = MultipleIndexConstructor.loadTypes(n);
+    return getGraphBeforeComputeIndices(edgeToWeight, integers);
+  }
+
+  private Graph getGraphBeforeComputeIndices(Map<Long, Integer> edgeToWeight, Collection<Integer> types) throws IOException {
     MultipleIndexConstructor.createTypedEdges();
 
     BitcoinFeaturesBase.logMemory();
@@ -238,7 +346,7 @@ public class TopKTest {
     BitcoinFeaturesBase.logMemory();
 
     //test method that computes totalTypes
-    MultipleIndexConstructor. computeTotalTypes();
+    MultipleIndexConstructor.computeTotalTypes();
     BitcoinFeaturesBase.logMemory();
     // logger.debug("Computed number of types: " + totalTypes);
 
@@ -253,8 +361,8 @@ public class TopKTest {
 
     logger.info("Computing SPD, Topology and SPath Indices...");
 
-    Set<Integer> types = new HashSet<>(2);
-    types.add(1);
+//    Set<Integer> types = new HashSet<>(2);
+//    types.add(1);
     MultipleIndexConstructor.makeTypeIDs(types);
     return graph;
   }
@@ -280,8 +388,8 @@ public class TopKTest {
         if (low != from) logger.error("huh?");
         if (high != to) logger.error("huh?");
     */
-        int w = 1+random.nextInt(9);
-        logger.info(from + "->" + to + " : " + w);
+        int w = 1 + random.nextInt(9);
+        //    logger.info(from + "->" + to + " : " + w);
         edgeToWeight.put(l, w);
       }
     }
