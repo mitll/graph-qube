@@ -118,6 +118,266 @@ public class MultipleIndexConstructor {
   }
 
   /**
+   * Compute SPD, Topology and SPath Indices
+   *
+   * @throws IOException
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection, Graph)
+   */
+  public static void computeIndicesFast(Graph graph) throws IOException {
+    //Make outDir if neccessary
+    File directory = new File(outDir);
+    if (!directory.exists() && !directory.mkdirs())
+      throw new IOException("Could not create directory: " + outDir);
+
+    String datasetId = BitcoinBinding.DATASET_ID + "_Fast";
+    String topologyFilename = datasetId + "." + Integer.toString(D) + ".topology";
+    BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
+    String spdFilename = datasetId + "." + Integer.toString(D) + ".spd";
+    File file = new File(outDir, spdFilename);
+    BufferedWriter outSPD = new BufferedWriter(new FileWriter(file));
+    BufferedWriter counts = new BufferedWriter(new FileWriter(new File(outDir, "counts_" + spdFilename)));
+
+    logger.info("Writing to " + file.getAbsolutePath());
+    long then = System.currentTimeMillis();
+    BitcoinFeaturesBase.logMemory();
+
+    int traversed = 0;
+    long totalNeighbors = 0;
+    long totalQueued = 0;
+    long totalPaths = 0;
+    long pathsCopied = 0;
+    Map<Edge, Integer> edgeToVisit = new HashMap<>();
+    //for(int i=1;i<=graph.numNodes;i++)
+    //Map<Integer, Map<String, Integer>> nodeToTypeToCount = new HashMap<>();
+    //Map<Integer, Map<String, Float>> nodeToTypeToTotalWeight = new HashMap<>();
+
+    List<NodeInfo> nodeInfos = new ArrayList<>();
+
+    for (int i = 0; i < graph.getNumNodes(); i++) {
+      if (i % NOTICE_MOD == 0) {
+        //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
+        logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
+        BitcoinFeaturesBase.logMemory();
+      }
+
+      NodeInfo nodeInfo = new NodeInfo();
+      nodeInfos.add(nodeInfo);
+      Collection<Edge> nbrs = graph.getNeighbors(i);
+      Set<Integer> seen = new HashSet<>();
+      for (Edge edge : nbrs) {
+        int src = edge.getSrc();
+        if (!seen.contains(src)) {
+          float weight = edge.getFWeight();
+
+          String types = oneHop[getNodeType(graph, src) - 1];
+
+          nodeInfo.addWeight(types, weight);
+          seen.add(src);
+
+          logger.info("for " + i + " : " + edge + " node " + nodeInfo);
+
+        }
+      }
+    }
+
+    logger.info("got " +nodeInfos);
+//    List<NodeInfo> d2Info = new ArrayList<>();
+    // D = 2
+    for (int i = 0; i < graph.getNumNodes(); i++) {
+      String theNodeType = oneHop[node2Type.get(i) - 1];
+
+      NodeInfo d2 = new NodeInfo();
+      //    d2Info.add(d2);
+
+      Collection<Edge> nbrs = graph.getNeighbors(i);
+     // Set<Integer> seen = new HashSet<>();
+
+      Map<Integer,Edge> srcToEdge = new HashMap<>();
+      Map<Integer,Float> srcToWeight = new HashMap<>();
+
+      for (Edge edge : nbrs) {
+        int src = edge.getSrc();
+        //int srcNode = graph.nodeId2NodeMap.get(src);
+        Float edgeWeight = srcToWeight.get(src);
+        float fWeight = edge.getFWeight();
+        if (edgeWeight == null || edgeWeight < fWeight) {
+          srcToWeight.put(src, fWeight);
+          srcToEdge.put(src, edge);
+        }
+      }
+
+      for (Edge edge : srcToEdge.values()) {
+        int src = edge.getSrc();
+        int srcNode = graph.nodeId2NodeMap.get(src);
+       // if (!seen.contains(srcNode)) {
+         // seen.add(srcNode);
+
+          String neighborType = oneHop[node2Type.get(srcNode) - 1];
+
+          NodeInfo nodeInfo = nodeInfos.get(srcNode);
+
+          logger.info("\tfor " + i + " neighbor " + edge + " and " + nodeInfo);
+
+          float weight = edge.getFWeight();
+          for (Map.Entry<String, TypeInfo> pair : nodeInfo.typeToInfo.entrySet()) {
+            String nType = pair.getKey();
+            TypeInfo typeInfo = pair.getValue();//d2.typeToInfo.get(nType);
+
+
+            int neighborCount = typeInfo.getCount();
+            boolean sameType = nType.equals(theNodeType);
+
+            int typeCountOfNeighbor = sameType ? neighborCount - 1 : neighborCount;
+
+            float neighborWeight = typeInfo.getMaxWeight();
+            boolean matchingWeight = neighborWeight == weight;
+            float weightOfNeighbor = sameType && matchingWeight ? typeInfo.getPrevMax() : neighborWeight;
+            logger.info("\t\tfor " + srcNode + " type " + nType + " and " + typeInfo +
+                " match " +matchingWeight + " weight " + weightOfNeighbor);
+
+            String d2Type = neighborType + nType;
+
+            d2.incrMax(d2Type, typeCountOfNeighbor, weightOfNeighbor +weight);
+
+            logger.info("\t\td2 " + d2);
+          }
+//        }
+      }
+
+      outTopology.write(i + "\t");
+
+      NodeInfo nodeInfo = nodeInfos.get(i);
+      writeTopologyFast(outTopology, 0, nodeInfo.typeToInfo);
+      writeTopologyFast(outTopology, 1, d2.typeToInfo);
+      outTopology.write("\n");
+
+      outSPD.write(i + "\t");
+
+      writeSPDIndexFast(outSPD, 0, nodeInfo.typeToInfo);
+      writeSPDIndexFast(outSPD, 1, d2.typeToInfo);
+
+      outSPD.write("\n");
+    }
+
+
+//    out.close();
+    outTopology.close();
+    outSPD.close();
+    counts.close();
+
+    long now = System.currentTimeMillis();
+    logger.info("took " + ((now - then) / 1000) + " seconds to do graph of size " +
+        graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges, " +
+        " traversed " + traversed +
+        " neighbors " + totalNeighbors +
+        " queued " + totalQueued + " copied " + pathsCopied + " total paths " + totalPaths
+    );
+
+    if (DEBUG) logger.info("edge to visit " + edgeToVisit);
+
+    BitcoinFeaturesBase.logMemory();
+  }
+
+  private static Integer getNodeType(Graph graph, int src) {
+    int srcNode = graph.nodeId2NodeMap.get(src);
+    return node2Type.get(srcNode);
+  }
+
+  private static class NodeInfo {
+    Map<String, TypeInfo> typeToInfo = new HashMap<>();
+
+    public void addWeight(String type, float weight) {
+      TypeInfo info = typeToInfo.get(type);
+      if (info == null) {
+        info = new TypeInfo(weight);
+        typeToInfo.put(type, info);
+      } else {
+        info.max(weight);
+      }
+    }
+/*
+    public void incrMax(String type, TypeInfo other) {
+      TypeInfo info = typeToInfo.get(type);
+      if (info == null) {
+        info = new TypeInfo(other);
+        typeToInfo.put(type, info);
+      } else {
+        info.incrMax(other);
+      }
+    }*/
+
+    public void incrMax(String type, int typeCountOfNeighbor, float weightOfNeighbor) {
+      TypeInfo info = typeToInfo.get(type);
+      if (info == null) {
+        info = new TypeInfo(typeCountOfNeighbor, weightOfNeighbor, weightOfNeighbor);
+        typeToInfo.put(type, info);
+      } else {
+        info.incrMax(typeCountOfNeighbor, weightOfNeighbor);
+      }
+    }
+    public String toString() { return typeToInfo.toString(); }
+  }
+
+  private static class TypeInfo {
+    private int count = 1;
+    private float totalWeight = 0f;
+    private float prevMax = 0f;
+
+    public TypeInfo(TypeInfo other) {
+      this(other.count, other.totalWeight, other.prevMax);
+    }
+
+    public TypeInfo(int count, float max, float prevMax) {
+      this.count = count;
+      this.totalWeight = max;
+      this.prevMax = prevMax;
+    }
+
+    public TypeInfo(float weight) {
+      this.totalWeight = weight;
+      count = 1;
+    }
+
+    public void max(float weight) {
+      newMax(weight);
+
+      //this.totalWeight = newMax ? weight : totalWeight;
+      count = getCount() + 1;
+    }
+
+    private void newMax(float weight) {
+      boolean newMax = weight > totalWeight;
+
+      // TODO : correct???
+      //if (prevMax == 0) prevMax = totalWeight;
+      if (newMax) {
+        prevMax = totalWeight;
+        totalWeight = weight;
+      }
+    }
+
+    public int getCount() {
+      return count;
+    }
+
+    public float getMaxWeight() {
+      return totalWeight;
+    }
+
+    public float getPrevMax() {
+      return prevMax;
+    }
+
+    public void incrMax(int otherCount, float otherWeight) {
+      count += otherCount;
+      newMax(otherWeight);
+    }
+
+    public String toString() { return getCount() + " : " + getMaxWeight() + " prev " + getPrevMax(); }
+
+  }
+
+  /**
    *
    //setup output files
    //		String filename=graphFile.split("\\.")[0]+"."+Integer.toString(D)+".spath";
@@ -162,7 +422,7 @@ public class MultipleIndexConstructor {
     long totalQueued = 0;
     long totalPaths = 0;
     long pathsCopied = 0;
-    Map<Edge,Integer> edgeToVisit = new HashMap<>();
+    Map<Edge, Integer> edgeToVisit = new HashMap<>();
     //for(int i=1;i<=graph.numNodes;i++)
     for (int i = 0; i < graph.getNumNodes(); i++) {
       if (i % NOTICE_MOD == 0) {
@@ -202,11 +462,11 @@ public class MultipleIndexConstructor {
           Collection<Edge> nbrs = graph.getNeighbors(q);
           totalNeighbors += nbrs.size();
 
-          if (DEBUG) logger.info("nbrs of " +q + " : " + nbrs);
+          if (DEBUG) logger.info("nbrs of " + q + " : " + nbrs);
 
           for (Edge e : nbrs) {
             Integer integer = edgeToVisit.get(e);
-            edgeToVisit.put(e,integer == null ? 1:integer+1);
+            edgeToVisit.put(e, integer == null ? 1 : integer + 1);
             traversed++;
             int qDash = e.getSrc();
             double newWt = sumWeight.get(q) + e.getWeight();
@@ -217,14 +477,25 @@ public class MultipleIndexConstructor {
               newQueue.add(qDash);
               newSumWeight.put(qDash, newWt);
             } else {
-              if (DEBUG) logger.info("\tskip " + qDash + " since current weight " + currentWeight + " > " + newWt + " considered " + considered.size());
+              if (DEBUG)
+                logger.info("\tskip " + qDash + " since current weight " + currentWeight + " > " + newWt +
+                    " considered " + considered.size() + " already " + considered.contains(qDash));
             }
 
             boolean hasWeight = newSumWeight.containsKey(qDash);
             boolean visited = considered.contains(qDash);
             if (hasWeight || !visited) {
+              if (DEBUG) {
+                if (hasWeight != visited) {
+                  logger.info("\t1 add path " + qDash + " since hasWeight " + hasWeight + " visited " + visited);
+                } else {
+                  logger.info("\t2 add path " + qDash + " since hasWeight " + hasWeight + " visited " + visited);
+
+                }
+              }
+
               pathsCopied = getPathsCopied(pathsCopied, newPaths, q, qDash, paths);
-             // if (DEBUG) logger.info("pathsCopied  " + pathsCopied);
+              // if (DEBUG) logger.info("pathsCopied  " + pathsCopied);
             } else {
               if (DEBUG) logger.info("\tskip path " + qDash + " since hasWeight " + hasWeight + " visited " + visited);
             }
@@ -284,7 +555,7 @@ public class MultipleIndexConstructor {
     return pathsCopied;
   }
 
-  private static Map<Integer, List<Integer>> getSPathMap(Graph graph, Set<Integer> queue) {
+/*  private static Map<Integer, List<Integer>> getSPathMap(Graph graph, Set<Integer> queue) {
     Map<Integer, List<Integer>> map = new HashMap<>();
     for (int q : queue) {
       int actualID = graph.nodeId2NodeMap.get(q);
@@ -300,7 +571,7 @@ public class MultipleIndexConstructor {
       al.add(actualID);
     }
     return map;
-  }
+  }*/
 
 /*
   private static void writeSPath(BufferedWriter out, Map<Integer, List<Integer>> map) throws IOException {
@@ -351,8 +622,7 @@ public class MultipleIndexConstructor {
             //if (edge != edgeFast) logger.info("err -- not the same " + edge + " vs " +edgeFast);
 
             totWeight += edge.getWeight();
-            int b = graph.nodeId2NodeMap.get(a);
-            Integer typeOfDestNode = node2Type.get(b);
+            Integer typeOfDestNode = getNodeType(graph, a);
             // types += typeOfDestNode; // TODO : string concatenation...
 
             typeSequence[j - 1] = typeOfDestNode - 1;
@@ -396,11 +666,29 @@ public class MultipleIndexConstructor {
         int t = topo.get(o).size();
         toWrite = t + ";";
       }
-      if (DEBUG) logger.info("writeTopology for  " + d + " : " +toWrite);
+      if (DEBUG) logger.info("writeTopology for  " + d + " : " + toWrite);
 
       outTopology.write(toWrite);
     }
   }
+
+
+  private static void writeTopologyFast(Writer outTopology, int d, Map<String, TypeInfo> topo) throws IOException {
+    for (String o : ordering.get(d + 1)) {
+      String toWrite;
+
+      if (!topo.containsKey(o)) {
+        toWrite = "0;";
+      } else {
+        int t = topo.get(o).getCount();
+        toWrite = t + ";";
+      }
+    //  if (DEBUG) logger.info("writeTopologyFast for  " + d + " : " + toWrite);
+
+      outTopology.write(toWrite);
+    }
+  }
+
 
   private static void writeSPDIndex(Writer outSPD, int d, Map<String, Double> spd) throws IOException {
     for (String o : ordering.get(d + 1)) {
@@ -410,13 +698,30 @@ public class MultipleIndexConstructor {
       } else {
         double t = spd.get(o);
         String format = twoDForm.format(t);
-        str = Double.valueOf(format) + ";";
+        //   str = Double.valueOf(format) + ";";
+        str = format + ";";
       }
-      if (DEBUG) logger.info("writeSPDIndex for  " + d + " : " +str);
+      //if (DEBUG) logger.info("writeSPDIndex for  " + d + " : " + str);
 
       outSPD.write(str);
     }
   }
+
+  private static void writeSPDIndexFast(Writer outSPD, int d, Map<String, TypeInfo> spd) throws IOException {
+    for (String o : ordering.get(d + 1)) {
+      String str = "0.";
+      if (spd.containsKey(o)) {
+        float t = spd.get(o).getMaxWeight();
+        //   str = Double.valueOf(format) + ";";
+        str = twoDForm.format(t);
+      }
+ //     if (DEBUG) logger.info("writeSPDIndexFast for  " + d + " : " + str);
+
+      outSPD.write(str);
+      outSPD.write(";");
+    }
+  }
+
 
   private static void updateTopo(Map<String, Collection<Integer>> topo, int ii, String types) {
 //    int lastNode = ii;
@@ -431,16 +736,6 @@ public class MultipleIndexConstructor {
       l.add(ii);
     }
   }
-
-/*  private static void updateTopo2(Map<Integer, List<Integer>> topo, int lastNode, int types) {
-    //int lastNode = ii;
-    List<Integer> l = new ArrayList<Integer>();
-    if (topo.containsKey(types))
-      l = topo.get(types);
-    if (!l.contains(lastNode))
-      l.add(lastNode);
-    topo.put(types, l);
-  }*/
 
   /**
    * Compute all EdgeType Paths of length d, put in hash map
@@ -569,6 +864,7 @@ public class MultipleIndexConstructor {
 
     for (Edge e : graph.getEdges()) {
       //get internal node-ids for
+     // logger.info("populateSortedEdgeLists edge " +e);
       int from = graph.nodeId2NodeMap.get(e.getSrc());
       int to = graph.nodeId2NodeMap.get(e.getDst());
       double weight = e.getWeight();
@@ -634,6 +930,7 @@ public class MultipleIndexConstructor {
    * @throws FileNotFoundException
    * @throws IOException
    * @paramx typesFile
+   * @see #main(String[])
    */
   private static void loadTypesFile()
       throws IOException {
@@ -652,6 +949,10 @@ public class MultipleIndexConstructor {
     in.close();
   }
 
+  /**
+   * @param n
+   * @see TopKTest#ingest
+   */
   public static void loadTypes(int n) {
     for (int i = 0; i < n; i++) node2Type.put(i, 1);
     totalTypes = 1;

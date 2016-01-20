@@ -4,7 +4,10 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.Writer;
 import java.sql.*;
 import java.util.*;
 
@@ -29,6 +32,8 @@ public class Graph {
   final HashMap<Integer, Integer> node2NodeIdMap = new HashMap<>();
   /**
    * Maps internal node id to a node
+   *
+   * TODO: this is dumb - this is just an integer array!!!
    */
   final HashMap<Integer, Integer> nodeId2NodeMap = new HashMap<>();
   /**
@@ -47,6 +52,7 @@ public class Graph {
 
   public Graph(Map<Long, Integer> edgeToWeight) {
     this();
+    simpleIds(edgeToWeight);
     loadGraphFromMemory(edgeToWeight);
   }
 
@@ -57,10 +63,10 @@ public class Graph {
   /**
    * Returns the edge object if there exists an edge between node1 and node2 else returns null
    *
-   * @see #createRandomGraph(boolean)
    * @param node1
    * @param node2
    * @return
+   * @see #createRandomGraph(boolean)
    */
   protected Edge getEdge(int node1, int node2) {
     if (inLinks.containsKey(node2)) {
@@ -74,10 +80,10 @@ public class Graph {
   }
 
   /**
-   * @see MultipleIndexConstructor#processPathsq(Writer, Writer, Graph, int)
    * @param node1
    * @param node2
    * @return
+   * @see MultipleIndexConstructor#processPathsq(Writer, Writer, Graph, int)
    */
   public Edge getEdgeFast(int node1, int node2) {
     if (inLinks2.containsKey(node2)) {
@@ -97,8 +103,9 @@ public class Graph {
    */
   protected void addEdge(int a, int b, double weight) {
     Edge e = new Edge(a, b, weight);
-    if (!getEdges().contains(e)) {
-      getEdges().add(e);
+    if (!edges.contains(e)) {
+      edges.add(e);
+      logger.info("adding " + e);
       ArrayList<Edge> al = new ArrayList<>();
       if (inLinks.get(b) != null)
         al = inLinks.get(b);
@@ -137,6 +144,8 @@ public class Graph {
     setNumNodes(0);
     setNumEdges(0);
 
+    logger.info("map " + nodeCount);
+
     int c = 0;
     for (Map.Entry<Long, Integer> edgeAndCount : edgeToWeight.entrySet()) {
       Long key = edgeAndCount.getKey();
@@ -145,7 +154,7 @@ public class Graph {
       int to = BitcoinFeaturesBase.getHigh(key);
       int weight = edgeAndCount.getValue();
 
-      //if (c < 20) logger.info(from + " -> " + to + " = " +weight);
+      if (c < 20) logger.info("loadGraphFromMemory " + from + " -> " + to + " = " + weight);
 
       c++;
       if (c % 1000000 == 0) {
@@ -179,6 +188,19 @@ public class Graph {
   }
 
 
+  public void simpleIds(Map<Long, Integer> edgeToWeight) {
+    for (Long key : edgeToWeight.keySet()) {
+      int from = BitcoinFeaturesBase.getLow(key);
+      int to = BitcoinFeaturesBase.getHigh(key);
+
+      node2NodeIdMap.put(from, from);
+      node2NodeIdMap.put(to, to);
+
+      nodeId2NodeMap.put(from, from);
+      nodeId2NodeMap.put(to, to);
+    }
+  }
+
   /**
    * Loads the graph from an h2 database
    *
@@ -194,11 +216,11 @@ public class Graph {
     setNumEdges(0);
 
 		/*
-		 * Do database query
+     * Do database query
 		 */
-    String sqlQuery = "select * from " + tableName ;
+    String sqlQuery = "select * from " + tableName;
 
-    logger.info("loadGraphAgain doing " +sqlQuery);
+    logger.info("loadGraphAgain doing " + sqlQuery);
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();
 
@@ -242,7 +264,7 @@ public class Graph {
     setNumNodes(nodeCount);
     setNumEdges(c);
 
-    logger.info("read " + c+ " found " + getNumNodes() + " nodes and " + getNumEdges() + " edges");
+    logger.info("read " + c + " found " + getNumNodes() + " nodes and " + getNumEdges() + " edges");
   }
 
   /**
@@ -434,6 +456,7 @@ public class Graph {
     }
     in.close();
   }
+
 
   public int getNumNodes() {
     return numNodes;

@@ -51,7 +51,7 @@ public class BitcoinIngestSubGraph {
 
   private static final Logger logger = Logger.getLogger(BitcoinIngestSubGraph.class);
 
-  private static final int MIN_TRANSACTIONS = 10;
+ // private static final int MIN_TRANSACTIONS = 10;
 
   //private static final int BITCOIN_OUTLIER = 25;
   private static final List<Integer> BITCOIN_OUTLIERS = Arrays.asList(25, 39);
@@ -67,9 +67,9 @@ public class BitcoinIngestSubGraph {
    * @deprecated
    */
   public static final String SORTED_PAIR = "SORTED_PAIR";
-  public static final String NUM_TRANS = "NUM_TRANS";
-  public static final String SOURCE = "source".toUpperCase();
-  public static final String TARGET = "target".toUpperCase();
+  private static final String NUM_TRANS = "NUM_TRANS";
+  private static final String SOURCE = "source".toUpperCase();
+  private static final String TARGET = "target".toUpperCase();
 
 
   private static PreparedStatement queryStatement;
@@ -81,7 +81,7 @@ public class BitcoinIngestSubGraph {
    * @param dbConnection
    * @param tableName
    */
-  private static boolean existsTable(DBConnection dbConnection, String tableName) {
+/*  private static boolean existsTable(DBConnection dbConnection, String tableName) {
     try {
       ResultSet rs = doSQLQuery(dbConnection, "select 1 from " + tableName + " limit 1;");
       rs.close();
@@ -89,7 +89,7 @@ public class BitcoinIngestSubGraph {
     } catch (SQLException e) {
       return false;
     }
-  }
+  }*/
 
 
   /**
@@ -97,6 +97,7 @@ public class BitcoinIngestSubGraph {
    * @throws IOException
    * @throws Throwable
    * @throws NumberFormatException
+   * @deprecated unused for now
    */
   public static void executeQuery(String outDir, DBConnection connection) throws
       Throwable {

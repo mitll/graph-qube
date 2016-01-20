@@ -28,7 +28,7 @@ public class Edge {
   public Edge(int src, int dst, double weight) {
     this.src = src;
     this.dst = dst;
-    this.weight = (float)weight;
+    this.weight = (float) weight;
   }
 
   @Override
@@ -65,11 +65,18 @@ public class Edge {
     return weight;
   }
 
+  public float getFWeight() {
+    return weight;
+  }
+
 //  public void setWeight(double weight) {
 //    this.weight = weight;
 //  }
 }
 
+/**
+ * @see MultipleIndexConstructor#populateSortedEdgeLists(Graph)
+ */
 class EdgeComparator implements Comparator<Edge> {
   @Override
   public int compare(Edge e1, Edge e2) {

@@ -33,6 +33,7 @@ import org.junit.runners.JUnit4;
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -136,15 +137,29 @@ public class TopKTest {
   @Test
   public void testIngest() {
     logger.debug("ENTER testIngest()");
-    int n = 10;
+    int n = 5;
     //int neighbors = 100;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
     ingest(n, edgeToWeight);
 
     //sleep();
 
     logger.debug("EXIT testIngest()");
+  }
+
+  @Test
+  public void testIngestFast() {
+    logger.debug("ENTER testIngestFast()");
+    int n = 5;
+    //int neighbors = 100;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
+    ingestFast(n, edgeToWeight);
+
+    //sleep();
+
+    logger.debug("EXIT testIngestFast()");
   }
 
   @Test
@@ -167,49 +182,7 @@ public class TopKTest {
     try {
       long time1 = System.currentTimeMillis();
 
-      MultipleIndexConstructor.loadTypes(n);
-      MultipleIndexConstructor.createTypedEdges();
-
-      BitcoinFeaturesBase.logMemory();
-
-      Graph graph = new Graph(edgeToWeight);
-
-      BitcoinFeaturesBase.logMemory();
-
-      //load types file
-  //    MultipleIndexConstructor.loadTypesFile();
-
-      // Create Typed Edges
-
-      // Load and Sort Edges from Graph
-      //loadAndSortEdges();
-      MultipleIndexConstructor.populateSortedEdgeLists(graph);
-      BitcoinFeaturesBase.logMemory();
-
-      //save the sorted edge lists
-      MultipleIndexConstructor.saveSortedEdgeList();
-      BitcoinFeaturesBase.logMemory();
-
-      //test method that computes totalTypes
-      // totalTypes = 0;
-      MultipleIndexConstructor. computeTotalTypes();
-      BitcoinFeaturesBase.logMemory();
-      // logger.debug("Computed number of types: " + totalTypes);
-
-      /**
-       * Functionality of SPDAndTopologyAndSPathIndexConstructor
-       */
-      //hash map for all possible "edge-type" paths: i.e. doubles,triples,...D-tuples
-      //this gets you the "official" ordering
-      logger.info("Computing Edge-Type Path Ordering...");
-      MultipleIndexConstructor.computeEdgeTypePathOrdering();
-
-
-      logger.info("Computing SPD, Topology and SPath Indices...");
-
-      Set<Integer> types = new HashSet<>(2);
-      types.add(1);
-      MultipleIndexConstructor.makeTypeIDs(types);
+      Graph graph = beforeComputeIndices(n, edgeToWeight);
 
       long then = System.currentTimeMillis();
       BitcoinFeaturesBase.rlogMemory();
@@ -222,6 +195,68 @@ public class TopKTest {
     } catch (Exception e) {
       logger.error("got " +e,e);
     }
+  }
+
+  private void ingestFast(int n, Map<Long, Integer> edgeToWeight) {
+    try {
+      long time1 = System.currentTimeMillis();
+
+      Graph graph = beforeComputeIndices(n, edgeToWeight);
+
+      long then = System.currentTimeMillis();
+      BitcoinFeaturesBase.rlogMemory();
+      MultipleIndexConstructor.computeIndicesFast(graph);
+      BitcoinFeaturesBase.rlogMemory();
+
+      long time2 = new Date().getTime();
+      logger.info("Time:" + (time2 - time1));
+      logger.info("Time to do computeIndices :" + (time2 - then));
+    } catch (Exception e) {
+      logger.error("got " +e,e);
+    }
+  }
+
+
+  private Graph beforeComputeIndices(int n, Map<Long, Integer> edgeToWeight) throws IOException {
+    MultipleIndexConstructor.loadTypes(n);
+    MultipleIndexConstructor.createTypedEdges();
+
+    BitcoinFeaturesBase.logMemory();
+
+    Graph graph = new Graph(edgeToWeight);
+
+    BitcoinFeaturesBase.logMemory();
+
+    // Create Typed Edges
+
+    // Load and Sort Edges from Graph
+    MultipleIndexConstructor.populateSortedEdgeLists(graph);
+    BitcoinFeaturesBase.logMemory();
+
+    //save the sorted edge lists
+    MultipleIndexConstructor.saveSortedEdgeList();
+    BitcoinFeaturesBase.logMemory();
+
+    //test method that computes totalTypes
+    MultipleIndexConstructor. computeTotalTypes();
+    BitcoinFeaturesBase.logMemory();
+    // logger.debug("Computed number of types: " + totalTypes);
+
+    /**
+     * Functionality of SPDAndTopologyAndSPathIndexConstructor
+     */
+    //hash map for all possible "edge-type" paths: i.e. doubles,triples,...D-tuples
+    //this gets you the "official" ordering
+    logger.info("Computing Edge-Type Path Ordering...");
+    MultipleIndexConstructor.computeEdgeTypePathOrdering();
+
+
+    logger.info("Computing SPD, Topology and SPath Indices...");
+
+    Set<Integer> types = new HashSet<>(2);
+    types.add(1);
+    MultipleIndexConstructor.makeTypeIDs(types);
+    return graph;
   }
 
   private Map<Long, Integer> getGraph(int n, int neighbors) {
