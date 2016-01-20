@@ -3,6 +3,8 @@
  */
 package uiuc.topksubgraph;
 
+import mitll.xdata.binding.Binding;
+import mitll.xdata.binding.TopKSubgraphShortlist;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -36,7 +38,7 @@ public class QueryExecutor {
   public static String typesFile;
   public static String queryFile;
   public static String queryTypesFile;
-  public static String spathFile;
+  //public static String spathFile;
   public static String topologyFile;
   public static String spdFile;
   public static String resultDir;
@@ -47,20 +49,20 @@ public class QueryExecutor {
   //no more statics after this...
   public Graph g;
 
-  private HashMap<Integer, Integer> node2Type;
+  private Map<Integer, Integer> node2Type;
   private int totalTypes;
 
-  private ArrayList<Integer> types;
-  private HashMap<Integer, HashSet<Integer>> graphType2IDSet;
+  private final ArrayList<Integer> types;
+  private final HashMap<Integer, HashSet<Integer>> graphType2IDSet;
   private int totalNodes;
   private int totalOrderingSize;
-  private HashMap<Integer, ArrayList<String>> ordering;
-  private HashMap<String, Integer> orderingType2Index;
+  private final HashMap<Integer, ArrayList<String>> ordering;
+  private final HashMap<String, Integer> orderingType2Index;
 
   private int[][] graphSign;
 
-  private HashMap<String, ArrayList<String>> sortedEdgeLists;
-  private HashMap<String, HashMap<Integer, ArrayList<Integer>>> node2EdgeListPointers;
+  private final HashMap<String, ArrayList<String>> sortedEdgeLists;
+  private final HashMap<String, HashMap<Integer, ArrayList<Integer>>> node2EdgeListPointers;
 
   private double[][] spd;
 
@@ -83,8 +85,27 @@ public class QueryExecutor {
   private FibonacciHeap<ArrayList<String>> heap;
   private HashSet<ArrayList<String>> heapSet;
 
+  public QueryExecutor(Graph graph, String datasetId, String datasetResourceDir, Map<Integer,Integer> idToType) {
+    this();
+    QueryExecutor.datasetId = datasetId;
+    QueryExecutor.baseDir =  datasetResourceDir; //THIS LINE SHOULD CHANGE FOR JAR-ed VERSION
+
+    this.g = graph;
+
+    // QueryExecutor.spathFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spath";
+    QueryExecutor.topologyFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".topology";
+    QueryExecutor.spdFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spd";
+    QueryExecutor.resultDir = "results";
+
+    setNode2Type(idToType);
+    computeTotalTypes();
+    prepareInternals();
+  }
+
   /**
    * Constructor
+   *
+   * @see mitll.xdata.binding.TopKSubgraphShortlist#TopKSubgraphShortlist(Binding)
    */
   public QueryExecutor() {
 
@@ -95,7 +116,7 @@ public class QueryExecutor {
     typesFile = "";
     queryFile = "";
     queryTypesFile = "";
-    spathFile = "";
+    //spathFile = "";
     topologyFile = "";
     spdFile = "";
     resultDir = "";
@@ -142,6 +163,162 @@ public class QueryExecutor {
     heapSet = new HashSet<ArrayList<String>>();
   }
 
+  public void testQuery(List<String> exemplarIDs, Graph graph, Map<Integer, Integer> idToType) {
+        /*
+     * Get all pairs of query nodes...
+		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
+		 */
+    HashSet<Edge> queryEdges = getQueryEdges(exemplarIDs, graph);
+
+    for (Edge qe : queryEdges) {
+      logger.info("qe: " + qe);
+    }
+
+    int isClique = loadQuery(queryEdges, idToType);
+    logger.info("isClique: " + isClique);
+
+    executeQuery(isClique);
+
+    // Heap of results from uiuc.topksubgraph
+    FibonacciHeap<ArrayList<String>> heap = getHeap();
+
+    logger.info("Starting with: " + heap.size() + " matching sub-graphs...");
+
+    // Loop-through resultant sub-graphs
+    while (!heap.isEmpty()) {
+      // Get matching sub-graph
+      FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
+      ArrayList<String> list = fhn.getData();
+
+      // Sub-graph score
+      double subgraphScore = fhn.getKey();
+
+      logger.info("match score " + subgraphScore + " match " + getSubgraphNodes(list));
+    }
+  }
+
+
+  /**
+   * Get nodes involved in subgraph from list of edges
+   *
+   * @param nodes
+   * @param list
+   */
+  private HashSet<String> getSubgraphNodes(ArrayList<String> list) {
+    HashSet<String> nodes = new HashSet<String>();
+
+    for (String aList : list) {
+      // Get parts of edge
+      String[] edgeSplit = aList.split("#");
+      String src = edgeSplit[0];
+      String dest = edgeSplit[1];
+      /*
+			 * Track nodes
+			 */
+      if (!nodes.contains(src))
+        nodes.add(src);
+      if (!nodes.contains(dest))
+        nodes.add(dest);
+    }
+
+    return nodes;
+  }
+
+  private HashSet<Edge> getQueryEdges(List<String> exemplarIDs, Graph graph) {
+    HashSet<Edge> queryEdges = new HashSet<Edge>();
+    Edge edg;
+    int e1, e2;
+    //String pair;
+
+    logger.info("ran on " + exemplarIDs);
+
+    if (exemplarIDs.size() > 1) {
+      for (int i = 0; i < exemplarIDs.size(); i++) {
+        for (int j = i + 1; j < exemplarIDs.size(); j++) {
+          String e1ID = exemplarIDs.get(i);
+          e1 = Integer.parseInt(e1ID);
+          String e2ID = exemplarIDs.get(j);
+          e2 = Integer.parseInt(e2ID);
+          if (e1 <= e2) {
+            //  pair = "(" + e1 + "," + e2 + ")";
+            edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
+          } else {
+            //  pair = "(" + e2 + "," + e1 + ")";
+            edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
+          }
+
+          // if (existsPair(graphTable, pairIDColumn, pair)) {
+          boolean hasEdge = graph.getEdge(e1, e2) != null || graph.getEdge(e2, e1) != null;
+          if (hasEdge) {
+            queryEdges.add(edg);
+          } else {
+            logger.warn("no edge between " + e1ID + " and " + e2ID);
+          }
+        }
+      }
+    }
+    return queryEdges;
+  }
+
+  public void executeQuery(int isClique) {
+    /**
+     * Get query signatures
+     */
+    getQuerySignatures(); //fills in querySign
+
+    /**
+     * NS Containment Check and Candidate Generation
+     */
+    long time1 = new Date().getTime();
+
+    int prunedCandidateFiltering = generateCandidates();
+    //if (prunedCandidateFiltering < 0) {
+    //	return;
+    //}
+
+    long timeA = new Date().getTime();
+    System.out.println("Candidate Generation Time: " + (timeA - time1));
+
+
+    /**
+     * Populate all required HashMaps relating edges to edge-types
+     */
+    // compute edge types for all edges in query
+    HashSet<String> queryEdgeTypes = computeQueryEdgeTypes();
+
+    //compute queryEdgetoIndex
+    computeQueryEdge2Index();
+
+    //compute queryEdgeType2Edges
+    HashMap<String, ArrayList<String>> queryEdgeType2Edges = computeQueryEdgeType2Edges();
+
+
+    //Maintain pointers and topk heap
+    computePointers(queryEdgeTypes, queryEdgeType2Edges);
+
+    /**
+     * The secret sauce... Execute the query...
+     */
+    executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
+
+    long time2 = new Date().getTime();
+    System.out.println("Overall Time: " + (time2 - time1));
+
+
+    //FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();
+    //executor.printHeap();
+    //executor.logHeap();
+
+		/*
+     *  Format results to influent API
+		 */
+
+    // subgraphs returned from executeQuery() are in the form of ordered edges.
+    // this order aligns result edges to query edges. the issue is, there is no
+    // mapping between query nodes roles (E0,E1,etc.) to result subgraph node roles.
+    // this is what
+  }
+
 
   public static void main(String[] args) throws Throwable {
 
@@ -158,7 +335,7 @@ public class QueryExecutor {
     k0 = Integer.parseInt(args[3]);
     queryFile = args[4];
     queryTypesFile = args[5];
-    spathFile = args[6];
+    //spathFile = args[6];
     topK = Integer.parseInt(args[7]);
     topologyFile = args[8];
     spdFile = args[9];
@@ -230,7 +407,7 @@ public class QueryExecutor {
 
 
   /**
-   *
+   * @see mitll.xdata.binding.TopKSubgraphShortlist#getShortlist(List, List, long)
    */
   public void executeQuery(HashMap<String, ArrayList<String>> queryEdgeType2Edges, int isClique, int prunedCandidateFiltering) {
 
@@ -277,7 +454,7 @@ public class QueryExecutor {
       //max is the type. How to get appropriate query edge/edges for this type?
 
 			/*
-			 * Get query edges corresponding to edge-type of the largest unprocessed weighted-edge in sortedEdgeLists 
+       * Get query edges corresponding to edge-type of the largest unprocessed weighted-edge in sortedEdgeLists
 			 */
       ArrayList<String> edgesOfMaxType = queryEdgeType2Edges.get(max);
       if (edgesOfMaxType == null) {
@@ -290,7 +467,7 @@ public class QueryExecutor {
         edgesOfMaxType = edgesOfMaxType2;
       }
 //			logger.info("edgesOfMaxType:"+edgesOfMaxType);
-			
+
 			
 			/*
 			 * Loop-through query edges of edge-type "max" 
@@ -835,6 +1012,7 @@ public class QueryExecutor {
    * @throws FileNotFoundException
    * @throws IOException
    * @throws NumberFormatException
+   * @seex mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    */
   public int loadQuery() throws Throwable {
 
@@ -846,11 +1024,7 @@ public class QueryExecutor {
     //read query graph
     query.loadGraph(new File(baseDir, queryFile));
 
-    int isClique = 0;
-    if (query.getNumEdges() == (query.getNumNodes() * (query.getNumNodes() - 1) / 2)) {
-      System.err.println("Query is Clique");
-      isClique = 1;
-    }
+    int isClique = getIsClique();
 
     //read query types
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, queryTypesFile)));
@@ -864,6 +1038,22 @@ public class QueryExecutor {
     return isClique;
   }
 
+  private int loadQuery(Set<Edge> queryEdges, Map<Integer, Integer> idToType) {
+    loadGraph(queryEdges);
+
+		/*
+		 * Read query types
+		 */
+    Set<Integer> queryNodes = query.node2NodeIdMap.keySet();
+
+    for (int node : queryNodes) {
+      Integer type = idToType.get(node);
+      queryNodeID2Type.put(query.node2NodeIdMap.get(node), type);
+      queryNode2Type.put(node, type);
+    }
+
+    return getIsClique();
+  }
 
   /**
    * Load-in the query graph from HashSet of edges
@@ -874,27 +1064,40 @@ public class QueryExecutor {
    * @param uidColumn
    * @param typeColumn
    * @return
+   * @see mitll.xdata.binding.TopKSubgraphShortlist#getShortlist(List, List, long)
    */
   public int loadQuery(HashSet<Edge> queryEdges, Connection connection, String tableName,
                        String uidColumn, String typeColumn) {
+    loadGraph(queryEdges);
 
-    //initialize (or re-initialize if loading new query)
-    initQuery();
-
-    //read query graph
-    query.loadGraph(queryEdges);
-
-    int isClique = 0;
-    if (query.getNumEdges() == (query.getNumNodes() * (query.getNumNodes() - 1) / 2)) {
-      System.err.println("Query is Clique");
-      isClique = 1;
-    }
-		
 		/*
 		 * Read query types
 		 */
     Set<Integer> queryNodes = query.node2NodeIdMap.keySet();
 
+    loadQueryTypes(connection, tableName, uidColumn, typeColumn, queryNodes);
+
+    return getIsClique();
+  }
+
+  private void loadGraph(Collection<Edge> queryEdges) {
+    //initialize (or re-initialize if loading new query)
+    initQuery();
+
+    //read query graph
+    query.loadGraph(queryEdges);
+  }
+
+  private int getIsClique() {
+    int isClique = 0;
+    if (query.getNumEdges() == (query.getNumNodes() * (query.getNumNodes() - 1) / 2)) {
+      System.err.println("Query is Clique");
+      isClique = 1;
+    }
+    return isClique;
+  }
+
+  private void loadQueryTypes(Connection connection, String tableName, String uidColumn, String typeColumn, Set<Integer> queryNodes) {
     for (int node : queryNodes) {
       String sqlQuery = "select " + typeColumn + " from " + tableName + " where " + uidColumn + "=" + node + ";";
 
@@ -915,8 +1118,6 @@ public class QueryExecutor {
       queryNodeID2Type.put(query.node2NodeIdMap.get(node), type);
       queryNode2Type.put(node, type);
     }
-
-    return isClique;
   }
 
 
@@ -941,7 +1142,7 @@ public class QueryExecutor {
   /**
    *
    */
-  public void init() {
+/*  public void init() {
     ordering = new HashMap<Integer, ArrayList<String>>();
     orderingType2Index = new HashMap<String, Integer>();
     topK = 10;
@@ -959,7 +1160,7 @@ public class QueryExecutor {
     pointers = new HashMap<String, Integer>();
     queryEdgetoIndex = new HashMap<String, Integer>();
     queryEdge2EdgeType = new HashMap<String, String>();
-  }
+  }*/
 
   /**
    *
@@ -978,7 +1179,7 @@ public class QueryExecutor {
 //		System.exit(0);
   }
 
-  public void logHeap() {
+/*  public void logHeap() {
     logger.info("============================================================================");
     while (!heap.isEmpty()) {
       FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
@@ -996,7 +1197,7 @@ public class QueryExecutor {
       logger.info(line);
     }
     logger.info("============================================================================");
-  }
+  }*/
 
   /**
    * @throws Throwable
@@ -1023,7 +1224,11 @@ public class QueryExecutor {
     for (int i = 1; i <= totalTypes; i++) {
       for (int j = i; j <= totalTypes; j++) {
         //BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+"indices/"+graphFileBasename.split("\\.txt")[0]+"_"+i+"#"+j+".list")));
-        BufferedReader in = new BufferedReader(new FileReader(new File(baseDir + datasetId + "_" + i + "#" + j + ".list")));
+        File edgeListFile = new File(baseDir + datasetId + "_" + i + "#" + j + ".list");
+
+        logger.info("reading " + edgeListFile.getAbsolutePath() + " exists " + edgeListFile.exists() + " baseDir " + baseDir);
+
+        BufferedReader in = new BufferedReader(new FileReader(edgeListFile));
         String str = "";
         ArrayList<String> list = new ArrayList<String>();
         while ((str = in.readLine()) != null)
@@ -1099,11 +1304,24 @@ public class QueryExecutor {
     in.close();
   }
 
+  public void prepareInternals() {
+    logger.info("Loading in indices...");
+
+    try {
+      loadGraphNodesType();    //compute ordering
+      loadGraphSignatures();    //topology
+      loadEdgeLists();      //sorted edge lists
+      loadSPDIndex();      //spd index
+    } catch (Throwable e) {
+      logger.error("Got " + e, e);
+    }
+  }
+
   /**
    * @throws Throwable
-   * @see
+   * @see TopKSubgraphShortlist#loadTypesAndIndices()
    */
-  public void loadGraphNodesType() throws Throwable {
+  public void loadGraphNodesType() {
 
     for (int t = 1; t <= totalTypes; t++) {
       types.add(t);
@@ -1263,7 +1481,7 @@ public class QueryExecutor {
       ArrayList<Integer> newList = new ArrayList<Integer>();
       HashSet<Integer> newListCopy = new HashSet<Integer>();
       for (int n : currList) {
-     //   ArrayList<Edge> nbrs = query.inLinks.get(n);
+        //   ArrayList<Edge> nbrs = query.inLinks.get(n);
         Collection<Edge> nbrs = query.getNeighbors(n);
         for (Edge e : nbrs) {
           if ((!considered.containsKey(e.getSrc()) && !newListCopy.contains(e.getSrc())) || considered.get(e.getSrc()) == k + 1) {
@@ -1301,6 +1519,7 @@ public class QueryExecutor {
    * @throws FileNotFoundException
    * @throws IOException
    */
+/*
   public void loadTypesFile()
       throws IOException {
 
@@ -1317,6 +1536,7 @@ public class QueryExecutor {
     }
     in.close();
   }
+*/
 
 
   /**
@@ -1381,7 +1601,6 @@ public class QueryExecutor {
    * Figure out how many types there are (in the case where we're not loading everything from file)
    */
   public void computeTotalTypes() {
-
     for (int key : node2Type.keySet()) {
       int type = node2Type.get(key);
       if (type > totalTypes)
@@ -1391,8 +1610,10 @@ public class QueryExecutor {
 
   /**
    * Setter for pre-loaded node2Type HashMap
+   *
+   * @see IngestAndQuery#executeQuery()
    */
-  public void setNode2Type(HashMap<Integer, Integer> in) {
+  public void setNode2Type(Map<Integer, Integer> in) {
     node2Type = in;
   }
 
@@ -1406,6 +1627,7 @@ public class QueryExecutor {
   /**
    * Setter for pre-loaded query-graph "query"
    */
+/*
   public void setQueryGraph(Graph in) {
     query = in;
   }
@@ -1418,7 +1640,7 @@ public class QueryExecutor {
   public void setQueryNode2Type(HashMap<Integer, Integer> queryNode2Type) {
     this.queryNode2Type = queryNode2Type;
   }
-
+*/
   public int getTotalTypes() {
     return totalTypes;
   }
@@ -1432,8 +1654,10 @@ public class QueryExecutor {
     return queryEdgetoIndex;
   }
 
+/*
   public ArrayList<String> getActualQueryEdges() {
     return actualQueryEdges;
   }
+*/
 }
 

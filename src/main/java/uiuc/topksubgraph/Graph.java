@@ -209,11 +209,10 @@ public class Graph {
    *
    * @param connection
    * @param tableName
-   * @param edgeName
    * @throws SQLException
    * @see Graph#loadGraph(DBConnection, String, String)
    */
-  public void loadGraphAgain(Connection connection, String tableName, String edgeName) throws SQLException {
+  public void loadGraphAgain(Connection connection, String tableName) throws SQLException {
     int nodeCount = node2NodeIdMap.size();
     setNumNodes(0);
     setNumEdges(0);
@@ -363,7 +362,7 @@ public class Graph {
    *
    * @param edges
    */
-  public void loadGraph(HashSet<Edge> edges) {
+  public void loadGraph(Collection<Edge> edges) {
     int nodeCount = node2NodeIdMap.size();
     setNumNodes(0);
     setNumEdges(0);
@@ -495,5 +494,9 @@ public class Graph {
 
   private HashMap<Integer, Map<Integer, Edge>> getInLinks2() {
     return inLinks2;
+  }
+
+  public Collection<Integer> getRawIDs() {
+    return node2NodeIdMap.keySet();
   }
 }

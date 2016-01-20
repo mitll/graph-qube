@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
  */
 public class TopKSubgraphShortlist extends Shortlist {
   private static final Logger logger = Logger.getLogger(TopKSubgraphShortlist.class);
-  public static final String MARGINAL_GRAPH = "MARGINAL_GRAPH";
+  private static final String MARGINAL_GRAPH = "MARGINAL_GRAPH";
 
   private int K = 500;
   private int D = 2;
@@ -83,13 +83,13 @@ public class TopKSubgraphShortlist extends Shortlist {
     Graph g = new Graph();
     try {
       //  g.loadGraph(binding.connection, "MARGINAL_GRAPH", "NUM_TRANS");
-      g.loadGraphAgain(binding.connection, MARGINAL_GRAPH, "NUM_TRANS");
+      g.loadGraphAgain(binding.connection, MARGINAL_GRAPH);
     } catch (Exception e) {
       logger.info("Got: " + e);
     }
     executor.g = g;
 
-    QueryExecutor.spathFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spath";
+    // QueryExecutor.spathFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spath";
     QueryExecutor.topologyFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".topology";
     QueryExecutor.spdFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spd";
     QueryExecutor.resultDir = "results";
@@ -119,11 +119,11 @@ public class TopKSubgraphShortlist extends Shortlist {
       executor.loadTypesFromDatabase(binding.connection, usersTable, userIdColumn, typeColumn);
 
       logger.info("Loading in indices...");
-      executor.loadGraphNodesType();    //compute ordering
-      executor.loadGraphSignatures();    //topology
-      executor.loadEdgeLists();      //sorted edge lists
-      executor.loadSPDIndex();      //spd index
-
+//      executor.loadGraphNodesType();    //compute ordering
+//      executor.loadGraphSignatures();    //topology
+//      executor.loadEdgeLists();      //sorted edge lists
+//      executor.loadSPDIndex();      //spd index
+      executor.prepareInternals();
 
       //Make resultDir if necessary
       File directory = new File(QueryExecutor.baseDir + QueryExecutor.resultDir);
@@ -169,37 +169,7 @@ public class TopKSubgraphShortlist extends Shortlist {
      * Get all pairs of query nodes...
 		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
 		 */
-    HashSet<Edge> queryEdges = new HashSet<Edge>();
-    Edge edg;
-    int e1, e2;
-    String pair;
-
-    logger.info("ran on " + exemplarIDs);
-
-    if (exemplarIDs.size() > 1) {
-      for (int i = 0; i < exemplarIDs.size(); i++) {
-        for (int j = i + 1; j < exemplarIDs.size(); j++) {
-          String e1ID = exemplarIDs.get(i);
-          e1 = Integer.parseInt(e1ID);
-          String e2ID = exemplarIDs.get(j);
-          e2 = Integer.parseInt(e2ID);
-          if (Integer.parseInt(e1ID) <= Integer.parseInt(e2ID)) {
-          //  pair = "(" + e1 + "," + e2 + ")";
-            edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
-          } else {
-          //  pair = "(" + e2 + "," + e1 + ")";
-            edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
-          }
-
-          // if (existsPair(graphTable, pairIDColumn, pair)) {
-          if (existsPairTransactions(BitcoinBinding.TRANSACTIONS, e1ID, e2ID)) {
-            queryEdges.add(edg);
-          } else {
-            logger.warn("no edge between " + e1ID + " and " + e2ID);
-          }
-        }
-      }
-    }
+    HashSet<Edge> queryEdges = getQueryEdges(exemplarIDs);
 
     for (Edge qe : queryEdges) {
       logger.info("qe: " + qe);
@@ -219,63 +189,8 @@ public class TopKSubgraphShortlist extends Shortlist {
     } catch (FileNotFoundException e) {
       logger.info("got: " + e);
     }
-
-    /**
-     * Get query signatures
-     */
-    executor.getQuerySignatures(); //fills in querySign
-
-    /**
-     * NS Containment Check and Candidate Generation
-     */
-    long time1 = new Date().getTime();
-
-    int prunedCandidateFiltering = executor.generateCandidates();
-    //if (prunedCandidateFiltering < 0) {
-    //	return;
-    //}
-
-    long timeA = new Date().getTime();
-    System.out.println("Candidate Generation Time: " + (timeA - time1));
-
-
-    /**
-     * Populate all required HashMaps relating edges to edge-types
-     */
-    // compute edge types for all edges in query
-    HashSet<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
-
-    //compute queryEdgetoIndex
-    executor.computeQueryEdge2Index();
-
-    //compute queryEdgeType2Edges
-    HashMap<String, ArrayList<String>> queryEdgeType2Edges = executor.computeQueryEdgeType2Edges();
-
-
-    //Maintain pointers and topk heap
-    executor.computePointers(queryEdgeTypes, queryEdgeType2Edges);
-
-    /**
-     * The secret sauce... Execute the query...
-     */
-    executor.executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
-
-    long time2 = new Date().getTime();
-    System.out.println("Overall Time: " + (time2 - time1));
-
-
-    //FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();
-    //executor.printHeap();
-    //executor.logHeap();
-		
-		/*
-		 *  Format results to influent API
-		 */
-
-    // subgraphs returned from executeQuery() are in the form of ordered edges.
-    // this order aligns result edges to query edges. the issue is, there is no
-    // mapping between query nodes roles (E0,E1,etc.) to result subgraph node roles.
-    // this is what
+   // executeQuery(isClique);
+    executor.executeQuery(isClique);
 
     logger.info("Original entity ordering from Influent query: " + exemplarIDs);
     List<FL_PatternSearchResult> results = getPatternSearchResults(queryEdges, exemplarIDs);
@@ -283,6 +198,40 @@ public class TopKSubgraphShortlist extends Shortlist {
     return results;
   }
 
+  private HashSet<Edge> getQueryEdges(List<String> exemplarIDs) {
+    HashSet<Edge> queryEdges = new HashSet<Edge>();
+    Edge edg;
+    int e1, e2;
+    //String pair;
+
+    logger.info("ran on " + exemplarIDs);
+
+    if (exemplarIDs.size() > 1) {
+      for (int i = 0; i < exemplarIDs.size(); i++) {
+        for (int j = i + 1; j < exemplarIDs.size(); j++) {
+          String e1ID = exemplarIDs.get(i);
+          e1 = Integer.parseInt(e1ID);
+          String e2ID = exemplarIDs.get(j);
+          e2 = Integer.parseInt(e2ID);
+          if (Integer.parseInt(e1ID) <= Integer.parseInt(e2ID)) {
+            //  pair = "(" + e1 + "," + e2 + ")";
+            edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
+          } else {
+            //  pair = "(" + e2 + "," + e1 + ")";
+            edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
+          }
+
+          // if (existsPair(graphTable, pairIDColumn, pair)) {
+          if (existsPairTransactions(BitcoinBinding.TRANSACTIONS, e1ID, e2ID)) {
+            queryEdges.add(edg);
+          } else {
+            logger.warn("no edge between " + e1ID + " and " + e2ID);
+          }
+        }
+      }
+    }
+    return queryEdges;
+  }
 
   /**
    * @param connection
@@ -331,7 +280,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @param pairID
    * @return
    */
-  private boolean existsPair(String tableName, String pairIdCol, String pair) {
+/*  private boolean existsPair(String tableName, String pairIdCol, String pair) {
     try {
       String sql = "select count(*) as CNT from " + tableName + " where " + pairIdCol + " = " + pair + " limit 1;";
       ResultSet rs = doSQLQuery(sql);
@@ -349,7 +298,7 @@ public class TopKSubgraphShortlist extends Shortlist {
       logger.info("got e: " + e);
       return false;
     }
-  }
+  }*/
 
 
   /**
@@ -424,6 +373,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    *
    * @param queryEdges
    * @return
+   * @see #getShortlist(List, List, long)
    */
   private List<FL_PatternSearchResult> getPatternSearchResults(HashSet<Edge> queryEdges, List<String> exemplarIDs) {
 
@@ -849,12 +799,12 @@ public class TopKSubgraphShortlist extends Shortlist {
   private HashSet<String> getSubgraphNodes(ArrayList<String> list) {
     HashSet<String> nodes = new HashSet<String>();
 
-    for (int i = 0; i < list.size(); i++) {
+    for (String aList : list) {
       // Get parts of edge
-      String[] edgeSplit = list.get(i).split("#");
+      String[] edgeSplit = aList.split("#");
       String src = edgeSplit[0];
       String dest = edgeSplit[1];
-			/*
+      /*
 			 * Track nodes
 			 */
       if (!nodes.contains(src))
@@ -1030,7 +980,7 @@ public class TopKSubgraphShortlist extends Shortlist {
       QueryExecutor.typesFile = QueryExecutor.typesFile.replace(separator, "/");
       QueryExecutor.queryFile = QueryExecutor.queryFile.replace(separator, "/");
       QueryExecutor.queryTypesFile = QueryExecutor.queryTypesFile.replace(separator, "/");
-      QueryExecutor.spathFile = QueryExecutor.spathFile.replace(separator, "/");
+      // QueryExecutor.spathFile = QueryExecutor.spathFile.replace(separator, "/");
       QueryExecutor.topologyFile = QueryExecutor.topologyFile.replace(separator, "/");
       QueryExecutor.spdFile = QueryExecutor.spdFile.replace(separator, "/");
       QueryExecutor.resultDir = QueryExecutor.resultDir.replace(separator, "/");

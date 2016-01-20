@@ -67,7 +67,7 @@ public class IngestAndQuery {
     QueryExecutor.typesFile = "graphs/bitcoin_small_types.txt";
     QueryExecutor.queryFile = "queries/queryGraph.FanOut.txt";
     QueryExecutor.queryTypesFile = "queries/queryTypes.FanOut.txt";
-    QueryExecutor.spathFile = "indices/bitcoin_small_transactions.2.spath";
+    //QueryExecutor.spathFile = "indices/bitcoin_small_transactions.2.spath";
     QueryExecutor.topologyFile = "indices/bitcoin_small_transactions.2.topology";
     QueryExecutor.spdFile = "indices/bitcoin_small_transactions.2.spd";
     QueryExecutor.resultDir = "results";
@@ -176,7 +176,7 @@ public class IngestAndQuery {
       QueryExecutor.typesFile = QueryExecutor.typesFile.replace(separator, "/");
       QueryExecutor.queryFile = QueryExecutor.queryFile.replace(separator, "/");
       QueryExecutor.queryTypesFile = QueryExecutor.queryTypesFile.replace(separator, "/");
-      QueryExecutor.spathFile = QueryExecutor.spathFile.replace(separator, "/");
+      //QueryExecutor.spathFile = QueryExecutor.spathFile.replace(separator, "/");
       QueryExecutor.topologyFile = QueryExecutor.topologyFile.replace(separator, "/");
       QueryExecutor.spdFile = QueryExecutor.spdFile.replace(separator, "/");
       QueryExecutor.resultDir = QueryExecutor.resultDir.replace(separator, "/");

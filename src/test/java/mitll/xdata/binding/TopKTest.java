@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
+import uiuc.topksubgraph.QueryExecutor;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,6 +44,32 @@ import java.util.*;
 public class TopKTest {
   private static Logger logger = Logger.getLogger(TopKTest.class);
 
+
+  @Test
+  public void testSimpleSearch() {
+    int n = 10;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    Graph graph = ingest(n, edgeToWeight);
+
+    Map<Integer, Integer> idToType = new HashMap<>();
+    for (Integer rawID : graph.getRawIDs()) {
+      idToType.put(rawID, 1);
+    }
+
+    QueryExecutor executor = new QueryExecutor(graph,
+        "bitcoin_small",
+        "/Users/go22670/graph-qube/data/bitcoin/indices/", idToType);
+
+
+    List<String> exemplarIDs  = Arrays.asList("1", "2", "3");
+    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
+//    for (Integer id : Arrays.asList(1, 2, 3)) {
+//      idToType.put(id, 1);
+//    }
+    executor.testQuery(exemplarIDs, graph, idToType);
+    executor.testQuery(exemplarIDs2, graph, idToType);
+  }
 
   @Test
   public void testSearch() {
@@ -151,11 +178,11 @@ public class TopKTest {
   @Test
   public void testIngest2() {
     logger.debug("ENTER testIngest()");
-    int n = 5;
+    int n = 10;
     //int neighbors = 100;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
-   // ingest2(n, edgeToWeight);
+    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    ingest2(n, edgeToWeight);
     ingestFast2(n, edgeToWeight);
 
     //sleep();
@@ -260,16 +287,19 @@ public class TopKTest {
     }
   }
 
-  private void ingest(int n, Map<Long, Integer> edgeToWeight) {
+  private Graph ingest(int n, Map<Long, Integer> edgeToWeight) {
     try {
       long time1 = System.currentTimeMillis();
 
       Graph graph = beforeComputeIndices(n, edgeToWeight);
 
       computeIndices(time1, graph);
+
+      return graph;
     } catch (Exception e) {
       logger.error("got " + e, e);
     }
+    return null;
   }
 
   private void computeIndices(long time1, Graph graph) throws IOException {

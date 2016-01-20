@@ -113,7 +113,7 @@ public class BitcoinIngestSubGraph {
     QueryExecutor.k0 = 2;
     QueryExecutor.topK = 5001;
 
-    QueryExecutor.spathFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spath";
+    //QueryExecutor.spathFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spath";
     QueryExecutor.topologyFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".topology";
     QueryExecutor.spdFile = QueryExecutor.datasetId + "." + QueryExecutor.k0 + ".spd";
     QueryExecutor.resultDir = "results";
@@ -801,7 +801,7 @@ public class BitcoinIngestSubGraph {
       QueryExecutor.typesFile = QueryExecutor.typesFile.replace(separator, "/");
       QueryExecutor.queryFile = QueryExecutor.queryFile.replace(separator, "/");
       QueryExecutor.queryTypesFile = QueryExecutor.queryTypesFile.replace(separator, "/");
-      QueryExecutor.spathFile = QueryExecutor.spathFile.replace(separator, "/");
+      //QueryExecutor.spathFile = QueryExecutor.spathFile.replace(separator, "/");
       QueryExecutor.topologyFile = QueryExecutor.topologyFile.replace(separator, "/");
       QueryExecutor.spdFile = QueryExecutor.spdFile.replace(separator, "/");
       QueryExecutor.resultDir = QueryExecutor.resultDir.replace(separator, "/");
