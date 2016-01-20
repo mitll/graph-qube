@@ -230,7 +230,8 @@ public class MultipleIndexConstructor {
 
         NodeInfo nodeInfo = nodeInfos.get(srcNode);
 
-        if (DEBUG) logger.info("\tfor " + i + " neighbor " + edge + "/" + neighborType +
+        if (DEBUG) logger.info("\tfor " + i + "/" + src +
+            " neighbor " + edge + "/" + neighborType +
             " and " + nodeInfo);
 
         float weight = edge.getFWeight();
@@ -238,13 +239,14 @@ public class MultipleIndexConstructor {
           String nType = pair.getKey();
           TypeInfo typeInfo = pair.getValue();
           Set<Integer> neighborNeighbors = typeInfo.getNodes();
-          if (DEBUG) logger.info("\tfor " + i + " type " + nType +
+          if (DEBUG) logger.info("\tfor " + i + "/" + src + " type " + nType +
               " neighborNeighbors " + neighborNeighbors);
 
-          Set<Integer> seenForType = typeToNeighbors.get(nType);
+          String d2Type = neighborType + nType;
+          Set<Integer> seenForType = typeToNeighbors.get(d2Type);
 
           if (seenForType == null) {
-            typeToNeighbors.put(nType, seenForType = new HashSet<Integer>());
+            typeToNeighbors.put(d2Type, seenForType = new HashSet<Integer>());
           }
 
           for (Integer candidate : neighborNeighbors) {
@@ -258,7 +260,6 @@ public class MultipleIndexConstructor {
           float neighborWeight = typeInfo.getMaxWeight();
           boolean matchingWeight = neighborWeight == weight;
           float weightOfNeighbor = sameType && matchingWeight ? typeInfo.getPrevMax() : neighborWeight;
-          String d2Type = neighborType + nType;
           // String d2Type = nType +neighborType;
           //String d2Type = nType + neighborType;
 
