@@ -157,7 +157,7 @@ public class Graph {
       int weight = edgeAndCount.getValue();
 
      // if (c < 20)
-       logger.info("loadGraphFromMemory " + from + " -> " + to + " = " + weight);
+      // logger.info("loadGraphFromMemory " + from + " -> " + to + " = " + weight);
 
       c++;
       if (c % 1000000 == 0) {

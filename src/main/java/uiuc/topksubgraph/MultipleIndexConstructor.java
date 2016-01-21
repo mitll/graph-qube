@@ -54,7 +54,7 @@ public class MultipleIndexConstructor {
   private static Graph graph = new Graph();
 
   public static int totalTypes = 0;
-  private static final boolean DEBUG = true;
+  private static final boolean DEBUG = false;
 
   /**
    * @param args

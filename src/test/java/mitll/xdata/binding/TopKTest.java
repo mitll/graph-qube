@@ -53,27 +53,34 @@ public class TopKTest {
 
     Graph graph = ingestFast(n, edgeToWeight, outdir);
 
-    Map<Integer, Integer> idToType = new HashMap<>();
-    for (Integer rawID : graph.getRawIDs()) {
-      idToType.put(rawID, 1);
-    }
+    Map<Integer, Integer> idToType = getUniformTypes(graph);
     //String outdir = "data/bitcoin/fast/";
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
-        "/Users/go22670/graph-qube/" + outdir, idToType);
+        getResourcePath(outdir), idToType);
 
-    List<String> exemplarIDs = Arrays.asList("1", "2", "3");
-    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
-    List<String> exemplarIDs3 = Arrays.asList("1", "2");
-    List<String> exemplarIDs4 = Arrays.asList("2", "7", "8");
-
-    executor.testQuery(exemplarIDs, graph, idToType);
-    executor.testQuery(exemplarIDs2, graph, idToType);
-    executor.testQuery(exemplarIDs3, graph, idToType);
-    executor.testQuery(exemplarIDs4, graph, idToType);
+    doTests(graph, idToType, executor);
   }
 
+  @Test
+  public void testSimpleSearchFast2() {
+    int n = 10;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    String outdir = "data/bitcoin/fast/";
+
+    Graph graph = ingestFast2(n, edgeToWeight, outdir);
+
+    Map<Integer, Integer> idToType = getOddEvenTypes(graph);
+    //String outdir = "data/bitcoin/fast/";
+
+    QueryExecutor executor = new QueryExecutor(graph,
+        "bitcoin_small",
+        getResourcePath(outdir), idToType);
+
+    doTests(graph, idToType, executor);
+  }
 
   @Test
   public void testSimpleSearch() {
@@ -83,16 +90,17 @@ public class TopKTest {
     String outdir = "data/bitcoin/indices/";
     Graph graph = ingest(n, edgeToWeight, outdir);
 
-    Map<Integer, Integer> idToType = new HashMap<>();
-    for (Integer rawID : graph.getRawIDs()) {
-      idToType.put(rawID, 1);
-    }
+    Map<Integer, Integer> idToType = getUniformTypes(graph);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
-        "/Users/go22670/graph-qube/" + outdir, idToType);
+        getResourcePath(outdir), idToType);
 
 
+    doTests(graph, idToType, executor);
+  }
+
+  private void doTests(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor) {
     List<String> exemplarIDs = Arrays.asList("1", "2", "3");
     List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
     List<String> exemplarIDs3 = Arrays.asList("1", "2");
@@ -104,6 +112,38 @@ public class TopKTest {
     executor.testQuery(exemplarIDs4, graph, idToType);
   }
 
+  private Map<Integer, Integer> getUniformTypes(Graph graph) {
+    Map<Integer, Integer> idToType = new HashMap<>();
+    for (Integer rawID : graph.getRawIDs()) {
+      idToType.put(rawID, 1);
+    }
+    return idToType;
+  }
+
+
+  @Test
+  public void testSimpleSearchFastOddEven2() {
+    int n = 10;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
+
+    String outdir = "data/bitcoin/fast/";
+
+    Graph graph = ingestFast2(n, edgeToWeight, outdir);
+
+    Map<Integer, Integer> idToType = getOddEvenTypes(graph);
+
+    QueryExecutor executor = new QueryExecutor(graph,
+        "bitcoin_small",
+        getResourcePath(outdir), idToType);
+
+
+    doOddEvenTests(graph, idToType, executor);
+  }
+
+  private String getResourcePath(String outdir) {
+    return "/Users/go22670/graph-qube/" + outdir;
+  }
 
   @Test
   public void testSimpleSearch2() {
@@ -115,16 +155,17 @@ public class TopKTest {
 
     Graph graph = ingest2(n, edgeToWeight, outdir);
 
-    Map<Integer, Integer> idToType = new HashMap<>();
-    for (Integer rawID : graph.getRawIDs()) {
-      idToType.put(rawID, rawID % 2 == 0 ? 1 : 2);
-    }
+    Map<Integer, Integer> idToType = getOddEvenTypes(graph);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
-        "/Users/go22670/graph-qube/data/bitcoin/indices/", idToType);
+        getResourcePath(outdir), idToType);
 
 
+    doOddEvenTests(graph, idToType, executor);
+  }
+
+  private void doOddEvenTests(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor) {
     List<String> exemplarIDs = Arrays.asList("3", "5", "7");
     List<String> exemplarIDs2 = Arrays.asList("2", "4", "6");
     List<String> exemplarIDs3 = Arrays.asList("2", "4", "6", "8");
@@ -138,6 +179,14 @@ public class TopKTest {
     executor.testQuery(exemplarIDs3, graph, idToType);
     executor.testQuery(exemplarIDs4, graph, idToType);
     executor.testQuery(exemplarIDs5, graph, idToType);
+  }
+
+  private Map<Integer, Integer> getOddEvenTypes(Graph graph) {
+    Map<Integer, Integer> idToType = new HashMap<>();
+    for (Integer rawID : graph.getRawIDs()) {
+      idToType.put(rawID, rawID % 2 == 0 ? 1 : 2);
+    }
+    return idToType;
   }
 
 
@@ -419,15 +468,18 @@ public class TopKTest {
     return null;
   }
 
-  private void ingestFast2(int n, Map<Long, Integer> edgeToWeight, String outdir) {
+  private Graph ingestFast2(int n, Map<Long, Integer> edgeToWeight, String outdir) {
     try {
       long time1 = System.currentTimeMillis();
 
       Graph graph = beforeComputeIndices2(n, edgeToWeight, outdir);
       computeIndicesFast(time1, graph);
+
+      return graph;
     } catch (Exception e) {
       logger.error("got " + e, e);
     }
+    return null;
   }
 
   private void computeIndicesFast(long time1, Graph graph) throws IOException {
