@@ -92,7 +92,7 @@ public class MultipleIndexConstructor {
     populateSortedEdgeLists(graph);
 
     //save the sorted edge lists
-    saveSortedEdgeList();
+    saveSortedEdgeList(MultipleIndexConstructor.outDir);
 
     //test method that computes totalTypes
     totalTypes = 0;
@@ -129,7 +129,7 @@ public class MultipleIndexConstructor {
     if (!directory.exists() && !directory.mkdirs())
       throw new IOException("Could not create directory: " + outDir);
 
-    String datasetId = BitcoinBinding.DATASET_ID + "_Fast";
+    String datasetId = BitcoinBinding.DATASET_ID;// + "_Fast";
     String topologyFilename = datasetId + "." + Integer.toString(D) + ".topology";
     BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
     String spdFilename = datasetId + "." + Integer.toString(D) + ".spd";
@@ -847,9 +847,11 @@ public class MultipleIndexConstructor {
    *
    * @throws IOException
    * @paramx graphFile
+   * @see TopKTest#getGraphBeforeComputeIndices
    */
-  public static void saveSortedEdgeList() throws IOException {
+  public static void saveSortedEdgeList(String outDir) throws IOException {
 
+    logger.info("out dir " + outDir);
     //Make outDir if neccessary
     File directory = new File(outDir);
     if (!directory.exists() && !directory.mkdirs())

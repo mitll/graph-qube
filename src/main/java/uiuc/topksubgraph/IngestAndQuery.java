@@ -224,7 +224,7 @@ public class IngestAndQuery {
 
     //save the sorted edge lists
     try {
-      MultipleIndexConstructor.saveSortedEdgeList();
+      MultipleIndexConstructor.saveSortedEdgeList(MultipleIndexConstructor.outDir);
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

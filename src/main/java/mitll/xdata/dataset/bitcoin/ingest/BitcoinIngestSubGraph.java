@@ -252,7 +252,7 @@ public class BitcoinIngestSubGraph {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
     long then = System.currentTimeMillis();
-    logger.info("computeIndices start");
+    logger.info("computeIndices start " + bitcoinDirectory);
 
     computeIndicesFromMemory(bitcoinDirectory, connection, edgeToWeight);
     long now = System.currentTimeMillis();
@@ -324,6 +324,13 @@ public class BitcoinIngestSubGraph {
     return null;
   }
 
+  /**
+   * @see #computeIndicesFromMemory
+   * @param bitcoinDirectory
+   * @param dbConnection
+   * @param edgeToWeight
+   * @throws Throwable
+   */
   private static void computeIndicesFromMemory(String bitcoinDirectory,
                                                DBConnection dbConnection,
                                                Map<Long, Integer> edgeToWeight) throws Throwable {
@@ -395,7 +402,7 @@ public class BitcoinIngestSubGraph {
     MultipleIndexConstructor.populateSortedEdgeLists(graph);
 
     //save the sorted edge lists
-    MultipleIndexConstructor.saveSortedEdgeList();
+    MultipleIndexConstructor.saveSortedEdgeList(MultipleIndexConstructor.outDir);
 
     //hash map for all possible "edge-type" paths: i.e. doubles,triples,...D-tuples
     //this gets you the "official" ordering

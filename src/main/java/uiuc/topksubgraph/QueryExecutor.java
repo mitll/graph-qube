@@ -99,6 +99,8 @@ public class QueryExecutor {
 
     setNode2Type(idToType);
     computeTotalTypes();
+
+    logger.info("total " + totalTypes);
     prepareInternals();
   }
 
@@ -277,7 +279,7 @@ public class QueryExecutor {
     //}
 
     long timeA = new Date().getTime();
-    System.out.println("Candidate Generation Time: " + (timeA - time1));
+    logger.info("Candidate Generation Time: " + (timeA - time1));
 
 
     /**
@@ -302,7 +304,7 @@ public class QueryExecutor {
     executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
 
     long time2 = new Date().getTime();
-    System.out.println("Overall Time: " + (time2 - time1));
+    logger.info("Overall Time: " + (time2 - time1));
 
 
     //FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();
@@ -373,7 +375,7 @@ public class QueryExecutor {
 //		}
 //
 //		long timeA = new Date().getTime();
-//		System.out.println("Candidate Generation Time: " + (timeA - time1));
+//		logger.info("Candidate Generation Time: " + (timeA - time1));
 //		
 //		
 //		/**
@@ -400,7 +402,7 @@ public class QueryExecutor {
 //		executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
 //		
 //		long time2=new Date().getTime();
-//		System.out.println("Overall Time: "+(time2-time1));
+//		logger.info("Overall Time: "+(time2-time1));
 //		
 //		printHeap();
   }
@@ -423,7 +425,7 @@ public class QueryExecutor {
     while (true) {
       edgeProcessed++;
       if (edgeProcessed % 100 == 0)
-        //System.err.println("edgeProcessed: "+edgeProcessed);
+        //logger.error("edgeProcessed: "+edgeProcessed);
         logger.debug("edgeProcessed: " + edgeProcessed);
 
 
@@ -458,7 +460,7 @@ public class QueryExecutor {
 			 */
       ArrayList<String> edgesOfMaxType = queryEdgeType2Edges.get(max);
       if (edgesOfMaxType == null) {
-        System.err.println("Something is wrong: " + max);
+        logger.error("Something is wrong: " + max);
         edgesOfMaxType = queryEdgeType2Edges.get(max.split("#")[1] + "#" + max.split("#")[0]);
       }
       if (isClique == 1) {
@@ -548,10 +550,10 @@ public class QueryExecutor {
           double ubScoreOfNonConsideredEdges = 0;
           if (ubScoreOfNonConsideredEdges2 < ubScoreOfNonConsideredEdges1) {
             ubScoreOfNonConsideredEdges = ubScoreOfNonConsideredEdges2;
-            //System.err.println("Helps "+consideredEdgeIndices.size());
+            //logger.error("Helps "+consideredEdgeIndices.size());
           } else {
             ubScoreOfNonConsideredEdges = ubScoreOfNonConsideredEdges1;
-            //System.err.println("No Help!"+consideredEdgeIndices.size());
+            //logger.error("No Help!"+consideredEdgeIndices.size());
           }
           //compute upper bound score of candidate
           double upperBoundScore = actualScore + ubScoreOfNonConsideredEdges;
@@ -559,7 +561,7 @@ public class QueryExecutor {
           //check with heap and then add it to newCandidate
           if (heap.size() >= topK) {
             FibonacciHeapNode<ArrayList<String>> fhn = heap.min();
-            //System.out.println("Check:"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
+            //logger.info("Check:"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
 
             // add partial candidate pc if there's room in the heap for it
             if (upperBoundScore > fhn.getKey())
@@ -572,7 +574,7 @@ public class QueryExecutor {
                 prunedMPWSize1++;
               if (ubScoreOfNonConsideredEdges2 < ubScoreOfNonConsideredEdges1 && ubScoreOfNonConsideredEdges1 + actualScore > fhn.getKey())
                 pruningByMPWBetterThanThatByEdgeListsSize1++;
-              //System.out.println("TopK pruned!"+"\t"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
+              //logger.info("TopK pruned!"+"\t"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
             }
           } else
             // if heap is not yet full, pc gets added by default
@@ -601,7 +603,7 @@ public class QueryExecutor {
           }
           int rand = 0;//(int) (Math.random()*nextEdgeCandidates.size());
           if (nextEdgeCandidates.size() == 0) {
-            System.err.println("Cannot process this query");
+            logger.error("Cannot process this query");
             return;
           }
           String nextEdge = nextEdgeCandidates.get(rand);
@@ -750,10 +752,10 @@ public class QueryExecutor {
               double ubScoreOfNonConsideredEdges = 0;
               if (ubScoreOfNonConsideredEdges2 < ubScoreOfNonConsideredEdges1) {
                 ubScoreOfNonConsideredEdges = ubScoreOfNonConsideredEdges2;
-//								System.err.println("Helps "+consideredEdgeIndices.size());
+//								logger.error("Helps "+consideredEdgeIndices.size());
               } else {
                 ubScoreOfNonConsideredEdges = ubScoreOfNonConsideredEdges1;
-//								System.err.println("No Help!"+consideredEdgeIndices.size());
+//								logger.error("No Help!"+consideredEdgeIndices.size());
               }
               //compute upper bound score of candidate
               double upperBoundScore = actualScore + ubScoreOfNonConsideredEdges;
@@ -854,9 +856,9 @@ public class QueryExecutor {
         FibonacciHeapNode<ArrayList<String>> fhn = heap.min();
         if (maxUpperBound < fhn.getKey()) {
           //printHeap();
-          System.out.println("Top-K Quit");
+          logger.info("Top-K Quit");
           prunedGlobal = 1;
-          System.out.println("Pruning Stats: " + prunedCandidateFiltering + "\t" + prunedEdgeListsPartialCandidate + "\t" + prunedGlobal + "\t" + prunedMPWPartialCandidate + "\t" + prunedEdgeListsSize1 + "\t" + prunedMPWSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsPartial);
+          logger.info("Pruning Stats: " + prunedCandidateFiltering + "\t" + prunedEdgeListsPartialCandidate + "\t" + prunedGlobal + "\t" + prunedMPWPartialCandidate + "\t" + prunedEdgeListsSize1 + "\t" + prunedMPWSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsPartial);
           return;
         }
       }
@@ -864,8 +866,8 @@ public class QueryExecutor {
 
     //printHeap();
 
-    System.err.println("edgeProcessed: " + edgeProcessed);
-    System.out.println("Pruning Stats: " + prunedCandidateFiltering + "\t" + prunedEdgeListsPartialCandidate + "\t" + prunedGlobal + "\t" + prunedMPWPartialCandidate + "\t" + prunedEdgeListsSize1 + "\t" + prunedMPWSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsPartial);
+    logger.error("edgeProcessed: " + edgeProcessed);
+    logger.info("Pruning Stats: " + prunedCandidateFiltering + "\t" + prunedEdgeListsPartialCandidate + "\t" + prunedGlobal + "\t" + prunedMPWPartialCandidate + "\t" + prunedEdgeListsSize1 + "\t" + prunedMPWSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsPartial);
 
   }
 
@@ -979,25 +981,25 @@ public class QueryExecutor {
       HashSet<Integer> c1 = graphType2IDSet.get(queryNodeID2Type.get(i));
 
       if (c1 == null) {
-        System.err.println("Graph has no nodes of type " + queryNodeID2Type.get(i));
+        logger.error("Graph has no nodes of type " + queryNodeID2Type.get(i));
         return -1;
       }
 
-      // System.out.println("Old Size: "+c1.size());
+      // logger.info("Old Size: "+c1.size());
       ArrayList<Integer> c2 = new ArrayList<Integer>();
       for (int c : c1) {
         int kstar = NSContained(i, c);
-        // System.out.println(kstar+" kstar: "+c);
+        // logger.info(kstar+" kstar: "+c);
         if (kstar != -1)
           c2.add(c);
       }
 
       if (c2.size() == 0) {
-        System.err.println("Graph has no candidate nodes of type " + queryNodeID2Type.get(i));
+        logger.error("Graph has no candidate nodes of type " + queryNodeID2Type.get(i));
         return -1;
       }
 
-      System.out.println("New Size: " + c2.size());
+      logger.info("New Size: " + c2.size());
       candidates.put(query.nodeId2NodeMap.get(i), c2);
       prunedCandidateFiltering += (c1.size() - c2.size());
     }
@@ -1091,7 +1093,7 @@ public class QueryExecutor {
   private int getIsClique() {
     int isClique = 0;
     if (query.getNumEdges() == (query.getNumNodes() * (query.getNumNodes() - 1) / 2)) {
-      System.err.println("Query is Clique");
+      logger.error("Query is Clique");
       isClique = 1;
     }
     return isClique;
@@ -1166,7 +1168,7 @@ public class QueryExecutor {
    *
    */
   public void printHeap() {
-    System.out.println("============================================================================");
+    logger.info("============================================================================");
     while (!heap.isEmpty()) {
       FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
       ArrayList<String> list = fhn.getData();
@@ -1175,7 +1177,7 @@ public class QueryExecutor {
       System.out.print(fhn.getKey());
       System.out.println();
     }
-    System.out.println("============================================================================");
+    logger.info("============================================================================");
 //		System.exit(0);
   }
 
@@ -1226,7 +1228,7 @@ public class QueryExecutor {
         //BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+"indices/"+graphFileBasename.split("\\.txt")[0]+"_"+i+"#"+j+".list")));
         File edgeListFile = new File(baseDir + datasetId + "_" + i + "#" + j + ".list");
 
-        logger.info("reading " + edgeListFile.getAbsolutePath() + " exists " + edgeListFile.exists() + " baseDir " + baseDir);
+//        logger.info("reading " + edgeListFile.getAbsolutePath() + " exists " + edgeListFile.exists() + " baseDir " + baseDir);
 
         BufferedReader in = new BufferedReader(new FileReader(edgeListFile));
         String str = "";
@@ -1291,7 +1293,11 @@ public class QueryExecutor {
 
   public void loadGraphSignatures() throws Throwable {
     graphSign = new int[totalNodes][totalOrderingSize];
-    BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, topologyFile)));
+    File file = new File(baseDir, topologyFile);
+
+    logger.info("reading topology from " + file.getAbsolutePath());
+
+    BufferedReader in = new BufferedReader(new FileReader(file));
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\s+");
@@ -1346,6 +1352,8 @@ public class QueryExecutor {
       orderingType2Index.put(i + "", totalOrderingSize);
       totalOrderingSize++;
     }
+
+    logger.info("ordering " + ordering.keySet());
     for (int d = 2; d <= k0; d++) {
       for (int i = 1; i <= totalTypes; i++) {
         for (String s : ordering.get(d - 1)) {

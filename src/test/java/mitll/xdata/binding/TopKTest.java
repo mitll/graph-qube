@@ -44,13 +44,44 @@ import java.util.*;
 public class TopKTest {
   private static Logger logger = Logger.getLogger(TopKTest.class);
 
+  @Test
+  public void testSimpleSearchFast() {
+    int n = 10;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    String outdir = "data/bitcoin/fast/";
+
+    Graph graph = ingestFast(n, edgeToWeight, outdir);
+
+    Map<Integer, Integer> idToType = new HashMap<>();
+    for (Integer rawID : graph.getRawIDs()) {
+      idToType.put(rawID, 1);
+    }
+    //String outdir = "data/bitcoin/fast/";
+
+    QueryExecutor executor = new QueryExecutor(graph,
+        "bitcoin_small",
+        "/Users/go22670/graph-qube/" + outdir, idToType);
+
+    List<String> exemplarIDs = Arrays.asList("1", "2", "3");
+    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
+    List<String> exemplarIDs3 = Arrays.asList("1", "2");
+    List<String> exemplarIDs4 = Arrays.asList("2", "7", "8");
+
+    executor.testQuery(exemplarIDs, graph, idToType);
+    executor.testQuery(exemplarIDs2, graph, idToType);
+    executor.testQuery(exemplarIDs3, graph, idToType);
+    executor.testQuery(exemplarIDs4, graph, idToType);
+  }
+
 
   @Test
   public void testSimpleSearch() {
     int n = 10;
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 2);
-    Graph graph = ingest(n, edgeToWeight);
+    String outdir = "data/bitcoin/indices/";
+    Graph graph = ingest(n, edgeToWeight, outdir);
 
     Map<Integer, Integer> idToType = new HashMap<>();
     for (Integer rawID : graph.getRawIDs()) {
@@ -59,17 +90,56 @@ public class TopKTest {
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
+        "/Users/go22670/graph-qube/" + outdir, idToType);
+
+
+    List<String> exemplarIDs = Arrays.asList("1", "2", "3");
+    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
+    List<String> exemplarIDs3 = Arrays.asList("1", "2");
+    List<String> exemplarIDs4 = Arrays.asList("2", "7", "8");
+
+    executor.testQuery(exemplarIDs, graph, idToType);
+    executor.testQuery(exemplarIDs2, graph, idToType);
+    executor.testQuery(exemplarIDs3, graph, idToType);
+    executor.testQuery(exemplarIDs4, graph, idToType);
+  }
+
+
+  @Test
+  public void testSimpleSearch2() {
+    int n = 10;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
+
+    String outdir = "data/bitcoin/indices/";
+
+    Graph graph = ingest2(n, edgeToWeight, outdir);
+
+    Map<Integer, Integer> idToType = new HashMap<>();
+    for (Integer rawID : graph.getRawIDs()) {
+      idToType.put(rawID, rawID % 2 == 0 ? 1 : 2);
+    }
+
+    QueryExecutor executor = new QueryExecutor(graph,
+        "bitcoin_small",
         "/Users/go22670/graph-qube/data/bitcoin/indices/", idToType);
 
 
-    List<String> exemplarIDs  = Arrays.asList("1", "2", "3");
-    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
-//    for (Integer id : Arrays.asList(1, 2, 3)) {
-//      idToType.put(id, 1);
-//    }
+    List<String> exemplarIDs = Arrays.asList("3", "5", "7");
+    List<String> exemplarIDs2 = Arrays.asList("2", "4", "6");
+    List<String> exemplarIDs3 = Arrays.asList("2", "4", "6", "8");
+    List<String> exemplarIDs5 = Arrays.asList("1", "4", "5", "8");
+
+    List<String> exemplarIDs4 = Arrays.asList("1", "7", "9");
+
+
     executor.testQuery(exemplarIDs, graph, idToType);
     executor.testQuery(exemplarIDs2, graph, idToType);
+    executor.testQuery(exemplarIDs3, graph, idToType);
+    executor.testQuery(exemplarIDs4, graph, idToType);
+    executor.testQuery(exemplarIDs5, graph, idToType);
   }
+
 
   @Test
   public void testSearch() {
@@ -168,7 +238,9 @@ public class TopKTest {
     //int neighbors = 100;
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 1);
-    ingest(n, edgeToWeight);
+    String outdir = "data/bitcoin/indices/";
+
+    ingest(n, edgeToWeight, outdir);
 
     //sleep();
 
@@ -180,10 +252,14 @@ public class TopKTest {
     logger.debug("ENTER testIngest()");
     int n = 10;
     //int neighbors = 100;
+    String outdir = "data/bitcoin/indices/";
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 2);
-    ingest2(n, edgeToWeight);
-    ingestFast2(n, edgeToWeight);
+    ingest2(n, edgeToWeight, outdir);
+
+    String outdirFast = "data/bitcoin/fast/";
+
+    ingestFast2(n, edgeToWeight, outdirFast);
 
     //sleep();
 
@@ -197,7 +273,8 @@ public class TopKTest {
     //int neighbors = 100;
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 1);
-    ingestFast(n, edgeToWeight);
+    String outdir = "data/bitcoin/fast/";
+    ingestFast(n, edgeToWeight, outdir);
 
     //sleep();
 
@@ -211,8 +288,10 @@ public class TopKTest {
     //int neighbors = 100;
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 2);
-    ingest(n, edgeToWeight);
-    ingestFast(n, edgeToWeight);
+    String outdir = "data/bitcoin/indices/";
+
+    ingest(n, edgeToWeight, outdir);
+    ingestFast(n, edgeToWeight, outdir.replaceAll("indices", "fast"));
 
     //sleep();
 
@@ -227,8 +306,11 @@ public class TopKTest {
     //int neighbors = 100;
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 2);
-    ingest(n, edgeToWeight);
-    ingestFast(n, edgeToWeight);
+    String outdir = "data/bitcoin/indices/";
+    ingest(n, edgeToWeight, outdir);
+
+    String outFast = outdir.replaceAll("indices", "fast");
+    ingestFast(n, edgeToWeight, outFast);
 
     //sleep();
 
@@ -244,12 +326,18 @@ public class TopKTest {
     Map<Long, Integer> edgeToWeight = getGraph(n, 8);
 
     long then = System.currentTimeMillis();
-    ingest(n, edgeToWeight);
+
+    String outdir = "data/bitcoin/indices/";
+
+    ingest(n, edgeToWeight, outdir);
 
     long then2 = System.currentTimeMillis();
 
     logger.info("old " + (then2 - then));
-    ingestFast(n, edgeToWeight);
+
+    String outFast = outdir.replaceAll("indices", "fast");
+
+    ingestFast(n, edgeToWeight, outFast);
     long now = System.currentTimeMillis();
     logger.info("new " + (now - then2));
 
@@ -265,9 +353,10 @@ public class TopKTest {
     int n = 400000;
     //int neighbors = 100;
 
+    String outdir = "data/bitcoin/indices/";
     for (int i = 10; i < 50; i += 10) {
       Map<Long, Integer> edgeToWeight = getGraph(n, i);
-      ingest(n, edgeToWeight);
+      ingest(n, edgeToWeight, outdir);
     }
 
     sleep();
@@ -275,23 +364,26 @@ public class TopKTest {
     logger.debug("EXIT testSearch()");
   }
 
-  private void ingest2(int n, Map<Long, Integer> edgeToWeight) {
+  private Graph ingest2(int n, Map<Long, Integer> edgeToWeight, String outdir) {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices2(n, edgeToWeight);
+      Graph graph = beforeComputeIndices2(n, edgeToWeight, outdir);
 
       computeIndices(time1, graph);
+
+      return graph;
     } catch (Exception e) {
       logger.error("got " + e, e);
     }
+    return null;
   }
 
-  private Graph ingest(int n, Map<Long, Integer> edgeToWeight) {
+  private Graph ingest(int n, Map<Long, Integer> edgeToWeight, String outdir) {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices(n, edgeToWeight);
+      Graph graph = beforeComputeIndices(n, edgeToWeight, outdir);
 
       computeIndices(time1, graph);
 
@@ -313,22 +405,25 @@ public class TopKTest {
     logger.info("Time to do computeIndices :" + (time2 - then));
   }
 
-  private void ingestFast(int n, Map<Long, Integer> edgeToWeight) {
+  private Graph ingestFast(int n, Map<Long, Integer> edgeToWeight, String outdir) {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices(n, edgeToWeight);
+      Graph graph = beforeComputeIndices(n, edgeToWeight, outdir);
       computeIndicesFast(time1, graph);
+
+      return graph;
     } catch (Exception e) {
       logger.error("got " + e, e);
     }
+    return null;
   }
 
-  private void ingestFast2(int n, Map<Long, Integer> edgeToWeight) {
+  private void ingestFast2(int n, Map<Long, Integer> edgeToWeight, String outdir) {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices2(n, edgeToWeight);
+      Graph graph = beforeComputeIndices2(n, edgeToWeight, outdir);
       computeIndicesFast(time1, graph);
     } catch (Exception e) {
       logger.error("got " + e, e);
@@ -338,6 +433,7 @@ public class TopKTest {
   private void computeIndicesFast(long time1, Graph graph) throws IOException {
     long then = System.currentTimeMillis();
     BitcoinFeaturesBase.rlogMemory();
+    MultipleIndexConstructor.outDir = MultipleIndexConstructor.outDir.replaceAll("indices", "fast");
     MultipleIndexConstructor.computeIndicesFast(graph);
     BitcoinFeaturesBase.rlogMemory();
 
@@ -346,17 +442,18 @@ public class TopKTest {
     logger.info("Time to do computeIndices :" + (time2 - then));
   }
 
-  private Graph beforeComputeIndices2(int n, Map<Long, Integer> edgeToWeight) throws IOException {
+  private Graph beforeComputeIndices2(int n, Map<Long, Integer> edgeToWeight, String outDir) throws IOException {
     Collection<Integer> integers = MultipleIndexConstructor.loadTypes2(n);
-    return getGraphBeforeComputeIndices(edgeToWeight, integers);
+    return getGraphBeforeComputeIndices(edgeToWeight, integers, outDir);
   }
 
-  private Graph beforeComputeIndices(int n, Map<Long, Integer> edgeToWeight) throws IOException {
+  private Graph beforeComputeIndices(int n, Map<Long, Integer> edgeToWeight, String outDir) throws IOException {
     Collection<Integer> integers = MultipleIndexConstructor.loadTypes(n);
-    return getGraphBeforeComputeIndices(edgeToWeight, integers);
+    return getGraphBeforeComputeIndices(edgeToWeight, integers, outDir);
   }
 
-  private Graph getGraphBeforeComputeIndices(Map<Long, Integer> edgeToWeight, Collection<Integer> types) throws IOException {
+  private Graph getGraphBeforeComputeIndices(Map<Long, Integer> edgeToWeight, Collection<Integer> types,
+                                             String outDir) throws IOException {
     MultipleIndexConstructor.createTypedEdges();
 
     BitcoinFeaturesBase.logMemory();
@@ -372,7 +469,8 @@ public class TopKTest {
     BitcoinFeaturesBase.logMemory();
 
     //save the sorted edge lists
-    MultipleIndexConstructor.saveSortedEdgeList();
+    //String outDir = MultipleIndexConstructor.outDir;
+    MultipleIndexConstructor.saveSortedEdgeList(outDir);
     BitcoinFeaturesBase.logMemory();
 
     //test method that computes totalTypes
