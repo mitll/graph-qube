@@ -164,9 +164,6 @@ public class MultipleIndexConstructor {
 
       NodeInfo nodeInfo = new NodeInfo();
       nodeInfos.add(nodeInfo);
-      //Collection<Edge> nbrs = graph.getNeighbors(i);
-      //   Set<Integer> seen = new HashSet<>();
-
       Collection<Edge> values = getUniqueEdges(graph, i);
 
       for (Edge edge : values) {
@@ -183,13 +180,11 @@ public class MultipleIndexConstructor {
       // }
     }
 
-    if (DEBUG) logger.info("got " + nodeInfos);
-//    List<NodeInfo> d2Info = new ArrayList<>();
+    if (DEBUG || true) logger.info("got " + nodeInfos.size() + " nodes ");
     // D = 2
 
     long now = doD2(graph, outTopology, outSPD, nodeInfos);
 
-//    out.close();
     outTopology.close();
     outSPD.close();
     counts.close();
@@ -207,10 +202,23 @@ public class MultipleIndexConstructor {
     BitcoinFeaturesBase.logMemory();
   }
 
+  /**
+   * @see #computeIndicesFast(Graph)
+   * @param graph
+   * @param outTopology
+   * @param outSPD
+   * @param nodeInfos
+   * @return
+   * @throws IOException
+   */
   private static long doD2(Graph graph, BufferedWriter outTopology, BufferedWriter outSPD, List<NodeInfo> nodeInfos) throws IOException {
     long then2 = System.currentTimeMillis();
     for (int i = 0; i < graph.getNumNodes(); i++) {
-      String theNodeType = oneHop[node2Type.get(i) - 1];
+
+      int rawID = graph.getRawID(i);
+
+      int i1 = node2Type.get(rawID) - 1;
+      String theNodeType = oneHop[i1];
 
       if (i % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
@@ -225,7 +233,7 @@ public class MultipleIndexConstructor {
 
       for (Edge edge : values) {
         int src = edge.getSrc();
-        int srcNode = graph.nodeId2NodeMap.get(src);
+        int srcNode = graph.getRawID(src);
         String neighborType = oneHop[node2Type.get(srcNode) - 1];
 
         NodeInfo nodeInfo = nodeInfos.get(srcNode);
@@ -306,7 +314,7 @@ public class MultipleIndexConstructor {
 
     for (Edge edge : nbrs) {
       int src = edge.getSrc();
-      //int srcNode = graph.nodeId2NodeMap.get(src);
+      //int srcNode = graph.getRawID(src);
       Float edgeWeight = srcToWeight.get(src);
       float fWeight = edge.getFWeight();
       if (edgeWeight == null || edgeWeight < fWeight) {
@@ -319,7 +327,7 @@ public class MultipleIndexConstructor {
   }
 
   private static Integer getNodeType(Graph graph, int src) {
-    int srcNode = graph.nodeId2NodeMap.get(src);
+    int srcNode = graph.getRawID(src);
     return node2Type.get(srcNode);
   }
 
@@ -500,7 +508,7 @@ public class MultipleIndexConstructor {
         logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
         BitcoinFeaturesBase.logMemory();
       }
-      counts.write(i + "," + graph.nodeId2NodeMap.get(i) + "," + graph.getNeighbors(i).size() +
+      counts.write(i + "," + graph.getRawID(i) + "," + graph.getNeighbors(i).size() +
           "\n");
       //out.write(i + "\t");
       outTopology.write(i + "\t");
@@ -628,7 +636,7 @@ public class MultipleIndexConstructor {
 /*  private static Map<Integer, List<Integer>> getSPathMap(Graph graph, Set<Integer> queue) {
     Map<Integer, List<Integer>> map = new HashMap<>();
     for (int q : queue) {
-      int actualID = graph.nodeId2NodeMap.get(q);
+      int actualID = graph.getRawID(q);
       int label = node2Type.get(actualID);
 
       List<Integer> al = map.get(label);
@@ -937,8 +945,8 @@ public class MultipleIndexConstructor {
     for (Edge e : graph.getEdges()) {
       //get internal node-ids for
       // logger.info("populateSortedEdgeLists edge " +e);
-      int from = graph.nodeId2NodeMap.get(e.getSrc());
-      int to = graph.nodeId2NodeMap.get(e.getDst());
+      int from = graph.getRawID(e.getSrc());
+      int to = graph.getRawID(e.getDst());
       double weight = e.getWeight();
       //logger.info("from index is: "+from);
       //logger.info("to index is: "+to);
@@ -973,7 +981,7 @@ public class MultipleIndexConstructor {
       }
     }
 
-    logger.warn("populateSortedEdgeLists skipped " + skipped + " out of " + graph.node2NodeIdMap.size());
+    logger.warn("populateSortedEdgeLists skipped " + skipped + " out of " + graph.getNumNodes());
     //sort the arraylists in descending order
     for (String key : sortedEdgeLists.keySet())
       Collections.sort(sortedEdgeLists.get(key), new EdgeComparator());

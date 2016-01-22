@@ -951,15 +951,17 @@ public class QueryExecutor {
   }
 
   /**
+   * TODO : I thought that the edge ids were in raw space???
    * @return Edge Types for all edges in query
+   * @see QueryExecutor#executeQuery(int)
    */
   public HashSet<String> computeQueryEdgeTypes() {
     HashSet<Edge> queryEdgeSet = query.getEdges();
     //actualQueryEdges= new ArrayList<String>();
     HashSet<String> queryEdgeTypes = new HashSet<String>();
     for (Edge e : queryEdgeSet) {
-      int n1 = query.nodeId2NodeMap.get(e.getSrc());
-      int n2 = query.nodeId2NodeMap.get(e.getDst());
+      int n1 = query.getRawID(e.getSrc());
+      int n2 = query.getRawID(e.getDst());
       if (n1 <= n2) {
         actualQueryEdges.add(n1 + "#" + n2);
         int t1 = queryNodeID2Type.get(e.getSrc());
@@ -1000,7 +1002,7 @@ public class QueryExecutor {
       }
 
       logger.info("New Size: " + c2.size());
-      candidates.put(query.nodeId2NodeMap.get(i), c2);
+      candidates.put(query.getRawID(i), c2);
       prunedCandidateFiltering += (c1.size() - c2.size());
     }
     return prunedCandidateFiltering;
@@ -1033,7 +1035,7 @@ public class QueryExecutor {
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\t");
-      queryNodeID2Type.put(query.node2NodeIdMap.get(Integer.parseInt(tokens[0])), Integer.parseInt(tokens[1]));
+      queryNodeID2Type.put(query.getInternalID(Integer.parseInt(tokens[0])), Integer.parseInt(tokens[1]));
       queryNode2Type.put(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]));
     }
     in.close();
@@ -1046,11 +1048,11 @@ public class QueryExecutor {
 		/*
 		 * Read query types
 		 */
-    Set<Integer> queryNodes = query.node2NodeIdMap.keySet();
+    Collection<Integer> queryNodes = query.getRawIDs();
 
     for (int node : queryNodes) {
       Integer type = idToType.get(node);
-      queryNodeID2Type.put(query.node2NodeIdMap.get(node), type);
+      queryNodeID2Type.put(query.getInternalID(node), type);
       queryNode2Type.put(node, type);
     }
 
@@ -1075,7 +1077,7 @@ public class QueryExecutor {
 		/*
 		 * Read query types
 		 */
-    Set<Integer> queryNodes = query.node2NodeIdMap.keySet();
+    Collection<Integer> queryNodes = query.getRawIDs();
 
     loadQueryTypes(connection, tableName, uidColumn, typeColumn, queryNodes);
 
@@ -1099,7 +1101,8 @@ public class QueryExecutor {
     return isClique;
   }
 
-  private void loadQueryTypes(Connection connection, String tableName, String uidColumn, String typeColumn, Set<Integer> queryNodes) {
+  private void loadQueryTypes(Connection connection, String tableName, String uidColumn, String typeColumn,
+                              Collection<Integer> queryNodes) {
     for (int node : queryNodes) {
       String sqlQuery = "select " + typeColumn + " from " + tableName + " where " + uidColumn + "=" + node + ";";
 
@@ -1117,7 +1120,7 @@ public class QueryExecutor {
         logger.info("Got e: " + e);
       }
 
-      queryNodeID2Type.put(query.node2NodeIdMap.get(node), type);
+      queryNodeID2Type.put(query.getInternalID(node), type);
       queryNode2Type.put(node, type);
     }
   }
@@ -1277,9 +1280,9 @@ public class QueryExecutor {
         int chunk = ordering.get(k1).size() / totalTypes;
         int localType = (k2 - 1) / chunk;
         //count[localType]+=graphSign[u-1][oc];
-        Integer integer = g.node2NodeIdMap.get(u);
+        Integer integer = g.getInternalID(u);
         if (integer == null) {
-          logger.error("no  node for " + u + " in " + g.node2NodeIdMap.size());
+          logger.error("no  node for " + u + " in " + g.getNumNodes());
         }
         count[localType] += graphSign[integer][oc];
         if (querySign[v][oc] > count[localType])
@@ -1403,8 +1406,8 @@ public class QueryExecutor {
     HashSet<Integer> instantiatedVertices = new HashSet<Integer>();
     for (int c : consideredEdgeIndices) {
       String e = actualQueryEdges.get(c);
-      int n1 = query.node2NodeIdMap.get(Integer.parseInt(e.split("#")[0]));
-      int n2 = query.node2NodeIdMap.get(Integer.parseInt(e.split("#")[1]));
+      int n1 = query.getInternalID(Integer.parseInt(e.split("#")[0]));
+      int n2 = query.getInternalID(Integer.parseInt(e.split("#")[1]));
       Edge edge = new Edge(n1, n2, 1.0);
       coveredEdges.add(edge);
       edge = new Edge(n2, n1, 1.0);
@@ -1443,7 +1446,7 @@ public class QueryExecutor {
 
 
       //score+=spd[map.get(maxPath.get(0))-1][orderingType2Index.get(typeStr)];
-      score += spd[g.node2NodeIdMap.get(map.get(maxPath.get(0)))][orderingType2Index.get(typeStr)];
+      score += spd[g.getInternalID(map.get(maxPath.get(0)))][orderingType2Index.get(typeStr)];
       //remove paths in globalPath containing edges on globalPath.
       HashSet<Path> globalPathSetNew = new HashSet<Path>();
       for (Path p : globalPathSet) {
@@ -1463,8 +1466,8 @@ public class QueryExecutor {
     }
     //compute uncovered edges and account for them separately
     for (String edge : queryEdgetoIndex.keySet()) {
-      int n1 = query.node2NodeIdMap.get(Integer.parseInt(edge.split("#")[0]));
-      int n2 = query.node2NodeIdMap.get(Integer.parseInt(edge.split("#")[1]));
+      int n1 = query.getInternalID(Integer.parseInt(edge.split("#")[0]));
+      int n2 = query.getInternalID(Integer.parseInt(edge.split("#")[1]));
       Edge e = new Edge(n1, n2, 1.0);
       if (!coveredEdges.contains(e)) {
         String tmp = queryEdge2EdgeType.get(edge);

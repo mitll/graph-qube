@@ -29,19 +29,15 @@ public class Graph {
   /**
    * Maps the node to an internal node id.
    */
-  final HashMap<Integer, Integer> node2NodeIdMap = new HashMap<>();
+  private final HashMap<Integer, Integer> node2NodeIdMap = new HashMap<>();
+
   /**
    * Maps internal node id to a node
    *
    * TODO: this is dumb - this is just an integer array!!!
    */
-  final HashMap<Integer, Integer> nodeId2NodeMap = new HashMap<>();
+  private final HashMap<Integer, Integer> nodeId2NodeMap = new HashMap<>();
 
-  /**
-   * Maps node id to the number of times it appears in the changed edges
-   * @see ExtraGraph#addMoreEdges(boolean, int)
-   */
-  final HashMap<Integer, Integer> nodeFreqInNewEdges = new HashMap<>();
 
   /**
    * Constructor
@@ -57,6 +53,12 @@ public class Graph {
     simpleIds(edgeToWeight);
     loadGraphFromMemory(edgeToWeight);
   }
+
+  public int getInternalID(int rawID) { return node2NodeIdMap.get(rawID); }
+//  public Collection<Integer> getRawNodeIDs() { return node2NodeIdMap.keySet(); }
+
+  //public int getNumNodes() { return node2NodeIdMap.size(); }
+  public int getRawID(int internalID) { return nodeId2NodeMap.get(internalID); }
 
   public Collection<Edge> getNeighbors(int n) {
     return inLinks.get(n);
@@ -146,7 +148,7 @@ public class Graph {
     setNumNodes(0);
     setNumEdges(0);
 
-    logger.info("map " + nodeCount);
+    logger.info("loadGraphFromMemory map " + nodeCount + " vs " + edgeToWeight.size());
 
     int c = 0;
     for (Map.Entry<Long, Integer> edgeAndCount : edgeToWeight.entrySet()) {
@@ -492,9 +494,11 @@ public class Graph {
     this.inLinks = inLinks;
   }
 
+/*
   private HashMap<Integer, Map<Integer, Edge>> getInLinks2() {
     return inLinks2;
   }
+*/
 
   public Collection<Integer> getRawIDs() {
     return node2NodeIdMap.keySet();

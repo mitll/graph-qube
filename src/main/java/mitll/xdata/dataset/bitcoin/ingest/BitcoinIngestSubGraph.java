@@ -359,6 +359,13 @@ public class BitcoinIngestSubGraph {
     computeIndices(bitcoinDirectory, dbConnection, g);
   }
 
+  /**
+   * @see #computeIndicesFromMemory(String, DBConnection, Map)
+   * @param bitcoinDirectory
+   * @param dbConnection
+   * @param graph
+   * @throws Exception
+   */
   private static void computeIndices(String bitcoinDirectory, DBConnection dbConnection, Graph graph) throws Exception {
   /*
    * This is stuff is doing the actual topk-subgraph indexing
@@ -410,7 +417,7 @@ public class BitcoinIngestSubGraph {
     MultipleIndexConstructor.computeEdgeTypePathOrdering();
 
     logger.info("Computing SPD, Topology and SPath Indices...");
-    MultipleIndexConstructor.computeIndices(graph);
+    MultipleIndexConstructor.computeIndicesFast(graph);
   }
 
 

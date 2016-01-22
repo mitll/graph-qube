@@ -28,6 +28,14 @@ import java.util.*;
  */
 public class ExtraGraph extends Graph {
   @SuppressWarnings("unchecked")
+
+  /**
+   * Maps node id to the number of times it appears in the changed edges
+   * @see ExtraGraph#addMoreEdges(boolean, int)
+   */
+  private final HashMap<Integer, Integer> nodeFreqInNewEdges = new HashMap<>();
+
+
   /**
    * Performs a deep copy of the Graph to create a new graph
    */
@@ -63,11 +71,11 @@ public class ExtraGraph extends Graph {
         double dist[] = computeMinDistances(i);
         count++;
         nodes.add(i);
-        System.out.print(" " + nodeId2NodeMap.get(i));
+        System.out.print(" " + getRawID(i));
         for (int j = 0; j < dist.length; j++) {
           if (dist[j] != Double.MAX_VALUE && dist[j] != 0.) {
             nodes.add(j);
-            System.out.print(" " + nodeId2NodeMap.get(j));
+            System.out.print(" " + getRawID(j));
           }
         }
         System.out.println();
@@ -192,7 +200,7 @@ public class ExtraGraph extends Graph {
     //print the estimates
     BufferedWriter out = new BufferedWriter(new FileWriter(new File(baseDir, cohenEstimatesFile)));
     for (int j = 0; j < getNumNodes(); j++) {
-      out.write(nodeId2NodeMap.get(j) + "#");
+      out.write(getRawID(j) + "#");
       for (int d = 0; d < maxDist; d++) {
         int val = (int) Math.round((double) cohenK / matrix[j][d]) - 1;
         out.write(val + ",");
@@ -260,8 +268,8 @@ public class ExtraGraph extends Graph {
     for (int i = 0; i < getNumNodes(); i++) {
       double dist[] = computeMinDistances(i);
       for (int j = 0; j < getNumNodes(); j++) {
-        if (dist[j] != Double.MAX_VALUE && dist[j] != 0. && nodeId2NodeMap.get(i) < nodeId2NodeMap.get(j))
-          System.out.println(nodeId2NodeMap.get(i) + " " + nodeId2NodeMap.get(j) + " " + dist[j]);
+        if (dist[j] != Double.MAX_VALUE && dist[j] != 0. && getRawID(i) < getRawID(j))
+          System.out.println(getRawID(i) + " " + getRawID(j) + " " + dist[j]);
       }
     }
   }
@@ -341,7 +349,7 @@ public class ExtraGraph extends Graph {
           nodeFreqInNewEdges.put(b - 1, 1);
         this.removeEdge(a - 1, b - 1);
         this.removeEdge(b - 1, a - 1);
-        System.out.println("Edge deleted: " + nodeId2NodeMap.get(a - 1) + "--" + nodeId2NodeMap.get(b - 1));
+        System.out.println("Edge deleted: " + getRawID(a - 1) + "--" + getRawID(b - 1));
       } else {
         i--;
       }
@@ -399,7 +407,7 @@ public class ExtraGraph extends Graph {
           nodeFreqInNewEdges.put(b - 1, 1);
         this.addEdge(a - 1, b - 1, weight);
         this.addEdge(b - 1, a - 1, weight);
-        System.out.println("New edge added: " + nodeId2NodeMap.get(a - 1) + "--" + nodeId2NodeMap.get(b - 1) + ":" + weight);
+        System.out.println("New edge added: " + getRawID(a - 1) + "--" + getRawID(b - 1) + ":" + weight);
       } else {
         i--;
       }
