@@ -128,6 +128,9 @@ public class MultipleIndexConstructor {
     File directory = new File(outDir);
     if (!directory.exists() && !directory.mkdirs())
       throw new IOException("Could not create directory: " + outDir);
+    else {
+      logger.info("computeIndicesFast made " + directory.getAbsolutePath() + " exists " + directory.exists());
+    }
 
     String datasetId = BitcoinBinding.DATASET_ID;// + "_Fast";
     String topologyFilename = datasetId + "." + Integer.toString(D) + ".topology";
@@ -1029,11 +1032,10 @@ public class MultipleIndexConstructor {
     for (int i = 0; i < n; i++) node2Type.put(i, 1);
     totalTypes = 1;
     return new HashSet<>(node2Type.values());
-
   }
 
-  public static Collection<Integer> loadTypes2(int n) {
-    for (int i = 0; i < n; i++) node2Type.put(i, i % 2 == 0 ? 1 : 2);
+  public static Collection<Integer> loadTypesMod(int n, int mod) {
+    for (int i = 0; i < n; i++) node2Type.put(i, (i % mod) + 1);
     HashSet<Integer> integers = new HashSet<>(node2Type.values());
     totalTypes = integers.size();
     return integers;
