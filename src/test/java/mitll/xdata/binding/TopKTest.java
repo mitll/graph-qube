@@ -66,14 +66,30 @@ public class TopKTest {
   @Test
   public void testSimpleSearchFast2() {
     int n = 10;
-
     Map<Long, Integer> edgeToWeight = getGraph(n, 2);
     String outdir = "data/bitcoin/fast/";
 
-    Graph graph = ingestFast2(n, edgeToWeight, outdir);
+    Graph graph = ingestFastMod(n, edgeToWeight, outdir, 2);
 
-    Map<Integer, Integer> idToType = getOddEvenTypes(graph);
-    //String outdir = "data/bitcoin/fast/";
+    Map<Integer, Integer> idToType = getModTypes(graph, 2);
+
+    QueryExecutor executor = new QueryExecutor(graph,
+        "bitcoin_small",
+        getResourcePath(outdir), idToType);
+
+    doTests(graph, idToType, executor);
+  }
+
+  @Test
+  public void testSimpleSearchFast4() {
+    int n =20;
+    Map<Long, Integer> edgeToWeight = getGraph(n, 3);
+    String outdir = "data/bitcoin/fast/";
+
+    int mod = 4;
+    Graph graph = ingestFastMod(n, edgeToWeight, outdir, mod);
+
+    Map<Integer, Integer> idToType = getModTypes(graph, mod);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -129,9 +145,9 @@ public class TopKTest {
 
     String outdir = "data/bitcoin/fast/";
 
-    Graph graph = ingestFast2(n, edgeToWeight, outdir);
+    Graph graph = ingestFastMod(n, edgeToWeight, outdir, 2);
 
-    Map<Integer, Integer> idToType = getOddEvenTypes(graph);
+    Map<Integer, Integer> idToType = getModTypes(graph, 2);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -142,7 +158,9 @@ public class TopKTest {
   }
 
   private String getResourcePath(String outdir) {
-    return "/Users/go22670/graph-qube/" + outdir;
+    String base = "/Users/go22670/Projects/graph-qube/";
+    String baseToUse = "/Users/go22670/graph-qube/";
+    return base + outdir;
   }
 
   @Test
@@ -153,9 +171,9 @@ public class TopKTest {
 
     String outdir = "data/bitcoin/indices/";
 
-    Graph graph = ingest2(n, edgeToWeight, outdir);
+    Graph graph = ingestMod(n, edgeToWeight, outdir, 2);
 
-    Map<Integer, Integer> idToType = getOddEvenTypes(graph);
+    Map<Integer, Integer> idToType = getModTypes(graph, 2);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -181,14 +199,13 @@ public class TopKTest {
     executor.testQuery(exemplarIDs5, graph, idToType);
   }
 
-  private Map<Integer, Integer> getOddEvenTypes(Graph graph) {
+  private Map<Integer, Integer> getModTypes(Graph graph, int mod) {
     Map<Integer, Integer> idToType = new HashMap<>();
     for (Integer rawID : graph.getRawIDs()) {
-      idToType.put(rawID, rawID % 2 == 0 ? 1 : 2);
+      idToType.put(rawID, (rawID % mod)+1);
     }
     return idToType;
   }
-
 
   @Test
   public void testSearch() {
@@ -304,11 +321,11 @@ public class TopKTest {
     String outdir = "data/bitcoin/indices/";
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 2);
-    ingest2(n, edgeToWeight, outdir);
+    ingestMod(n, edgeToWeight, outdir, 2);
 
     String outdirFast = "data/bitcoin/fast/";
 
-    ingestFast2(n, edgeToWeight, outdirFast);
+    ingestFastMod(n, edgeToWeight, outdirFast, 2);
 
     //sleep();
 
@@ -413,11 +430,11 @@ public class TopKTest {
     logger.debug("EXIT testSearch()");
   }
 
-  private Graph ingest2(int n, Map<Long, Integer> edgeToWeight, String outdir) {
+  private Graph ingestMod(int n, Map<Long, Integer> edgeToWeight, String outdir, int mod) {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices2(n, edgeToWeight, outdir);
+      Graph graph = beforeComputeIndicesMod(n, edgeToWeight, outdir, mod);
 
       computeIndices(time1, graph);
 
@@ -468,11 +485,11 @@ public class TopKTest {
     return null;
   }
 
-  private Graph ingestFast2(int n, Map<Long, Integer> edgeToWeight, String outdir) {
+  private Graph ingestFastMod(int n, Map<Long, Integer> edgeToWeight, String outdir, int mod) {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices2(n, edgeToWeight, outdir);
+      Graph graph = beforeComputeIndicesMod(n, edgeToWeight, outdir, mod);
       computeIndicesFast(time1, graph);
 
       return graph;
@@ -494,8 +511,17 @@ public class TopKTest {
     logger.info("Time to do computeIndices :" + (time2 - then));
   }
 
-  private Graph beforeComputeIndices2(int n, Map<Long, Integer> edgeToWeight, String outDir) throws IOException {
-    Collection<Integer> integers = MultipleIndexConstructor.loadTypes2(n);
+  /**
+   *
+   * @param n
+   * @param edgeToWeight
+   * @param outDir
+   * @param mod
+   * @return
+   * @throws IOException
+   */
+  private Graph beforeComputeIndicesMod(int n, Map<Long, Integer> edgeToWeight, String outDir, int mod) throws IOException {
+    Collection<Integer> integers = MultipleIndexConstructor.loadTypesMod(n, mod);
     return getGraphBeforeComputeIndices(edgeToWeight, integers, outDir);
   }
 

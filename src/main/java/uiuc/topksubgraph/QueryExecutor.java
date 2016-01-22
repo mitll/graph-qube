@@ -460,7 +460,7 @@ public class QueryExecutor {
 			 */
       ArrayList<String> edgesOfMaxType = queryEdgeType2Edges.get(max);
       if (edgesOfMaxType == null) {
-        logger.error("Something is wrong: " + max);
+        logger.error("Something is wrong: '" + max +"'");
         edgesOfMaxType = queryEdgeType2Edges.get(max.split("#")[1] + "#" + max.split("#")[0]);
       }
       if (isClique == 1) {
@@ -1298,7 +1298,7 @@ public class QueryExecutor {
     graphSign = new int[totalNodes][totalOrderingSize];
     File file = new File(baseDir, topologyFile);
 
-    logger.info("reading topology from " + file.getAbsolutePath());
+    logger.info("reading topology from " + file.getAbsolutePath() + " base " + baseDir +" top " +topologyFile);
 
     BufferedReader in = new BufferedReader(new FileReader(file));
     String str = "";
