@@ -182,7 +182,7 @@ public class BitcoinIngestSubGraph {
       }
 
       long timeA = new Date().getTime();
-      System.out.println("Candidate Generation Time: " + (timeA - time1));
+      logger.debug("Candidate Generation Time: " + (timeA - time1));
 
 
 			/*
@@ -208,7 +208,7 @@ public class BitcoinIngestSubGraph {
       executor.executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
 
       long time2 = new Date().getTime();
-      System.out.println("Overall Time: " + (time2 - time1));
+      logger.debug("Overall Time: " + (time2 - time1));
 
 
       //FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();

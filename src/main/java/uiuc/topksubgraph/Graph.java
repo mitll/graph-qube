@@ -18,26 +18,25 @@ import java.util.*;
  *         University of Illinois at Urbana Champaign
  */
 public class Graph {
+  private static final Logger logger = Logger.getLogger(Graph.class);
+
   private int numNodes = 0;
   private int numEdges = 0;
   private HashSet<Edge> edges;
   private HashMap<Integer, ArrayList<Edge>> inLinks;
   private final HashMap<Integer, Map<Integer, Edge>> inLinks2;
 
-  private static final Logger logger = Logger.getLogger(Graph.class);
-
   /**
    * Maps the node to an internal node id.
    */
-  private final HashMap<Integer, Integer> node2NodeIdMap = new HashMap<>();
+  private final Map<Integer, Integer> node2NodeIdMap = new HashMap<>();
 
   /**
    * Maps internal node id to a node
-   *
+   * <p>
    * TODO: this is dumb - this is just an integer array!!!
    */
-  private final HashMap<Integer, Integer> nodeId2NodeMap = new HashMap<>();
-
+  private final Map<Integer, Integer> nodeId2NodeMap = new HashMap<>();
 
   /**
    * Constructor
@@ -50,15 +49,35 @@ public class Graph {
 
   public Graph(Map<Long, Integer> edgeToWeight) {
     this();
-    simpleIds(edgeToWeight);
+    simpleIds2(edgeToWeight);
     loadGraphFromMemory(edgeToWeight);
   }
 
-  public int getInternalID(int rawID) { return node2NodeIdMap.get(rawID); }
+  public Integer getInternalID(int rawID) {
+    if (node2NodeIdMap == null) {
+      logger.error("huh? node map is empty?");
+    }
+
+    Integer integer = node2NodeIdMap.get(rawID);
+    return integer;// == null ? -1 : integer;
+  }
 //  public Collection<Integer> getRawNodeIDs() { return node2NodeIdMap.keySet(); }
 
   //public int getNumNodes() { return node2NodeIdMap.size(); }
-  public int getRawID(int internalID) { return nodeId2NodeMap.get(internalID); }
+
+  /**
+   * TODO : why so schizo - everything internally should be in terms of internally assigned ids.
+   *
+   * Only when translating back into the outside world after we have results do we go back and translate IDs.
+   *
+   * @param internalID
+   * @return
+   *
+   */
+  public Integer getRawID(int internalID) {
+    Integer integer = nodeId2NodeMap.get(internalID);
+    return integer;
+  }
 
   public Collection<Edge> getNeighbors(int n) {
     return inLinks.get(n);
@@ -74,7 +93,7 @@ public class Graph {
    */
   protected Edge getEdge(int node1, int node2) {
     if (inLinks.containsKey(node2)) {
-      ArrayList<Edge> a = inLinks.get(node2);
+      List<Edge> a = inLinks.get(node2);
       for (Edge edge : a) {
         if (edge.getSrc() == node1)
           return edge;
@@ -109,7 +128,7 @@ public class Graph {
     Edge e = new Edge(a, b, weight);
     if (!edges.contains(e)) {
       edges.add(e);
-     // logger.info("adding " + e);
+//       logger.info("addEdge adding " + e);
       ArrayList<Edge> al = new ArrayList<>();
       if (inLinks.get(b) != null)
         al = inLinks.get(b);
@@ -155,10 +174,10 @@ public class Graph {
       Long key = edgeAndCount.getKey();
 
       int from = BitcoinFeaturesBase.getLow(key);
-      int to = BitcoinFeaturesBase.getHigh(key);
+      int to   = BitcoinFeaturesBase.getHigh(key);
       int weight = edgeAndCount.getValue();
 
-     // if (c < 20)
+      // if (c < 20)
       // logger.info("loadGraphFromMemory " + from + " -> " + to + " = " + weight);
 
       c++;
@@ -175,6 +194,7 @@ public class Graph {
         from = nodeCount;
         nodeCount++;
       }
+
       if (node2NodeIdMap.containsKey(to))
         to = node2NodeIdMap.get(to);
       else {
@@ -192,8 +212,7 @@ public class Graph {
     setNumEdges(c);
   }
 
-
-  public void simpleIds(Map<Long, Integer> edgeToWeight) {
+  private void simpleIds(Map<Long, Integer> edgeToWeight) {
     for (Long key : edgeToWeight.keySet()) {
       int from = BitcoinFeaturesBase.getLow(key);
       int to = BitcoinFeaturesBase.getHigh(key);
@@ -203,6 +222,30 @@ public class Graph {
 
       nodeId2NodeMap.put(from, from);
       nodeId2NodeMap.put(to, to);
+    }
+  }
+
+  public void simpleIds2(Map<Long, Integer> edgeToWeight) {
+    //Map<Integer,Integer> extToInternal = new HashMap<>();
+    int count = 0;
+    for (Long key : edgeToWeight.keySet()) {
+      int from = BitcoinFeaturesBase.getLow(key);
+      int to   = BitcoinFeaturesBase.getHigh(key);
+
+      Integer finternal = node2NodeIdMap.get(from);
+      if (finternal == null) {
+        finternal = count++;
+        node2NodeIdMap.put(from, finternal);
+        nodeId2NodeMap.put(finternal, from);
+      }
+
+      Integer tinternal = node2NodeIdMap.get(to);
+      if (tinternal == null) {
+        tinternal = count++;
+        node2NodeIdMap.put(to, tinternal);
+        nodeId2NodeMap.put(tinternal, to);
+      }
+
     }
   }
 
@@ -229,7 +272,7 @@ public class Graph {
     ResultSet rs = queryStatement.executeQuery();
 
 		/*
-		 * Loop through database table rows...
+     * Loop through database table rows...
 		 */
     int c = 0;
     while (rs.next()) {
@@ -490,6 +533,8 @@ public class Graph {
     return inLinks;
   }
 
+  public Set<Integer> getInLinksNodes() { return inLinks.keySet(); }
+
   protected void setInLinks(HashMap<Integer, ArrayList<Edge>> inLinks) {
     this.inLinks = inLinks;
   }
@@ -502,5 +547,21 @@ public class Graph {
 
   public Collection<Integer> getRawIDs() {
     return node2NodeIdMap.keySet();
+  }
+
+  /**
+   * TODO this should be n - the size of the array
+   *
+   * @return
+   */
+  public Collection<Integer> getInternalIDs() {
+    return nodeId2NodeMap.keySet();
+  }
+
+  public String toString() {
+    boolean isNull = node2NodeIdMap == null;
+    return "Graph with " + getNumNodes() + " nodes and " +getNumEdges() + " edges null " + isNull
+        //+ " " + (isNull ? "" : node2NodeIdMap.keySet())
+        ;
   }
 }

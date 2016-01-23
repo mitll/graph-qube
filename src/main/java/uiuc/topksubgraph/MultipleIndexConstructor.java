@@ -172,6 +172,8 @@ public class MultipleIndexConstructor {
       for (Edge edge : values) {
         int src = edge.getSrc();
         float weight = edge.getFWeight();
+
+//        logger.info("edge " + edge + " src " + src);
         String types = oneHop[getNodeType(graph, src) - 1];
         nodeInfo.addWeight(types, weight, src);
 
@@ -206,13 +208,13 @@ public class MultipleIndexConstructor {
   }
 
   /**
-   * @see #computeIndicesFast(Graph)
    * @param graph
    * @param outTopology
    * @param outSPD
    * @param nodeInfos
    * @return
    * @throws IOException
+   * @see #computeIndicesFast(Graph)
    */
   private static long doD2(Graph graph, BufferedWriter outTopology, BufferedWriter outSPD, List<NodeInfo> nodeInfos) throws IOException {
     long then2 = System.currentTimeMillis();
@@ -239,7 +241,7 @@ public class MultipleIndexConstructor {
         int srcNode = graph.getRawID(src);
         String neighborType = oneHop[node2Type.get(srcNode) - 1];
 
-        NodeInfo nodeInfo = nodeInfos.get(srcNode);
+        NodeInfo nodeInfo = nodeInfos.get(src);
 
         if (DEBUG) logger.info("\tfor " + i + "/" + src +
             " neighbor " + edge + "/" + neighborType +
@@ -329,6 +331,11 @@ public class MultipleIndexConstructor {
     return srcToEdge.values();
   }
 
+  /**
+   * @param graph
+   * @param src   internal id?
+   * @return
+   */
   private static Integer getNodeType(Graph graph, int src) {
     int srcNode = graph.getRawID(src);
     return node2Type.get(srcNode);
@@ -947,12 +954,13 @@ public class MultipleIndexConstructor {
 
     for (Edge e : graph.getEdges()) {
       //get internal node-ids for
-      // logger.info("populateSortedEdgeLists edge " +e);
+  //    logger.info("populateSortedEdgeLists edge " + e);
       int from = graph.getRawID(e.getSrc());
-      int to = graph.getRawID(e.getDst());
+      int to   = graph.getRawID(e.getDst());
       double weight = e.getWeight();
-      //logger.info("from index is: "+from);
-      //logger.info("to index is: "+to);
+
+//      logger.info("from index is: " + from + " to index is: " + to);
+
       if (from > to)
         continue;
 
@@ -1035,15 +1043,19 @@ public class MultipleIndexConstructor {
   /**
    * @param n
    * @seex TopKTest#ingest
+   * @see TopK#
    */
-  public static Collection<Integer> loadTypes(int n) {
+/*  public static Collection<Integer> loadTypes(int n) {
     for (int i = 0; i < n; i++) node2Type.put(i, 1);
-    totalTypes = 1;
-    return new HashSet<>(node2Type.values());
+    return setTotalTypes();
+  }*/
+
+  public static Collection<Integer> loadTypes(Map<Integer, Integer> node2TypeToUse) {
+    node2Type = node2TypeToUse;
+    return setTotalTypes();
   }
 
-  public static Collection<Integer> loadTypesMod(int n, int mod) {
-    for (int i = 0; i < n; i++) node2Type.put(i, (i % mod) + 1);
+  private static HashSet<Integer> setTotalTypes() {
     HashSet<Integer> integers = new HashSet<>(node2Type.values());
     totalTypes = integers.size();
     return integers;
@@ -1139,6 +1151,8 @@ public class MultipleIndexConstructor {
 
   /**
    * Setter for pre-loaded node2Type HashMap
+   *
+   * @see IngestAndQuery#computeIndices()
    */
   public static void setNode2Type(HashMap<Integer, Integer> in) {
     node2Type = in;
