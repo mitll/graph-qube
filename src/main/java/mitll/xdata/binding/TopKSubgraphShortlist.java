@@ -17,6 +17,7 @@ package mitll.xdata.binding;
 
 import influent.idl.*;
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.ingest.StatementResult;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
@@ -60,7 +61,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
   private final QueryExecutor executor;
 
-  private static PreparedStatement queryStatement;
+//  private PreparedStatement queryStatement;
 
   /**
    * @param binding
@@ -109,6 +110,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * Load a whole bunch of stuff from:
    * db: node type data
    * file: and all pre-computed indices
+   *
    * @see BitcoinBinding#BitcoinBinding(DBConnection, boolean, String)
    */
   public void loadTypesAndIndices() {
@@ -186,7 +188,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     } catch (FileNotFoundException e) {
       logger.info("got: " + e);
     }
-   // executeQuery(isClique);
+    // executeQuery(isClique);
     executor.executeQuery(isClique);
 
     logger.info("Original entity ordering from Influent query: " + exemplarIDs);
@@ -198,9 +200,9 @@ public class TopKSubgraphShortlist extends Shortlist {
   /**
    * Ask the transactions table for edges between the node ids.
    *
-   * @see #getShortlist(List, List, long)
    * @param exemplarIDs
    * @return
+   * @see #getShortlist(List, List, long)
    */
   private HashSet<Edge> getQueryEdges(List<String> exemplarIDs) {
     HashSet<Edge> queryEdges = new HashSet<Edge>();
@@ -244,10 +246,8 @@ public class TopKSubgraphShortlist extends Shortlist {
   private boolean existsTable(String tableName) {
     try {
       String sql = "select 1 from " + tableName + " limit 1;";
-      ResultSet rs = doSQLQuery(sql);
-      rs.close();
-      queryStatement.close();
-
+      StatementResult statementResult = doSQLQuery(sql);
+      statementResult.close();
       return true;
     } catch (SQLException e) {
       return false;
@@ -266,11 +266,12 @@ public class TopKSubgraphShortlist extends Shortlist {
           "SOURCE" + " = " + target + ")" +
           " limit 1;";
 
-      ResultSet rs = doSQLQuery(sql);
+      StatementResult statementResult = doSQLQuery(sql);
+      ResultSet rs = statementResult.rs;
       rs.next();
       int cnt = rs.getInt("CNT");
-      rs.close();
-      queryStatement.close();
+
+      statementResult.close();
 
       return cnt > 0;
     } catch (SQLException e) {
@@ -312,12 +313,11 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @return
    * @throws SQLException
    */
-  private ResultSet doSQLQuery(String sql) throws SQLException {
+  private StatementResult doSQLQuery(String sql) throws SQLException {
     //queryStatement = connection.prepareStatement(sql);
-    queryStatement = this.binding.connection.prepareStatement(sql);
+    PreparedStatement queryStatement = this.binding.connection.prepareStatement(sql);
     ResultSet rs = queryStatement.executeQuery();
-
-    return rs;
+    return new StatementResult(rs, queryStatement);
   }
 
 
@@ -388,7 +388,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
 
 		/*
-		 * Map query node names to their corresponding entity ind from the Influent JSON 
+     * Map query node names to their corresponding entity ind from the Influent JSON
 		 */
     HashMap<String, Integer> queryNode2InfluentEntityInd = new HashMap<String, Integer>();
     int i = 0;
@@ -595,7 +595,7 @@ public class TopKSubgraphShortlist extends Shortlist {
   /**
    * Convert query graphs into pattern search "result".
    *
-   * @param queryEdges
+   * @param exemplarIDs
    * @return
    */
   private FL_PatternSearchResult makeQueryIntoResult(List<String> exemplarIDs, Map<String, Integer> uiucQueryEdgetoIndex) {
@@ -794,8 +794,9 @@ public class TopKSubgraphShortlist extends Shortlist {
 
   /**
    * Get nodes involved in subgraph from list of edges
-   *
+   * <p>
    * TODO : why do we have to encode the nodes on an edge as a string like src#dst ???
+   *
    * @param nodes
    * @param list
    */
@@ -805,7 +806,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     for (String aList : list) {
       // Get parts of edge
       String[] edgeSplit = aList.split("#");
-      String src  = edgeSplit[0];
+      String src = edgeSplit[0];
       String dest = edgeSplit[1];
       /*
 			 * Track nodes
@@ -904,7 +905,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     ;
 
     try {
-      queryStatement = binding.connection.prepareStatement(sql);
+      PreparedStatement queryStatement = binding.connection.prepareStatement(sql);
       //queryStatement.setString(1, graphTable);
       //queryStatement.setString(2, pairIDColumn);
       ResultSet rs = queryStatement.executeQuery();
@@ -915,6 +916,8 @@ public class TopKSubgraphShortlist extends Shortlist {
 
       rs.close();
       queryStatement.close();
+
+      Runtime.getRuntime().gc();
 
     } catch (SQLException e) {
       logger.info("Got e: " + e);

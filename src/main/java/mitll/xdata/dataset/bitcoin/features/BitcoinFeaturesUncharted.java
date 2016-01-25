@@ -288,7 +288,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
         skipped++;
       }
       if (count % 1000000 == 0) {
-        logger.debug("read " + count + " transactions... " + (System.currentTimeMillis() - 1.0 * t0) / count + " ms/read");
+        logger.debug("getTransForUsers read " + count + " transactions... " + (System.currentTimeMillis() - 1.0 * t0) / count + " ms/read");
       }
     }
     logger.info("getTransForUsers skipped " + skipped + " out of " + count + " -> " + idToStats.size());

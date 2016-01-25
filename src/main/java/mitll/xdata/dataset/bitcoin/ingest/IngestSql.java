@@ -32,8 +32,10 @@ import java.util.*;
 public class IngestSql {
   private static final Logger logger = Logger.getLogger(IngestSql.class);
   private static final Map<String, String> TYPE_TO_DB = new HashMap<>();
+  // public static final String SOURCE1 = "SOURCE";
   public static final String SOURCE = "SOURCE";
   public static final String TARGET = "TARGET";
+  public static final String TIME = "TIME";
 
   static {
     TYPE_TO_DB.put("INTEGER", "INT");
@@ -50,12 +52,12 @@ public class IngestSql {
   }
 
   /**
-   * @see BitcoinIngestUnchartedTransactions#loadTransactionTable(MysqlInfo, String, String, String, boolean, int)
    * @param dbType
    * @param tableName
    * @param useTimestamp
    * @param connection
    * @throws SQLException
+   * @see BitcoinIngestUnchartedTransactions#loadTransactionTable(MysqlInfo, String, String, String, boolean, int)
    */
   void createTable(String dbType, String tableName, boolean useTimestamp, DBConnection connection) throws SQLException {
     List<String> cnames = getColumnsForTransactionsTable();
@@ -72,8 +74,8 @@ public class IngestSql {
   }
 
   /**
-   * @see
    * @return
+   * @see
    */
   List<String> getColumnsForTransactionsTable() {
     List<String> cols = new ArrayList<>(getColumnsForInsert());
@@ -83,34 +85,34 @@ public class IngestSql {
   }
 
   List<String> getColumnsForInsert() {
-    return Arrays.asList("TRANSID", SOURCE, TARGET, "TIME", "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
+    return Arrays.asList("TRANSID", SOURCE, TARGET, TIME, "AMOUNT", "USD", "DEVPOP", "CREDITDEV", "DEBITDEV");
   }
 
   /**
-   * @see #createTable(String, String, boolean, DBConnection)
    * @param connection
    * @param tableName
    * @param cnames
    * @param types
    * @throws SQLException
+   * @see #createTable(String, String, boolean, DBConnection)
    */
   private void createTable(DBConnection connection, String tableName, List<String> cnames, List<String> types) throws SQLException {
     long t = System.currentTimeMillis();
-  //  logger.debug("dropping current " + tableName);
+    //  logger.debug("dropping current " + tableName);
     doSQL(connection, "DROP TABLE " + tableName + " IF EXISTS");
-  //  logger.debug("took " + (since(t)) + " millis to drop " + tableName);
+    //  logger.debug("took " + (since(t)) + " millis to drop " + tableName);
     doSQL(connection, createCreateSQL(tableName, cnames, types, false));
   }
 
   /**
-   * @see #createTable(DBConnection, String, List, List)
    * @param tableName
    * @param names
    * @param types
    * @param mapTypes
    * @return
+   * @see #createTable(DBConnection, String, List, List)
    */
-  private  String createCreateSQL(String tableName, List<String> names, List<String> types, boolean mapTypes) {
+  private String createCreateSQL(String tableName, List<String> names, List<String> types, boolean mapTypes) {
     String sql = "CREATE TABLE " + tableName + " (" + "\n";
     for (int i = 0; i < names.size(); i++) {
       String statedType = types.get(i).toUpperCase();
@@ -120,7 +122,7 @@ public class IngestSql {
     }
     sql += "\n);";
 
- //   logger.debug("create " + sql);
+    //   logger.debug("create " + sql);
     return sql;
   }
 
@@ -144,28 +146,47 @@ public class IngestSql {
     statement.close();
   }
 
+  /**
+   * @param tableName
+   * @param connection
+   * @throws SQLException
+   * @see BitcoinIngestSubGraph#extractUndirectedGraphInMemory(DBConnection, Collection)
+   */
   void createIndices(String tableName, DBConnection connection) throws SQLException {
     long then = System.currentTimeMillis();
-    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "SOURCE" + ")");
-    logger.debug("first  index complete in " + since(then) + " on " + tableName);
+    long start = then;
+    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + SOURCE + ")");
+    logger.debug("first (" + SOURCE + ") index complete in " + reportTime(then) + " on " + tableName);
     then = System.currentTimeMillis();
     doSQL(connection, "CREATE INDEX ON " + tableName + " (" + TARGET + ")");
-    logger.debug("second index complete in " + (since(then)) + " on " + tableName);
+    logger.debug("second (" + TARGET +
+        ") index complete in " + (reportTime(then)) + " on " + tableName);
 
     then = System.currentTimeMillis();
-    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + "TIME" + ")");
-    logger.debug("third  index complete in " + (since(then)) + " on " + tableName);
+    doSQL(connection, "CREATE INDEX ON " + tableName + " (" + TIME + ")");
+    logger.debug("third (" +TIME+
+        ") index complete in " + (reportTime(then)) + " on " + tableName);
 
+    then = System.currentTimeMillis();
     doSQL(connection, "create index " +
         //"idx_transactions_source_target" +
         " on " +
         tableName +
         "(" +
-        "SOURCE" + ", TARGET" + ")");
-    logger.debug("fourth index complete in " + (since(then)) + " on " + tableName);
+        SOURCE + ", " +
+        TARGET + ")");
+    logger.debug("fourth (" +SOURCE + ", " +
+            TARGET+
+        ")" +
+        " index complete in " + reportTime(then) + " on " + tableName);
+    logger.debug("overall took " + reportTime(start) + " to do indices");
+  }
+
+  private String reportTime(long then) {
+    return (since(then)) + " seconds ";
   }
 
   private long since(long then) {
-    return System.currentTimeMillis() - then;
+    return (System.currentTimeMillis() - then) / 1000;
   }
 }

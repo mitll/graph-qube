@@ -19,6 +19,7 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.apache.log4j.net.SyslogAppender;
 
 import java.io.*;
 import java.sql.Connection;
@@ -140,7 +141,7 @@ public class MultipleIndexConstructor {
     BufferedWriter outSPD = new BufferedWriter(new FileWriter(file));
     BufferedWriter counts = new BufferedWriter(new FileWriter(new File(outDir, "counts_" + spdFilename)));
 
-    logger.info("Writing to " + file.getAbsolutePath());
+    logger.info("computeIndicesFast Writing to " + file.getAbsolutePath());
     long then = System.currentTimeMillis();
     BitcoinFeaturesBase.logMemory();
 
@@ -187,8 +188,12 @@ public class MultipleIndexConstructor {
       count++;
     }
 
-    if (DEBUG || true) logger.info("got " + nodeInfos.size() + " nodes ");
+    if (DEBUG || true) logger.info("computeIndicesFast got " + nodeInfos.size() + " nodes ");
     // D = 2
+
+    Runtime.getRuntime().gc();
+
+    BitcoinFeaturesBase.logMemory();
 
     long now = doD2(graph, outTopology, outSPD, nodeInfos);
 
@@ -197,7 +202,7 @@ public class MultipleIndexConstructor {
     counts.close();
 
     // long now = System.currentTimeMillis();
-    logger.info("took " + ((now - then) / 1000) + " seconds to do graph of size " +
+    logger.info("computeIndicesFast took " + ((now - then) / 1000) + " seconds to do graph of size " +
         graph.getNumNodes() + " nodes and " + graph.getNumEdges() + " edges, " +
         " traversed " + traversed +
         " neighbors " + totalNeighbors +
@@ -233,7 +238,11 @@ public class MultipleIndexConstructor {
 
       if (count++ % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
-        logger.debug("Nodes processed: " + count + " out of " + graph.getNumNodes());
+        long now = System.currentTimeMillis();
+        long diff = (now-then2)/1000;
+        long l = diff == 0 ? count : count / diff;
+
+        logger.debug("doD2 : Nodes processed: " + count + " out of " + graph.getNumNodes() + " rate " + l + " nodes/sec");
         BitcoinFeaturesBase.logMemory();
       }
 
@@ -272,7 +281,7 @@ public class MultipleIndexConstructor {
           for (Integer candidate : neighborNeighbors) {
             // if (candidate != i) {
             if (!candidate.equals(rawID)) {
-              seenForType.add(candidate);
+              seenForType.add(candidate); // TODO : hotspot
             }
           }
 
@@ -525,7 +534,7 @@ public class MultipleIndexConstructor {
     for (Integer rawID : graph.getRawIDs()) {
       if (count % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
-        logger.debug("Nodes processed: " + count + " out of " + graph.getNumNodes());
+        logger.debug("computeIndices Nodes processed: " + count + " out of " + graph.getNumNodes());
         BitcoinFeaturesBase.logMemory();
       }
       count++;

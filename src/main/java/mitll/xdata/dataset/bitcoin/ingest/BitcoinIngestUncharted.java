@@ -16,6 +16,7 @@
 package mitll.xdata.dataset.bitcoin.ingest;
 
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesUncharted;
 import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.db.MysqlConnection;
@@ -23,7 +24,6 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 
 
@@ -52,7 +52,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
    * @throws Exception
    */
   public static void main(String[] args) throws Throwable {
-  //  logger.debug("Starting Ingest...");
+    //  logger.debug("Starting Ingest...");
 
     //
     // Parse Arguments...
@@ -113,8 +113,19 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       }
     }
 
+    BitcoinFeaturesBase.logMemory();
+
     new BitcoinIngestUncharted().doIngest(dataFilename, USERTRANSACTIONS_2013_LARGERTHANDOLLAR, dbName, writeDir,
         skipLoadTransactions, limit);
+
+    BitcoinFeaturesBase.logMemory();
+
+    Runtime.getRuntime().gc();
+
+    BitcoinFeaturesBase.logMemory();
+
+    logger.info("ingest complete --------> ");
+    Thread.sleep(10000000);
   }
 
   private static long getLimit(long limit, String arg) {
@@ -149,7 +160,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       users = new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
           "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit, users);
 
-      logger.info("doIngest after userIds size " + users.size()  + " includes " + users.contains(253479) + " or " + users.contains(12329212));
+      logger.info("doIngest after userIds size " + users.size() + " includes " + users.contains(253479) + " or " + users.contains(12329212));
     }
 
     // Extract features for each account
@@ -165,8 +176,8 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     Set<Integer> validUsers = doSubgraphs(destinationDbName, userIds);
 
     boolean b = userIds.removeAll(validUsers);
-    logger.info("to remove " +userIds.size());
+    logger.info("to remove " + userIds.size());
 
-    bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName),userIds);
+    bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName), userIds);
   }
 }

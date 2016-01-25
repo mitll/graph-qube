@@ -7,7 +7,6 @@ import org.apache.log4j.Logger;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.Writer;
 import java.sql.*;
 import java.util.*;
 
@@ -20,16 +19,16 @@ import java.util.*;
 public class Graph {
   private static final Logger logger = Logger.getLogger(Graph.class);
 
-//  private int numNodes = 0;
+  //  private int numNodes = 0;
 //  private int numEdges = 0;
   private Set<Edge> edges;
   private Map<Integer, List<Edge>> inLinks;
   private final Map<Integer, Map<Integer, Edge>> inLinks2;
-
+  boolean populateInLinks2 = false;
   /**
    * Maps the node to an internal node id.
    */
- // private final Map<Integer, Integer> node2NodeIdMap = new HashMap<>();
+  // private final Map<Integer, Integer> node2NodeIdMap = new HashMap<>();
 
   /**
    * Maps internal node id to a node
@@ -48,8 +47,9 @@ public class Graph {
     inLinks2 = new HashMap<>();
   }
 
-  public Graph(Map<Long, Integer> edgeToWeight) {
+  public Graph(Map<Long, Integer> edgeToWeight,boolean populateInLinks2) {
     this();
+    this.populateInLinks2 = populateInLinks2;
     simpleIds2(edgeToWeight);
     loadGraphFromMemory(edgeToWeight);
   }
@@ -65,19 +65,16 @@ public class Graph {
 
   /**
    * TODO : why so schizo - everything internally should be in terms of internally assigned ids.
-   *
+   * <p>
    * Only when translating back into the outside world after we have results do we go back and translate IDs.
    *
    * @param internalID
    * @return
-   *
    */
 /*  public Integer getRawID(int internalID) {
     Integer integer = nodeId2NodeMap.get(internalID);
     return integer;
   }*/
-
-
   public Collection<Edge> getNeighbors(int n) {
     return inLinks.get(n);
   }
@@ -105,7 +102,7 @@ public class Graph {
    * @param node1
    * @param node2
    * @return
-   * @see MultipleIndexConstructor#processPathsq(Writer, Writer, Graph, int)
+   * @see MultipleIndexConstructor#processPathsq
    */
   public Edge getEdgeFast(int node1, int node2) {
     if (inLinks2.containsKey(node2)) {
@@ -128,7 +125,7 @@ public class Graph {
     if (!edges.contains(e)) {
       edges.add(e);
 //       logger.info("addEdge adding " + e);
-     List<Edge> al = inLinks.get(b);
+      List<Edge> al = inLinks.get(b);
 
       if (inLinks.get(b) == null) {
         al = new ArrayList<>();
@@ -137,13 +134,15 @@ public class Graph {
 
       al.add(e);
 
-      Map<Integer, Edge> integerEdgeMap = inLinks2.get(b);
-      if (integerEdgeMap == null) {
-        integerEdgeMap = new HashMap<>();
-        inLinks2.put(b, integerEdgeMap);
-      }
+      if (populateInLinks2) {
+        Map<Integer, Edge> integerEdgeMap = inLinks2.get(b);
+        if (integerEdgeMap == null) {
+          integerEdgeMap = new HashMap<>();
+          inLinks2.put(b, integerEdgeMap);
+        }
 
-      integerEdgeMap.put(a, e);
+        integerEdgeMap.put(a, e);
+      }
     }
   }
 
@@ -177,7 +176,7 @@ public class Graph {
       Long key = edgeAndCount.getKey();
 
       int from = BitcoinFeaturesBase.getLow(key);
-      int to   = BitcoinFeaturesBase.getHigh(key);
+      int to = BitcoinFeaturesBase.getHigh(key);
       int weight = edgeAndCount.getValue();
 
       // if (c < 20)
@@ -232,7 +231,7 @@ public class Graph {
     int count = 0;
     for (Long key : edgeToWeight.keySet()) {
       int from = BitcoinFeaturesBase.getLow(key);
-      int to   = BitcoinFeaturesBase.getHigh(key);
+      int to = BitcoinFeaturesBase.getHigh(key);
 
 /*      Integer finternal = node2NodeIdMap.get(from);
       if (finternal == null) {
@@ -263,7 +262,7 @@ public class Graph {
    * @see Graph#loadGraph(DBConnection, String, String)
    */
   public void loadGraphAgain(Connection connection, String tableName) throws SQLException {
-   // int nodeCount = node2NodeIdMap.size();
+    // int nodeCount = node2NodeIdMap.size();
 //    setNumNodes(0);
 //    setNumEdges(0);
 
@@ -328,10 +327,10 @@ public class Graph {
    * @see Graph#loadGraph(DBConnection, String, String)
    */
   private void loadGraph(Connection connection, String tableName, String edgeName) throws SQLException {
-   // int nodeCount = node2NodeIdMap.size();
+    // int nodeCount = node2NodeIdMap.size();
 //    setNumNodes(0);
 //    setNumEdges(0);
-		
+
 		/*
 		 * Do database query
 		 */
@@ -544,11 +543,13 @@ public class Graph {
     this.edges = edges;
   }
 
-  protected  Map<Integer, List<Edge>> getInLinks() {
+  protected Map<Integer, List<Edge>> getInLinks() {
     return inLinks;
   }
 
-  public Set<Integer> getInLinksNodes() { return inLinks.keySet(); }
+  public Set<Integer> getInLinksNodes() {
+    return inLinks.keySet();
+  }
 
   protected void setInLinks(Map<Integer, List<Edge>> inLinks) {
     this.inLinks = inLinks;
@@ -572,10 +573,9 @@ public class Graph {
 /*  public Collection<Integer> getInternalIDs() {
     return nodeId2NodeMap.keySet();
   }*/
-
   public String toString() {
     //boolean isNull = node2NodeIdMap == null;
-    return "Graph with " + getNumNodes() + " nodes and " +getNumEdges() + " edges "//null " + isNull
+    return "Graph with " + getNumNodes() + " nodes and " + getNumEdges() + " edges "//null " + isNull
         //+ " " + (isNull ? "" : node2NodeIdMap.keySet())
         ;
   }

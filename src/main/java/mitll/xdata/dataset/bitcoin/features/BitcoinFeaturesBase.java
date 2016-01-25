@@ -672,7 +672,10 @@ public class BitcoinFeaturesBase {
       }
     }
     writer.close();
-    logger.debug("wrote " + cc + " pairs to " + outfile);
+
+    logger.debug("writePairs wrote " + cc + " pairs to " + outfile);
+
+    Runtime.getRuntime().gc();
   }
 
   /**
@@ -1156,8 +1159,8 @@ public class BitcoinFeaturesBase {
     return ids;
   }
 
-  @SuppressWarnings("CanBeFinal")
-  static class Transaction implements Comparable<Transaction> {
+  //@SuppressWarnings("CanBeFinal")
+  static final class Transaction implements Comparable<Transaction> {
     final int source;
     final int target;
     final long time;

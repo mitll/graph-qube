@@ -41,6 +41,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   public static final int MIN_TRANSACTIONS = 10;
   public static final int REPORT_MOD = 1000000;
   public static final int FETCH_SIZE = 1000000;
+  public static final int UPDATE_MOD = 100;
 
   /**
    * Adds equivalent dollar value column
@@ -122,9 +123,9 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       }
     }
 
-    UserStats userStats = userToStats.get(253977);
+   // UserStats userStats = userToStats.get(253977);
 
-    logger.info ("loadTransactionTable for " + 253977+ " "+ userStats);
+   // logger.info("loadTransactionTable for " + 253977 + " " + userStats);
     logger.debug("loadTransactionTable Got past result set, skipped " + skipped + " transactions with pruned users, inserted " + inserted);
 
     resultSet.close();
@@ -264,7 +265,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     String insertSQL = ingestSql.createInsertSQL(tableName, cnames);
 
 //    logger.info("insertRowsInTable " + insertSQL);
-
+    long then = System.currentTimeMillis();
     PreparedStatement statement = connection.getConnection().prepareStatement(insertSQL);
     while (resultSet.next()) {
       // double[] additionalFeatures = feats.get(count);
@@ -292,21 +293,29 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
         Timestamp x = resultSet.getTimestamp(col++);
         double btc = resultSet.getDouble(col++);
-
         double usd = resultSet.getDouble(col++);
 
         double[] additionalFeatures = addAvgDollarFeatures(userToStats, avgUSD, count, sourceid, targetID, usd);
         try {
-          insertRow(useTimestamp, t0, count, statement, additionalFeatures, transid, sourceid, targetID, x, btc, usd);
+          boolean didUpdate = insertRow(useTimestamp, t0, count, statement, additionalFeatures, transid, sourceid, targetID, x, btc, usd);
+
+          if (!didUpdate) {
+            statement.executeUpdate();
+          }
+
         } catch (SQLException e) {
           logger.error("insertRowsInTable got error " + e + " on  " + count);
         }
         if (count % REPORT_MOD == 0) {
           logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
               + " ms/insert");
+          logMemory();
         }
       }
     }
+    logger.info("insertRowsInTable took " + ((System.currentTimeMillis() - then) / 1000) + " seconds to insert " + count + " transactions.");
+    logMemory();
+
     logger.info("insertRowsInTable skipped " + countSelf + " self transactions out of " + count);
     logger.info("insertRowsInTable skipped " + skipped + " missing users out of " + count + " and found " + knownUsers.size() + " known users");
     rstatement.close();
@@ -314,7 +323,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     return count;
   }
 
-  private void insertRow(boolean useTimestamp,
+  private boolean insertRow(boolean useTimestamp,
                          long t0, int count,
                          PreparedStatement statement,
                          double[] additionalFeatures,
@@ -336,11 +345,19 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     statement.setDouble(i++, usd);
     for (double feat : additionalFeatures) statement.setDouble(i++, feat);
 
-    statement.executeUpdate();
+    boolean didUpdate = false;
+    if (count % UPDATE_MOD == 0) {
+      statement.executeUpdate();
+      didUpdate = true;
+    }
 
     if (count % 1000000 == 0) {
-      logger.debug("feats count = " + count + "; " + (System.currentTimeMillis() - t0) / count
-          + " ms/insert");
+      long diff = System.currentTimeMillis() - t0;
+      if (diff > 1000) diff /= 1000;
+      logger.debug("insertRow feats count = " + count + "; " + count/diff
+          + " insert/sec");
+      logMemory();
     }
+    return didUpdate;
   }
 }
