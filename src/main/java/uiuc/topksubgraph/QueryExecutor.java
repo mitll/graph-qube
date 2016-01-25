@@ -169,12 +169,13 @@ public class QueryExecutor {
     heapSet = new HashSet<>();
   }
 
-  public void testQuery(List<String> exemplarIDs, Graph graph, Map<Integer, Integer> idToType) {
+  public boolean testQuery(List<String> exemplarIDs, Graph graph, Map<Integer, Integer> idToType) {
         /*
      * Get all pairs of query nodes...
 		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
 		 */
     Set<Edge> queryEdges = getQueryEdges(exemplarIDs, graph);
+    if (queryEdges.isEmpty()) return false;
 
     for (Edge qe : queryEdges) {
       logger.info("qe: " + qe);
@@ -201,6 +202,8 @@ public class QueryExecutor {
 
       logger.info("match score " + subgraphScore + " match " + getSubgraphNodes(list));
     }
+
+    return true;
   }
 
 
@@ -243,7 +246,7 @@ public class QueryExecutor {
     int e1, e2;
     //String pair;
 
-    logger.info("ran on " + exemplarIDs);
+    logger.info("getQueryEdges ran on " + exemplarIDs);
 
     if (exemplarIDs.size() > 1) {
       for (int i = 0; i < exemplarIDs.size(); i++) {
@@ -252,6 +255,9 @@ public class QueryExecutor {
           e1 = Integer.parseInt(e1ID);
           String e2ID = exemplarIDs.get(j);
           e2 = Integer.parseInt(e2ID);
+
+        //  logger.info("\tgetQueryEdges check : " + e1 + " " + e2);
+
           if (e1 <= e2) {
             //  pair = "(" + e1 + "," + e2 + ")";
             edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
@@ -265,11 +271,14 @@ public class QueryExecutor {
           if (hasEdge) {
             queryEdges.add(edg);
           } else {
-            logger.warn("no edge between " + e1ID + " and " + e2ID + " : " + graph.getInLinksNodes());
+            logger.warn("getQueryEdges no edge between " + e1ID + " and " + e2ID + " : " + graph.getInLinksNodes());
           }
         }
       }
     }
+
+    logger.info("getQueryEdges found " + queryEdges);
+
     return queryEdges;
   }
 
@@ -1094,7 +1103,10 @@ public class QueryExecutor {
    * @see #testQuery(List, Graph, Map)
    */
   private boolean loadQuery(Set<Edge> queryEdges, Map<Integer, Integer> idToType) {
-    if (queryEdges.isEmpty()) logger.error("loadQuery huh? no query edges???");
+    if (queryEdges.isEmpty()) {
+      logger.error("loadQuery huh? no query edges???");
+      return false;
+    }
     loadGraph(queryEdges);
 
 		/*

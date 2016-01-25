@@ -129,7 +129,7 @@ public class MultipleIndexConstructor {
     if (!directory.exists() && !directory.mkdirs())
       throw new IOException("Could not create directory: " + outDir);
     else {
-      logger.info("computeIndicesFast made " + directory.getAbsolutePath() + " exists " + directory.exists());
+      logger.info("computeIndicesFast made " + directory.getAbsolutePath());// + " exists " + directory.exists());
     }
 
     String datasetId = BitcoinBinding.DATASET_ID;// + "_Fast";
