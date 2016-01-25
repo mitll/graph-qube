@@ -48,7 +48,7 @@ public class TopKTest {
   public void testSimpleSearchFast() {
     int n = 10;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 4);
+    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
     String outdir = "data/bitcoin/fast/";
 
     Graph graph = ingestFast(edgeToWeight, outdir);
@@ -67,7 +67,7 @@ public class TopKTest {
   @Test
   public void testSimpleSearchFast2() {
     int n = 10;
-    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
     String outdir = "data/bitcoin/fast/";
 
     Graph graph = ingestFastMod(edgeToWeight, outdir, 2);
@@ -118,50 +118,49 @@ public class TopKTest {
   }
 
   /**
+   * List<String> exemplarIDs = Arrays.asList("10", "20", "30");
+   * List<String> exemplarIDs2 = Arrays.asList("20", "40", "70");
+   * List<String> exemplarIDs3 = Arrays.asList("10", "20");
+   * List<String> exemplarIDs4 = Arrays.asList("20", "70", "80");
    *
-   *     List<String> exemplarIDs = Arrays.asList("10", "20", "30");
-   List<String> exemplarIDs2 = Arrays.asList("20", "40", "70");
-   List<String> exemplarIDs3 = Arrays.asList("10", "20");
-   List<String> exemplarIDs4 = Arrays.asList("20", "70", "80");
    * @param graph
    * @param idToType
    * @param executor
    */
 
   private void doTests(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor) {
-  //  List<String> exemplarIDs = Arrays.asList("1", "2", "3");
+    //  List<String> exemplarIDs = Arrays.asList("1", "2", "3");
 
-    List<String> exemplarIDs = Arrays.asList("10", "20", "30");
-/*    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
+    List<String> exemplarIDs = Arrays.asList("10", "20", "40");
+    List<String> exemplarIDs2 = Arrays.asList("20", "40", "70");
+    List<String> exemplarIDs3 = Arrays.asList("10", "20");
+    List<String> exemplarIDs4 = Arrays.asList("20", "70", "80");
+
+
+    /*    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
     List<String> exemplarIDs3 = Arrays.asList("1", "2");
     List<String> exemplarIDs4 = Arrays.asList("2", "7", "8");*/
 
+    testQuery(graph, idToType, executor, exemplarIDs);
+    testQuery(graph, idToType, executor, exemplarIDs2);
+    testQuery(graph, idToType, executor, exemplarIDs3);
+    testQuery(graph, idToType, executor, exemplarIDs4);
+
+  }
+
+  private void testQuery(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor, List<String> exemplarIDs) {
     try {
-      executor.testQuery(exemplarIDs, graph, idToType);
+      boolean valid = executor.testQuery(exemplarIDs, graph, idToType);
+      if (!valid) logger.info(exemplarIDs + " are not connected");
     } catch (Exception e) {
       e.printStackTrace();
     }
-/*  try {
-      executor.testQuery(exemplarIDs2, graph, idToType);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    try {
-      executor.testQuery(exemplarIDs3, graph, idToType);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    try {
-      executor.testQuery(exemplarIDs4, graph, idToType);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }*/
   }
 
   /**
-   * @see #testSimpleSearchFast()
    * @param graph
    * @return
+   * @see #testSimpleSearchFast()
    */
   private Map<Integer, Integer> getUniformTypes(Graph graph) {
     Map<Integer, Integer> idToType = new HashMap<>();
@@ -237,6 +236,7 @@ public class TopKTest {
 
   /**
    * TODO : evil - we store both internal and raw node ids -> type
+   *
    * @param graph
    * @param mod
    * @return
@@ -395,7 +395,6 @@ public class TopKTest {
   public void testIngestTwo() {
     logger.debug("ENTER testIngestTwo()");
     int n = 5;
-    //int neighbors = 100;
 
     Map<Long, Integer> edgeToWeight = getGraph(n, 2);
     String outdir = "data/bitcoin/indices/";
@@ -403,11 +402,22 @@ public class TopKTest {
     ingest(n, edgeToWeight, outdir);
     ingestFast(edgeToWeight, outdir.replaceAll("indices", "fast"));
 
-    //sleep();
-
     logger.debug("EXIT testIngestTwo()");
   }
 
+  @Test
+  public void testIngestTwoSmallest() {
+    logger.debug("ENTER testIngestTwo()");
+    int n = 5;
+
+    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
+    String outdir = "data/bitcoin/indices/";
+
+    ingest(n, edgeToWeight, outdir);
+    ingestFast(edgeToWeight, outdir.replaceAll("indices", "fast"));
+
+    logger.debug("EXIT testIngestTwo()");
+  }
 
   @Test
   public void testIngestTwoTypes() {
@@ -578,13 +588,13 @@ public class TopKTest {
   }
 
   private Graph beforeComputeIndices(Map<Long, Integer> edgeToWeight, String outDir) throws IOException {
-    return beforeComputeIndicesMod(edgeToWeight,outDir,1);
+    return beforeComputeIndicesMod(edgeToWeight, outDir, 1);
   }
 
   private Map<Integer, Integer> loadTypesMod(Collection<Long> ids, int mod) {
     Map<Integer, Integer> node2Type = new HashMap<>();
     for (Long id : ids) {
-      int low  = BitcoinFeaturesBase.getLow(id);
+      int low = BitcoinFeaturesBase.getLow(id);
       int high = BitcoinFeaturesBase.getHigh(id);
 
       node2Type.put(low, (int) ((low % mod) + 1));
@@ -662,7 +672,7 @@ public class TopKTest {
         if (high != to) logger.error("huh?");
     */
         int w = 1 + random.nextInt(9);
-//        logger.info(rawFrom + "->" + rawTo + " : " + w);
+        logger.info(rawFrom + "->" + rawTo + " : " + w);
         edgeToWeight.put(l, w);
       }
     }

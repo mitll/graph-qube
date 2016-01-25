@@ -59,49 +59,74 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     //
     String dataFilename = new MysqlConnection().getSimpleURL(BITCOIN);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
     boolean skipLoadTransactions = false;
-    if (args.length > 0) {
+
+/*    if (args.length > 0) {
       String first = args[0];
       if (first.startsWith("skip=")) {
         skipLoadTransactions = first.equals(SKIP_TRUE);
       } else {
-        logger.debug("got data file " + dataFilename);
         dataFilename = first;
+        logger.debug("got data file " + dataFilename);
       }
-    }
+    }*/
 
     String dbName = "bitcoin";
-    if (args.length > 1) {
+/*    if (args.length > 1) {
       String second = args[1];
       if (!second.contains("=")) {
         dbName = second;
         logger.debug("got db name '" + dbName + "'");
       }
-    }
+    }*/
 
     String writeDir = "outUncharted";
+/*
     if (args.length > 2) {
       writeDir = args[2];
       logger.debug("got output dir " + writeDir);
     }
+*/
 
     if (args.length > 3) {
       skipLoadTransactions = args[3].equals("skip");
       logger.debug("got skip load transactions " + skipLoadTransactions);
     }
+
 //    long limit = 20000000000l;
     long limit = 20000l;
     for (String arg : args) {
-      if (arg.startsWith("limit=")) {
-        try {
-          limit = Long.parseLong(arg.split("limit=")[1]);
-        } catch (NumberFormatException e) {
-          e.printStackTrace();
-        }
+      limit = getLimit(limit, arg);
+
+      String prefix = "db=";
+      if (arg.startsWith(prefix)) {
+        dbName = arg.split(prefix)[1];
+      }
+
+      prefix = "out=";
+      if (arg.startsWith(prefix)) {
+        writeDir = arg.split(prefix)[1];
+      }
+
+      prefix = "skip=";
+      if (arg.startsWith(prefix)) {
+        skipLoadTransactions = arg.equals(SKIP_TRUE);
       }
     }
 
     new BitcoinIngestUncharted().doIngest(dataFilename, USERTRANSACTIONS_2013_LARGERTHANDOLLAR, dbName, writeDir,
         skipLoadTransactions, limit);
+  }
+
+  private static long getLimit(long limit, String arg) {
+    String prefix = "limit=";
+    if (arg.startsWith(prefix)) {
+      try {
+        limit = Long.parseLong(arg.split(prefix)[1]);
+      } catch (NumberFormatException e) {
+        e.printStackTrace();
+      }
+    }
+    return limit;
   }
 
   private void doIngest(String dataSourceJDBC, String transactionsTable, String destinationDbName, String writeDir,

@@ -1035,7 +1035,7 @@ public class QueryExecutor {
         logger.error("generateCandidates Graph has no nodes of type " + nodeType);
         return -1;
       } else {
-        logger.debug("generateCandidates for " + nodeID + " got " + c1);
+//        logger.debug("generateCandidates for " + nodeID + " got " + c1);
       }
 
       // logger.info("Old Size: "+c1.size());
@@ -1448,11 +1448,11 @@ public class QueryExecutor {
 
     for (int n : node2Type.keySet()) {
       Integer key = node2Type.get(n);
-      logger.debug("\t " + n + "-> " + key);
+//      logger.debug("\t " + n + "-> " + key);
       graphType2IDSet.get(key).add(n);
     }
 
-    logger.info("loadGraphNodesType graphType2IDSet " + graphType2IDSet.size() + " : " + graphType2IDSet);
+    logger.info("loadGraphNodesType graphType2IDSet " + graphType2IDSet.size());// + " : " + graphType2IDSet.size());
 
     totalNodes = node2Type.size();
     //fix the ordering
