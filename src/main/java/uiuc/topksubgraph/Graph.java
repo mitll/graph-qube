@@ -20,23 +20,24 @@ import java.util.*;
 public class Graph {
   private static final Logger logger = Logger.getLogger(Graph.class);
 
-  private int numNodes = 0;
-  private int numEdges = 0;
-  private HashSet<Edge> edges;
-  private HashMap<Integer, ArrayList<Edge>> inLinks;
-  private final HashMap<Integer, Map<Integer, Edge>> inLinks2;
+//  private int numNodes = 0;
+//  private int numEdges = 0;
+  private Set<Edge> edges;
+  private Map<Integer, List<Edge>> inLinks;
+  private final Map<Integer, Map<Integer, Edge>> inLinks2;
 
   /**
    * Maps the node to an internal node id.
    */
-  private final Map<Integer, Integer> node2NodeIdMap = new HashMap<>();
+ // private final Map<Integer, Integer> node2NodeIdMap = new HashMap<>();
 
   /**
    * Maps internal node id to a node
    * <p>
    * TODO: this is dumb - this is just an integer array!!!
    */
-  private final Map<Integer, Integer> nodeId2NodeMap = new HashMap<>();
+//  private final Map<Integer, Integer> nodeId2NodeMap = new HashMap<>();
+  private final Set<Integer> nodeIds = new HashSet<>();
 
   /**
    * Constructor
@@ -53,17 +54,14 @@ public class Graph {
     loadGraphFromMemory(edgeToWeight);
   }
 
-  public Integer getInternalID(int rawID) {
+/*  public Integer getInternalID(int rawID) {
     if (node2NodeIdMap == null) {
       logger.error("huh? node map is empty?");
     }
 
     Integer integer = node2NodeIdMap.get(rawID);
     return integer;// == null ? -1 : integer;
-  }
-//  public Collection<Integer> getRawNodeIDs() { return node2NodeIdMap.keySet(); }
-
-  //public int getNumNodes() { return node2NodeIdMap.size(); }
+  }*/
 
   /**
    * TODO : why so schizo - everything internally should be in terms of internally assigned ids.
@@ -74,10 +72,11 @@ public class Graph {
    * @return
    *
    */
-  public Integer getRawID(int internalID) {
+/*  public Integer getRawID(int internalID) {
     Integer integer = nodeId2NodeMap.get(internalID);
     return integer;
-  }
+  }*/
+
 
   public Collection<Edge> getNeighbors(int n) {
     return inLinks.get(n);
@@ -129,17 +128,21 @@ public class Graph {
     if (!edges.contains(e)) {
       edges.add(e);
 //       logger.info("addEdge adding " + e);
-      ArrayList<Edge> al = new ArrayList<>();
-      if (inLinks.get(b) != null)
-        al = inLinks.get(b);
+     List<Edge> al = inLinks.get(b);
+
+      if (inLinks.get(b) == null) {
+        al = new ArrayList<>();
+        inLinks.put(b, al);
+      }
+
       al.add(e);
-      inLinks.put(b, al);
 
       Map<Integer, Edge> integerEdgeMap = inLinks2.get(b);
       if (integerEdgeMap == null) {
         integerEdgeMap = new HashMap<>();
         inLinks2.put(b, integerEdgeMap);
       }
+
       integerEdgeMap.put(a, e);
     }
   }
@@ -163,11 +166,11 @@ public class Graph {
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndicesFromMemory(String, DBConnection, Map)
    */
   public void loadGraphFromMemory(Map<Long, Integer> edgeToWeight) {
-    int nodeCount = node2NodeIdMap.size();
-    setNumNodes(0);
-    setNumEdges(0);
+//    int nodeCount = 0;//node2NodeIdMap.size();
+//    setNumNodes(0);
+//    setNumEdges(0);
 
-    logger.info("loadGraphFromMemory map " + nodeCount + " vs " + edgeToWeight.size());
+    logger.info("loadGraphFromMemory map " + 0 + " vs " + edgeToWeight.size());
 
     int c = 0;
     for (Map.Entry<Long, Integer> edgeAndCount : edgeToWeight.entrySet()) {
@@ -185,7 +188,7 @@ public class Graph {
         logger.debug("loadGraphFromMemory read  " + c);
         BitcoinFeaturesBase.rlogMemory();
       }
-
+/*
       if (node2NodeIdMap.containsKey(from))
         from = node2NodeIdMap.get(from);
       else {
@@ -202,17 +205,16 @@ public class Graph {
         nodeId2NodeMap.put(nodeCount, to);
         to = nodeCount;
         nodeCount++;
-      }
+      }*/
 
-      this.addEdge(from, to, weight);
-      this.addEdge(to, from, weight);
+      addNodeAndEdge(from, to, weight);
     }
 
-    setNumNodes(nodeCount);
-    setNumEdges(c);
+//    setNumNodes(nodeIds.size());
+//    setNumEdges(c);
   }
 
-  private void simpleIds(Map<Long, Integer> edgeToWeight) {
+/*  private void simpleIds(Map<Long, Integer> edgeToWeight) {
     for (Long key : edgeToWeight.keySet()) {
       int from = BitcoinFeaturesBase.getLow(key);
       int to = BitcoinFeaturesBase.getHigh(key);
@@ -223,7 +225,7 @@ public class Graph {
       nodeId2NodeMap.put(from, from);
       nodeId2NodeMap.put(to, to);
     }
-  }
+  }*/
 
   public void simpleIds2(Map<Long, Integer> edgeToWeight) {
     //Map<Integer,Integer> extToInternal = new HashMap<>();
@@ -232,7 +234,7 @@ public class Graph {
       int from = BitcoinFeaturesBase.getLow(key);
       int to   = BitcoinFeaturesBase.getHigh(key);
 
-      Integer finternal = node2NodeIdMap.get(from);
+/*      Integer finternal = node2NodeIdMap.get(from);
       if (finternal == null) {
         finternal = count++;
         node2NodeIdMap.put(from, finternal);
@@ -244,7 +246,10 @@ public class Graph {
         tinternal = count++;
         node2NodeIdMap.put(to, tinternal);
         nodeId2NodeMap.put(tinternal, to);
-      }
+      }*/
+
+      nodeIds.add(from);
+      nodeIds.add(to);
 
     }
   }
@@ -258,9 +263,9 @@ public class Graph {
    * @see Graph#loadGraph(DBConnection, String, String)
    */
   public void loadGraphAgain(Connection connection, String tableName) throws SQLException {
-    int nodeCount = node2NodeIdMap.size();
-    setNumNodes(0);
-    setNumEdges(0);
+   // int nodeCount = node2NodeIdMap.size();
+//    setNumNodes(0);
+//    setNumEdges(0);
 
 		/*
      * Do database query
@@ -284,7 +289,7 @@ public class Graph {
       int to = rs.getInt(i++);
       int weight = rs.getInt(i++);
 
-      if (node2NodeIdMap.containsKey(from))
+/*      if (node2NodeIdMap.containsKey(from))
         from = node2NodeIdMap.get(from);
       else {
         node2NodeIdMap.put(from, nodeCount);
@@ -299,17 +304,16 @@ public class Graph {
         nodeId2NodeMap.put(nodeCount, to);
         to = nodeCount;
         nodeCount++;
-      }
+      }*/
 
-      this.addEdge(from, to, weight);
-      this.addEdge(to, from, weight);
+      addNodeAndEdge(from, to, weight);
     }
 
     rs.close();
     queryStatement.close();
 
-    setNumNodes(nodeCount);
-    setNumEdges(c);
+//    setNumNodes(nodeIds.size());
+//    setNumEdges(c);
 
     logger.info("read " + c + " found " + getNumNodes() + " nodes and " + getNumEdges() + " edges");
   }
@@ -324,9 +328,9 @@ public class Graph {
    * @see Graph#loadGraph(DBConnection, String, String)
    */
   private void loadGraph(Connection connection, String tableName, String edgeName) throws SQLException {
-    int nodeCount = node2NodeIdMap.size();
-    setNumNodes(0);
-    setNumEdges(0);
+   // int nodeCount = node2NodeIdMap.size();
+//    setNumNodes(0);
+//    setNumEdges(0);
 		
 		/*
 		 * Do database query
@@ -366,7 +370,7 @@ public class Graph {
 
       //logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
 
-      if (node2NodeIdMap.containsKey(from))
+/*      if (node2NodeIdMap.containsKey(from))
         from = node2NodeIdMap.get(from);
       else {
         node2NodeIdMap.put(from, nodeCount);
@@ -381,7 +385,7 @@ public class Graph {
         nodeId2NodeMap.put(nodeCount, to);
         to = nodeCount;
         nodeCount++;
-      }
+      }*/
 
 //			if (tot_out == 0.0) {this.addEdge(to,from,weight);}
 //			if (tot_in == 0.0) {this.addEdge(from,to,weight);}
@@ -391,15 +395,21 @@ public class Graph {
 //				this.addEdge(to, from, weight);
 //			}
 
-      this.addEdge(from, to, weight);
-      this.addEdge(to, from, weight);
+      addNodeAndEdge(from, to, weight);
     }
 
     rs.close();
     queryStatement.close();
 
-    setNumNodes(nodeCount);
-    setNumEdges(c);
+//    setNumNodes(nodeIds.size());
+//    setNumEdges(c);
+  }
+
+  private void addNodeAndEdge(int from, int to, double weight) {
+    nodeIds.add(from);
+    nodeIds.add(to);
+    this.addEdge(from, to, weight);
+    this.addEdge(to, from, weight);
   }
 
   /**
@@ -408,9 +418,9 @@ public class Graph {
    * @param edges
    */
   public void loadGraph(Collection<Edge> edges) {
-    int nodeCount = node2NodeIdMap.size();
-    setNumNodes(0);
-    setNumEdges(0);
+//    int nodeCount = node2NodeIdMap.size();
+//    setNumNodes(0);
+//    setNumEdges(0);
 		
 		/*
 		 * Loop through edges...
@@ -427,7 +437,7 @@ public class Graph {
 
       //logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
 
-      if (node2NodeIdMap.containsKey(from))
+/*      if (node2NodeIdMap.containsKey(from))
         from = node2NodeIdMap.get(from);
       else {
         node2NodeIdMap.put(from, nodeCount);
@@ -442,15 +452,18 @@ public class Graph {
         nodeId2NodeMap.put(nodeCount, to);
         to = nodeCount;
         nodeCount++;
-      }
+      }*/
 
-      this.addEdge(from, to, weight);
-      this.addEdge(to, from, weight);
+      addNodeAndEdge(from, to, weight);
     }
 
-    setNumNodes(nodeCount);
-    setNumEdges(c);
+//    setNumNodes(nodeCount);
+//    setNumEdges(c);
 
+    report();
+  }
+
+  private void report() {
     logger.info("numNodes: " + getNumNodes());
     logger.info("numEdges: " + getNumEdges());
   }
@@ -464,12 +477,12 @@ public class Graph {
   public void loadGraph(File f) throws Throwable {
     BufferedReader in = new BufferedReader(new FileReader(f));
     String str = "";
-    int nodeCount = node2NodeIdMap.size();
+//    int nodeCount = node2NodeIdMap.size();
     while ((str = in.readLine()) != null) {
       if (str.startsWith("#")) {
         if (str.contains("#Nodes")) {
-          setNumNodes(Integer.parseInt(str.split("\\s+")[1].trim()));
-          setNumEdges(Integer.parseInt(in.readLine().split("\\s+")[1].trim()));
+//          setNumNodes(Integer.parseInt(str.split("\\s+")[1].trim()));
+//          setNumEdges(Integer.parseInt(in.readLine().split("\\s+")[1].trim()));
         }
         //System.err.println(str);
         continue;
@@ -477,7 +490,7 @@ public class Graph {
       String tokens[] = str.split("#|\\t");
       int from = Integer.parseInt(tokens[0]);
       int to = Integer.parseInt(tokens[1]);
-      if (node2NodeIdMap.containsKey(from))
+/*      if (node2NodeIdMap.containsKey(from))
         from = node2NodeIdMap.get(from);
       else {
         node2NodeIdMap.put(from, nodeCount);
@@ -492,7 +505,7 @@ public class Graph {
         nodeId2NodeMap.put(nodeCount, to);
         to = nodeCount;
         nodeCount++;
-      }
+      }*/
       if (tokens.length > 2) {
         this.addEdge(from, to, Double.parseDouble(tokens[2]));
         this.addEdge(to, from, Double.parseDouble(tokens[2]));
@@ -506,36 +519,38 @@ public class Graph {
 
 
   public int getNumNodes() {
-    return numNodes;
+    return nodeIds.size();
   }
+/*
 
   protected void setNumNodes(int numNodes) {
     this.numNodes = numNodes;
   }
+*/
 
   public int getNumEdges() {
-    return numEdges;
+    return edges.size();
   }
 
-  protected void setNumEdges(int numEdges) {
-    this.numEdges = numEdges;
-  }
+//  protected void setNumEdges(int numEdges) {
+//    this.numEdges = numEdges;
+//  }
 
-  public HashSet<Edge> getEdges() {
+  public Set<Edge> getEdges() {
     return edges;
   }
 
-  protected void setEdges(HashSet<Edge> edges) {
+  protected void setEdges(Set<Edge> edges) {
     this.edges = edges;
   }
 
-  protected HashMap<Integer, ArrayList<Edge>> getInLinks() {
+  protected  Map<Integer, List<Edge>> getInLinks() {
     return inLinks;
   }
 
   public Set<Integer> getInLinksNodes() { return inLinks.keySet(); }
 
-  protected void setInLinks(HashMap<Integer, ArrayList<Edge>> inLinks) {
+  protected void setInLinks(Map<Integer, List<Edge>> inLinks) {
     this.inLinks = inLinks;
   }
 
@@ -546,7 +561,7 @@ public class Graph {
 */
 
   public Collection<Integer> getRawIDs() {
-    return node2NodeIdMap.keySet();
+    return nodeIds;// node2NodeIdMap.keySet();
   }
 
   /**
@@ -554,13 +569,13 @@ public class Graph {
    *
    * @return
    */
-  public Collection<Integer> getInternalIDs() {
+/*  public Collection<Integer> getInternalIDs() {
     return nodeId2NodeMap.keySet();
-  }
+  }*/
 
   public String toString() {
-    boolean isNull = node2NodeIdMap == null;
-    return "Graph with " + getNumNodes() + " nodes and " +getNumEdges() + " edges null " + isNull
+    //boolean isNull = node2NodeIdMap == null;
+    return "Graph with " + getNumNodes() + " nodes and " +getNumEdges() + " edges "//null " + isNull
         //+ " " + (isNull ? "" : node2NodeIdMap.keySet())
         ;
   }

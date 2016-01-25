@@ -112,19 +112,20 @@ public class BitcoinBinding extends Binding {
 
 		// Set and update all TopKSubgraphShortlist specific parameters
 		if (getShortlist() instanceof TopKSubgraphShortlist) {
-			((TopKSubgraphShortlist) getShortlist()).setK(DEFAULT_SHORTLIST_SIZE);
-			((TopKSubgraphShortlist) getShortlist()).setD(SHORTLISTING_D);
-			((TopKSubgraphShortlist) getShortlist()).refreshQueryExecutorParameters();
-			((TopKSubgraphShortlist) getShortlist()).setUsersTable(USER_FEATURES_TABLE);
-			((TopKSubgraphShortlist) getShortlist()).setUserIdColumn(USERID_COLUMN);
-			((TopKSubgraphShortlist) getShortlist()).setTypeColumn(TYPE_COLUMN);
-			((TopKSubgraphShortlist) getShortlist()).setGraphTable(GRAPH_TABLE);
-			((TopKSubgraphShortlist) getShortlist()).setPairIDColumn(PAIRID_COLUMN);
+			TopKSubgraphShortlist shortlist = (TopKSubgraphShortlist) getShortlist();
+
+			shortlist.setK(DEFAULT_SHORTLIST_SIZE);
+			shortlist.setD(SHORTLISTING_D);
+			shortlist.refreshQueryExecutorParameters();
+			shortlist.setUsersTable(USER_FEATURES_TABLE);
+			shortlist.setUserIdColumn(USERID_COLUMN);
+			shortlist.setTypeColumn(TYPE_COLUMN);
+			shortlist.setGraphTable(GRAPH_TABLE);
+			shortlist.setPairIDColumn(PAIRID_COLUMN);
 
 			//load types and indices
-			((TopKSubgraphShortlist) getShortlist()).loadTypesAndIndices();
+			shortlist.loadTypesAndIndices();
 		}
-
 
 		this.useFastBitcoinConnectedTest = useFastBitcoinConnectedTest;
 

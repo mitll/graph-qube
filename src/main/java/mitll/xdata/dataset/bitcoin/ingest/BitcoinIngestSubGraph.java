@@ -164,7 +164,7 @@ public class BitcoinIngestSubGraph {
           "_" + QueryExecutor.queryFile.split("/")[1])));
 
 
-      int isClique = executor.loadQuery();
+      boolean isClique = executor.loadQuery();
 
       /**
        * Get query signatures
@@ -190,13 +190,13 @@ public class BitcoinIngestSubGraph {
 			 */
 
       // compute edge types for all edges in query
-      HashSet<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
+      Set<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
 
       //compute queryEdgetoIndex
       executor.computeQueryEdge2Index();
 
       //compute queryEdgeType2Edges
-      HashMap<String, ArrayList<String>> queryEdgeType2Edges = executor.computeQueryEdgeType2Edges();
+      Map<String, List<String>> queryEdgeType2Edges = executor.computeQueryEdgeType2Edges();
 
 
       //Maintain pointers and topk heap

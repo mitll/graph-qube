@@ -109,6 +109,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * Load a whole bunch of stuff from:
    * db: node type data
    * file: and all pre-computed indices
+   * @see BitcoinBinding#BitcoinBinding(DBConnection, boolean, String)
    */
   public void loadTypesAndIndices() {
     /*
@@ -119,10 +120,6 @@ public class TopKSubgraphShortlist extends Shortlist {
       executor.loadTypesFromDatabase(binding.connection, usersTable, userIdColumn, typeColumn);
 
       logger.info("Loading in indices...");
-//      executor.loadGraphNodesType();    //compute ordering
-//      executor.loadGraphSignatures();    //topology
-//      executor.loadEdgeLists();      //sorted edge lists
-//      executor.loadSPDIndex();      //spd index
       executor.prepareInternals();
 
       //Make resultDir if necessary
@@ -174,8 +171,8 @@ public class TopKSubgraphShortlist extends Shortlist {
     for (Edge qe : queryEdges) {
       logger.info("qe: " + qe);
     }
-    int isClique = executor.loadQuery(queryEdges, binding.connection, usersTable, userIdColumn, typeColumn);
-    logger.info("isClique: " + isClique);
+    boolean isClique = executor.loadQuery(queryEdges, binding.connection, usersTable, userIdColumn, typeColumn);
+    if (isClique) logger.info("isClique: " + isClique);
 
     //set system out to out-file...
     QueryExecutor.queryFile = "queries/queryGraph.FanOutService.txt";
@@ -198,6 +195,13 @@ public class TopKSubgraphShortlist extends Shortlist {
     return results;
   }
 
+  /**
+   * Ask the transactions table for edges between the node ids.
+   *
+   * @see #getShortlist(List, List, long)
+   * @param exemplarIDs
+   * @return
+   */
   private HashSet<Edge> getQueryEdges(List<String> exemplarIDs) {
     HashSet<Edge> queryEdges = new HashSet<Edge>();
     Edge edg;
@@ -378,7 +382,7 @@ public class TopKSubgraphShortlist extends Shortlist {
   private List<FL_PatternSearchResult> getPatternSearchResults(HashSet<Edge> queryEdges, List<String> exemplarIDs) {
 
     // Heap of results from uiuc.topksubgraph
-    FibonacciHeap<ArrayList<String>> heap = executor.getHeap();
+    FibonacciHeap<List<String>> heap = executor.getHeap();
 
     // List of type FL_PatternSearchResult to hold all matching sub-graph contained in heap
     List<FL_PatternSearchResult> results = new ArrayList<FL_PatternSearchResult>();
@@ -396,8 +400,8 @@ public class TopKSubgraphShortlist extends Shortlist {
 		/*
 		 * Map between influent and uiuc.topksubraph index structure for query edges 
 		 */
-    HashMap<String, Integer> uiucQueryEdgetoIndex = executor.getQueryEdgetoIndex();
-    HashMap<Integer, Integer> uiucInd2InfluentInd = new HashMap<Integer, Integer>();
+    Map<String, Integer> uiucQueryEdgetoIndex = executor.getQueryEdgetoIndex();
+    Map<Integer, Integer> uiucInd2InfluentInd = new HashMap<Integer, Integer>();
 
     i = 0;
     for (Edge qe : queryEdges) {
@@ -409,7 +413,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
 
     // Compute map between influent entity ind and list of edges
-    HashMap<TreeSet<String>, Integer> queryEdgeList2InfluentEntityInd = computeQueryEdgeList2InfluentEntityIndMap(exemplarIDs,
+    Map<SortedSet<String>, Integer> queryEdgeList2InfluentEntityInd = computeQueryEdgeList2InfluentEntityIndMap(exemplarIDs,
         queryNode2InfluentEntityInd, uiucQueryEdgetoIndex);
 		
 		/*
@@ -430,14 +434,14 @@ public class TopKSubgraphShortlist extends Shortlist {
       List<FL_EntityMatchResult> entities = new ArrayList<FL_EntityMatchResult>();
 
       // Get matching sub-graph
-      FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
-      ArrayList<String> list = fhn.getData();
+      FibonacciHeapNode<List<String>> fhn = heap.removeMin();
+      List<String> list = fhn.getData();
 
       // Sub-graph score
       double subgraphScore = fhn.getKey();
 
       // HashSet for entities involved in this sub-graph
-      HashSet<String> nodes = getSubgraphNodes(list);
+      Set<String> nodes = getSubgraphNodes(list);
 
       // make subgraph guid
       String subgraphGuid = getSubgraphGuid(nodes);
@@ -522,7 +526,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 				/*
 				 * Get mapping between nodes and all edges they are involved in (for node correspondence mapping b/w query and result)
 				 */
-        HashMap<String, TreeSet<String>> resultNode2EdgeList = computeResultNode2EdgeListMap(list, nodes.size());
+        Map<String, SortedSet<String>> resultNode2EdgeList = computeResultNode2EdgeListMap(list, nodes.size());
 				
 
 				/*
@@ -594,8 +598,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @param queryEdges
    * @return
    */
-  private FL_PatternSearchResult makeQueryIntoResult(List<String> exemplarIDs, HashMap<String, Integer> uiucQueryEdgetoIndex) {
-
+  private FL_PatternSearchResult makeQueryIntoResult(List<String> exemplarIDs, Map<String, Integer> uiucQueryEdgetoIndex) {
 		/*
 		 *  Loop through all edges
 		 */
@@ -715,15 +718,15 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @param queryNode2InfluentEntityInd
    * @param uiucQueryEdgetoIndex
    */
-  private HashMap<TreeSet<String>, Integer> computeQueryEdgeList2InfluentEntityIndMap(
+  private Map<SortedSet<String>, Integer> computeQueryEdgeList2InfluentEntityIndMap(
       List<String> exemplarIDs,
-      HashMap<String, Integer> queryNode2InfluentEntityInd,
-      HashMap<String, Integer> uiucQueryEdgetoIndex) {
+      Map<String, Integer> queryNode2InfluentEntityInd,
+      Map<String, Integer> uiucQueryEdgetoIndex) {
     int i;
 		/*
 		 * Map to later help map query node roles to result node roles ("E0," etc.)
 		 */
-    HashMap<Integer, TreeSet<String>> influentEntityInd2QueryEdgeList = new HashMap<Integer, TreeSet<String>>();
+    Map<Integer, SortedSet<String>> influentEntityInd2QueryEdgeList = new HashMap<>();
 //		// initialize
 //		for (i=0; i< exemplarIDs.size(); i++)
 //			influentEntityInd2QueryEdgeList.put(i,new TreeSet<String>(Collator.getInstance()));
@@ -733,11 +736,11 @@ public class TopKSubgraphShortlist extends Shortlist {
       String[] edgNodes = edgStr.split("#");
 
       Integer influentInd;
-      TreeSet<String> queryEdgeList;
+      SortedSet<String> queryEdgeList;
       for (i = 0; i < 2; i++) {
         influentInd = queryNode2InfluentEntityInd.get(edgNodes[i]);
         if (!influentEntityInd2QueryEdgeList.containsKey(influentInd))
-          influentEntityInd2QueryEdgeList.put(influentInd, new TreeSet<String>(Collator.getInstance()));
+          influentEntityInd2QueryEdgeList.put(influentInd, new TreeSet<>(Collator.getInstance()));
         queryEdgeList = influentEntityInd2QueryEdgeList.get(influentInd);
         queryEdgeList.add(edgId);
         influentEntityInd2QueryEdgeList.put(influentInd, queryEdgeList);
@@ -745,9 +748,9 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
     logger.info(influentEntityInd2QueryEdgeList);
 
-    HashMap<TreeSet<String>, Integer> queryEdgeList2InfluentEntityInd = new HashMap<TreeSet<String>, Integer>();
+    Map<SortedSet<String>, Integer> queryEdgeList2InfluentEntityInd = new HashMap<>();
     for (Integer influentEntityInd : influentEntityInd2QueryEdgeList.keySet()) {
-      TreeSet<String> queryEdgeList = influentEntityInd2QueryEdgeList.get(influentEntityInd);
+      SortedSet<String> queryEdgeList = influentEntityInd2QueryEdgeList.get(influentEntityInd);
       queryEdgeList2InfluentEntityInd.put(queryEdgeList, influentEntityInd);
     }
     logger.info(queryEdgeList2InfluentEntityInd);
@@ -761,9 +764,8 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @param queryNode2InfluentEntityInd
    * @param uiucQueryEdgetoIndex
    */
-  private HashMap<String, TreeSet<String>> computeResultNode2EdgeListMap(ArrayList<String> edges, int numNodes) {
-
-    HashMap<String, TreeSet<String>> node2EdgeList = new HashMap<String, TreeSet<String>>();
+  private Map<String, SortedSet<String>> computeResultNode2EdgeListMap(List<String> edges, int numNodes) {
+    Map<String, SortedSet<String>> node2EdgeList = new HashMap<>();
 
     for (int i = 0; i < edges.size(); i++) {
       String edgId = "edg" + i;
@@ -774,7 +776,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
       if (!node2EdgeList.containsKey(n1))
         node2EdgeList.put(n1, new TreeSet<String>(Collator.getInstance()));
-      TreeSet<String> edgeList = node2EdgeList.get(n1);
+      SortedSet<String> edgeList = node2EdgeList.get(n1);
       edgeList.add(edgId);
       node2EdgeList.put(n1, edgeList);
 
@@ -793,16 +795,17 @@ public class TopKSubgraphShortlist extends Shortlist {
   /**
    * Get nodes involved in subgraph from list of edges
    *
+   * TODO : why do we have to encode the nodes on an edge as a string like src#dst ???
    * @param nodes
    * @param list
    */
-  private HashSet<String> getSubgraphNodes(ArrayList<String> list) {
-    HashSet<String> nodes = new HashSet<String>();
+  private Set<String> getSubgraphNodes(Collection<String> list) {
+    Set<String> nodes = new HashSet<String>();
 
     for (String aList : list) {
       // Get parts of edge
       String[] edgeSplit = aList.split("#");
-      String src = edgeSplit[0];
+      String src  = edgeSplit[0];
       String dest = edgeSplit[1];
       /*
 			 * Track nodes
@@ -927,8 +930,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @param nodes
    * @return
    */
-  private String getSubgraphGuid(HashSet<String> nodes) {
-
+  private String getSubgraphGuid(Collection<String> nodes) {
     List<String> nodeList = new ArrayList<String>(nodes);
 
     // sort nodes

@@ -52,43 +52,46 @@ public class QueryExecutor {
   private Map<Integer, Integer> node2Type;
   private int totalTypes;
 
-  private final ArrayList<Integer> types;
-  private final HashMap<Integer, HashSet<Integer>> graphType2IDSet;
+  private final List<Integer> types;
+  private final Map<Integer, Set<Integer>> graphType2IDSet;
   private int totalNodes;
   private int totalOrderingSize;
-  private final HashMap<Integer, ArrayList<String>> ordering;
-  private final HashMap<String, Integer> orderingType2Index;
+  private final Map<Integer, List<String>> ordering;
+  private final Map<String, Integer> orderingType2Index;
 
-  private int[][] graphSign;
+  //private int[][] graphSign;
+  private Map<Integer, List<Integer>> graphSign;
 
-  private final HashMap<String, ArrayList<String>> sortedEdgeLists;
-  private final HashMap<String, HashMap<Integer, ArrayList<Integer>>> node2EdgeListPointers;
+  private final Map<String, List<String>> sortedEdgeLists;
+  private final Map<String, Map<Integer, List<Integer>>> node2EdgeListPointers;
 
-  private double[][] spd;
-
+  //  private double[][] spd;
+  Map<Integer, List<Float>> spd;
   private Graph query;
-  private HashMap<Integer, Integer> queryNodeID2Type;
-  private HashMap<Integer, Integer> queryNode2Type;
+  //  private HashMap<Integer, Integer> queryNodeID2Type;
+  private Map<Integer, Integer> queryNode2Type;
+//  Set<Integer> queryNodeIds = new HashSet<>();
 
-  private int[][] querySign;
+  //private int[][] querySign;
+  private Map<Integer, List<Integer>> querySign;
 
-  private HashMap<Integer, List<Integer>> candidates;
+  private Map<Integer, List<Integer>> candidates;
 
-  private ArrayList<String> actualQueryEdges;
+  private List<String> actualQueryEdges;
 
-  private HashMap<String, Integer> queryEdgetoIndex;
+  private Map<String, Integer> queryEdgetoIndex;
 
-  private HashMap<String, String> queryEdge2EdgeType;
+  private Map<String, String> queryEdge2EdgeType;
 
-  private HashMap<String, Integer> pointers;
+  private Map<String, Integer> pointers;
 
-  private FibonacciHeap<ArrayList<String>> heap;
-  private HashSet<ArrayList<String>> heapSet;
+  private FibonacciHeap<List<String>> heap;
+  private Set<List<String>> heapSet;
 
-  public QueryExecutor(Graph graph, String datasetId, String datasetResourceDir, Map<Integer,Integer> idToType) {
+  public QueryExecutor(Graph graph, String datasetId, String datasetResourceDir, Map<Integer, Integer> idToType) {
     this();
     QueryExecutor.datasetId = datasetId;
-    QueryExecutor.baseDir =  datasetResourceDir; //THIS LINE SHOULD CHANGE FOR JAR-ed VERSION
+    QueryExecutor.baseDir = datasetResourceDir; //THIS LINE SHOULD CHANGE FOR JAR-ed VERSION
 
     this.g = graph;
 
@@ -146,7 +149,7 @@ public class QueryExecutor {
     //spd initialized by loadSPDIndex()
 
     //query initialized by loadQuery()
-    queryNodeID2Type = new HashMap<>();
+    //  queryNodeID2Type = new HashMap<>();
 
     queryNode2Type = new HashMap<Integer, Integer>();
 
@@ -171,27 +174,27 @@ public class QueryExecutor {
      * Get all pairs of query nodes...
 		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
 		 */
-    HashSet<Edge> queryEdges = getQueryEdges(exemplarIDs, graph);
+    Set<Edge> queryEdges = getQueryEdges(exemplarIDs, graph);
 
     for (Edge qe : queryEdges) {
       logger.info("qe: " + qe);
     }
 
-    int isClique = loadQuery(queryEdges, idToType);
-    logger.info("isClique: " + isClique);
+    boolean isClique = loadQuery(queryEdges, idToType);
+    if (isClique) logger.warn("isClique: " + isClique);
 
     executeQuery(isClique);
 
     // Heap of results from uiuc.topksubgraph
-    FibonacciHeap<ArrayList<String>> heap = getHeap();
+    FibonacciHeap<List<String>> heap = getHeap();
 
     logger.info("Starting with: " + heap.size() + " matching sub-graphs...");
 
     // Loop-through resultant sub-graphs
     while (!heap.isEmpty()) {
       // Get matching sub-graph
-      FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
-      ArrayList<String> list = fhn.getData();
+      FibonacciHeapNode<List<String>> fhn = heap.removeMin();
+      List<String> list = fhn.getData();
 
       // Sub-graph score
       double subgraphScore = fhn.getKey();
@@ -204,11 +207,12 @@ public class QueryExecutor {
   /**
    * Get nodes involved in subgraph from list of edges
    *
-   * @paramx nodes
    * @param list
+   * @paramx nodes
+   * @see #testQuery(List, Graph, Map)
    */
-  private HashSet<String> getSubgraphNodes(ArrayList<String> list) {
-    HashSet<String> nodes = new HashSet<>();
+  private Set<String> getSubgraphNodes(Collection<String> list) {
+    Set<String> nodes = new HashSet<>();
 
     for (String aList : list) {
       // Get parts of edge
@@ -216,7 +220,7 @@ public class QueryExecutor {
       String src = edgeSplit[0];
       String dest = edgeSplit[1];
       /*
-			 * Track nodes
+       * Track nodes
 			 */
       if (!nodes.contains(src))
         nodes.add(src);
@@ -228,14 +232,13 @@ public class QueryExecutor {
   }
 
   /**
-   *
    * @param exemplarIDs
    * @param graph
    * @return
    * @see #testQuery(List, Graph, Map)
    */
-  private HashSet<Edge> getQueryEdges(List<String> exemplarIDs, Graph graph) {
-    HashSet<Edge> queryEdges = new HashSet<>();
+  private Set<Edge> getQueryEdges(List<String> exemplarIDs, Graph graph) {
+    Set<Edge> queryEdges = new HashSet<>();
     Edge edg;
     int e1, e2;
     //String pair;
@@ -270,7 +273,7 @@ public class QueryExecutor {
     return queryEdges;
   }
 
-  public void executeQuery(int isClique) {
+  public void executeQuery(boolean isClique) {
     /**
      * Get query signatures
      */
@@ -294,7 +297,7 @@ public class QueryExecutor {
      * Populate all required HashMaps relating edges to edge-types
      */
     // compute edge types for all edges in query
-    HashSet<String> queryEdgeTypes = computeQueryEdgeTypes();
+    Set<String> queryEdgeTypes = computeQueryEdgeTypes();
 
     if (queryEdgeTypes.isEmpty()) {
       logger.error("huh? query edge types is empty???\n\n\n");
@@ -304,7 +307,7 @@ public class QueryExecutor {
     computeQueryEdge2Index();
 
     //compute queryEdgeType2Edges
-    HashMap<String, ArrayList<String>> queryEdgeType2Edges = computeQueryEdgeType2Edges();
+    Map<String, List<String>> queryEdgeType2Edges = computeQueryEdgeType2Edges();
 
 
     //Maintain pointers and topk heap
@@ -421,11 +424,10 @@ public class QueryExecutor {
 
 
   /**
-   * @see #executeQuery(int)
+   * @see #executeQuery(boolean)
    * @see mitll.xdata.binding.TopKSubgraphShortlist#getShortlist(List, List, long)
    */
-  public void executeQuery(HashMap<String, ArrayList<String>> queryEdgeType2Edges, int isClique, int prunedCandidateFiltering) {
-
+  public void executeQuery(Map<String, List<String>> queryEdgeType2Edges, boolean isClique, int prunedCandidateFiltering) {
     int prunedEdgeListsPartialCandidate = 0;
     int prunedMPWPartialCandidate = 0;
     int prunedEdgeListsSize1 = 0;
@@ -475,12 +477,12 @@ public class QueryExecutor {
 			/*
        * Get query edges corresponding to edge-type of the largest unprocessed weighted-edge in sortedEdgeLists
 			 */
-      ArrayList<String> edgesOfMaxType = queryEdgeType2Edges.get(max);
+      List<String> edgesOfMaxType = queryEdgeType2Edges.get(max);
       if (edgesOfMaxType == null) {
-        logger.error("Something is wrong: '" + max +"'");
+        logger.error("Something is wrong: '" + max + "'");
         edgesOfMaxType = queryEdgeType2Edges.get(max.split("#")[1] + "#" + max.split("#")[0]);
       }
-      if (isClique == 1) {
+      if (isClique) {
         ArrayList<String> edgesOfMaxType2 = new ArrayList<>();
         edgesOfMaxType2.add(edgesOfMaxType.get(0));
         edgesOfMaxType = edgesOfMaxType2;
@@ -489,7 +491,7 @@ public class QueryExecutor {
 
 			
 			/*
-			 * Loop-through query edges of edge-type "max" 
+       * Loop-through query edges of edge-type "max"
 			 */
       for (String queryEdge : edgesOfMaxType) {
 //				logger.info("Here comes the queryEdge: "+queryEdge);
@@ -528,7 +530,7 @@ public class QueryExecutor {
 
         // if homogeneous edge-type (i.e. i#i or j#j) and query graph not a clique
         // track edge twice because itself and it's reflection are valid candidates
-        if (max.split("#")[0].equals(max.split("#")[1]) && isClique == 0) {
+        if (max.split("#")[0].equals(max.split("#")[1]) && !isClique) {
           ArrayList<String> list1 = new ArrayList<>();
           for (int i = 0; i < queryEdgetoIndex.size(); i++)
             list1.add("");
@@ -548,9 +550,9 @@ public class QueryExecutor {
           }
         }
 //				logger.info("pcCurr: "+pcCurr);
-				
+
 				/*
-				 * compute scores for current partial candidates 
+         * compute scores for current partial candidates
 				 * add partial candidates to currCandidates if heap says they're worth considering 
 				 */
         for (ArrayList<String> pc : pcCurr) {
@@ -577,7 +579,7 @@ public class QueryExecutor {
 
           //check with heap and then add it to newCandidate
           if (heap.size() >= topK) {
-            FibonacciHeapNode<ArrayList<String>> fhn = heap.min();
+            FibonacciHeapNode<List<String>> fhn = heap.min();
             //logger.info("Check:"+(actualScore+ubScoreOfNonConsideredEdges1)+"\t"+(actualScore+ubScoreOfNonConsideredEdges2)+"\t"+fhn.getKey());
 
             // add partial candidate pc if there's room in the heap for it
@@ -597,9 +599,9 @@ public class QueryExecutor {
             // if heap is not yet full, pc gets added by default
             currCandidates.add(pc);
         }
-				
+
 				/*
-				 * 
+         *
 				 */
         if (currCandidates.size() == 0)
           continue;
@@ -667,8 +669,8 @@ public class QueryExecutor {
               node1 = Integer.parseInt(c.get(e1).split("#")[pos1 - 1]);
             if (e2 != -1)
               node2 = Integer.parseInt(c.get(e2).split("#")[pos2 - 1]);
-            ArrayList<Integer> edgeIDs1 = new ArrayList<>();
-            ArrayList<Integer> edgeIDs2 = new ArrayList<>();
+            List<Integer> edgeIDs1 = new ArrayList<>();
+            List<Integer> edgeIDs2 = new ArrayList<>();
             if (node1 != -1)
               edgeIDs1 = node2EdgeListPointers.get(nextEdgeType).get(node1);
             if (node2 != -1)
@@ -778,7 +780,7 @@ public class QueryExecutor {
               double upperBoundScore = actualScore + ubScoreOfNonConsideredEdges;
               //check with heap and then add it to newCandidate
               if (heap.size() >= topK) {
-                FibonacciHeapNode<ArrayList<String>> fhn = heap.min();
+                FibonacciHeapNode<List<String>> fhn = heap.min();
                 if (upperBoundScore > fhn.getKey()) {
                   newCandidates.add(pc);
                 } else {
@@ -805,16 +807,16 @@ public class QueryExecutor {
           if (heapSet.contains(c))
             continue;
           if (heap.size() >= topK) {
-            FibonacciHeapNode<ArrayList<String>> fhn = heap.min();
+            FibonacciHeapNode<List<String>> fhn = heap.min();
             if (actualScore > fhn.getKey()) {
-              FibonacciHeapNode<ArrayList<String>> fhn2 = heap.removeMin();
+              FibonacciHeapNode<List<String>> fhn2 = heap.removeMin();
               heapSet.remove(fhn2.getData());
-              FibonacciHeapNode<ArrayList<String>> fhn1 = new FibonacciHeapNode<>(c, actualScore);
+              FibonacciHeapNode<List<String>> fhn1 = new FibonacciHeapNode<>(c, actualScore);
               heap.insert(fhn1, fhn1.getKey());
               heapSet.add(fhn1.getData());
             }
           } else {
-            FibonacciHeapNode<ArrayList<String>> fhn = new FibonacciHeapNode<>(c, actualScore);
+            FibonacciHeapNode<List<String>> fhn = new FibonacciHeapNode<>(c, actualScore);
             heap.insert(fhn, fhn.getKey());
             heapSet.add(fhn.getData());
           }
@@ -823,8 +825,8 @@ public class QueryExecutor {
 
 
       //Move pointer to next position in useful edge list of e.
-      ArrayList<String> list = sortedEdgeLists.get(max);
-      ArrayList<String> arr1 = queryEdgeType2Edges.get(max);
+      List<String> list = sortedEdgeLists.get(max);
+      List<String> arr1 = queryEdgeType2Edges.get(max);
       int old = pointers.get(max);
       for (int c = pointers.get(max) + 1; c < list.size(); c++) {
         String l = list.get(c);
@@ -851,8 +853,8 @@ public class QueryExecutor {
       if (heap.size() == topK) {
         //Compute UpperBoundScore for any new candidate (using scores at pointer positions).
         double maxUpperBound = 0.;
-        for (int i = 0; i < actualQueryEdges.size(); i++) {
-          String type = queryEdge2EdgeType.get(actualQueryEdges.get(i));
+        for (String actualQueryEdge : actualQueryEdges) {
+          String type = queryEdge2EdgeType.get(actualQueryEdge);
           if (!sortedEdgeLists.containsKey(type))
             type = type.split("#")[1] + "#" + type.split("#")[0];
           if (sortedEdgeLists.get(type).size() > pointers.get(type))
@@ -870,7 +872,7 @@ public class QueryExecutor {
         //{
         //topK Quit
         //}
-        FibonacciHeapNode<ArrayList<String>> fhn = heap.min();
+        FibonacciHeapNode<List<String>> fhn = heap.min();
         if (maxUpperBound < fhn.getKey()) {
           //printHeap();
           logger.info("Top-K Quit");
@@ -889,13 +891,13 @@ public class QueryExecutor {
   }
 
   /**
-   * @see #executeQuery(int)
    * @param queryEdgeTypes
    * @param queryEdgeType2Edges
    * @throws NumberFormatException
+   * @see #executeQuery(boolean)
    */
-  public void computePointers(HashSet<String> queryEdgeTypes,
-                              HashMap<String, ArrayList<String>> queryEdgeType2Edges)
+  public void computePointers(Set<String> queryEdgeTypes,
+                              Map<String, List<String>> queryEdgeType2Edges)
       throws NumberFormatException {
     pointers = new HashMap<>();
     for (String edgeType : queryEdgeTypes) {
@@ -904,8 +906,8 @@ public class QueryExecutor {
       String orderedEdgeType = t1 + "#" + t2;
       if (t1 > t2)
         orderedEdgeType = t2 + "#" + t1;
-      ArrayList<String> list = sortedEdgeLists.get(orderedEdgeType);
-      ArrayList<String> arr1 = queryEdgeType2Edges.get(orderedEdgeType);
+      List<String> list = sortedEdgeLists.get(orderedEdgeType);
+      List<String> arr1 = queryEdgeType2Edges.get(orderedEdgeType);
       for (int c = 0; c < list.size(); c++) {
         String l = list.get(c);
         String tokens[] = l.split("#");
@@ -931,12 +933,15 @@ public class QueryExecutor {
   }
 
   /**
+   * TODO : why store type list in an array?
+   *
    * @return
    * @throws NumberFormatException
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    */
-  public HashMap<String, ArrayList<String>> computeQueryEdgeType2Edges()
+  public Map<String, List<String>> computeQueryEdgeType2Edges()
       throws NumberFormatException {
-    HashMap<String, ArrayList<String>> queryEdgeType2Edges = new HashMap<>();
+    Map<String, List<String>> queryEdgeType2Edges = new HashMap<>();
     //queryEdge2EdgeType = new HashMap<String, String>(); //this has already been initialized twice...
     //for(String s:queryEdgeTypes)
     //	queryEdgeType2Edges.put(s, new ArrayList<String>());
@@ -948,7 +953,7 @@ public class QueryExecutor {
       String type = t1 + "#" + t2;
       if (t1 > t2)
         type = t2 + "#" + t1;
-      ArrayList<String> tmp = new ArrayList<>();
+      List<String> tmp = new ArrayList<>();
       if (queryEdgeType2Edges.containsKey(type))
         tmp = queryEdgeType2Edges.get(type);
       tmp.add(qe);
@@ -970,26 +975,34 @@ public class QueryExecutor {
 
   /**
    * TODO : I thought that the edge ids were in raw space???
+   *
    * @return Edge Types for all edges in query
-   * @see QueryExecutor#executeQuery(int)
+   * @see QueryExecutor#executeQuery(boolean)
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    * @see
    */
-  public HashSet<String> computeQueryEdgeTypes() {
-    HashSet<Edge> queryEdgeSet = query.getEdges();
+  public Set<String> computeQueryEdgeTypes() {
+    Set<Edge> queryEdgeSet = query.getEdges();
     //actualQueryEdges= new ArrayList<String>();
-    HashSet<String> queryEdgeTypes = new HashSet<>();
+    Set<String> queryEdgeTypes = new HashSet<>();
 
-    if (queryNodeID2Type.isEmpty()) {
-      logger.error("computeQueryEdgeTypes : huh? queryNodeID2Type is empty ");
-    }
+//    if (queryNodeID2Type.isEmpty()) {
+//      logger.error("computeQueryEdgeTypes : huh? queryNodeID2Type is empty ");
+//    }
     for (Edge e : queryEdgeSet) {
-      int n1 = query.getRawID(e.getSrc());
-      int n2 = query.getRawID(e.getDst());
-      if (n1 <= n2) {
-        actualQueryEdges.add(n1 + "#" + n2);
-        int t1 = queryNodeID2Type.get(e.getSrc());
-        int t2 = queryNodeID2Type.get(e.getDst());
+      int src = e.getSrc();
+      //int n1 = query.getRawID(src);
+      int dst = e.getDst();
+      //  int n2 = query.getRawID(dst);
+      // if (n1 <= n2) {
+      if (src <= dst) {
+        //actualQueryEdges.add(n1 + "#" + n2);
+        actualQueryEdges.add(src + "#" + dst);
+//        int t1 = queryNodeID2Type.get(src);
+//        int t2 = queryNodeID2Type.get(dst);
+
+        int t1 = queryNode2Type.get(src);
+        int t2 = queryNode2Type.get(dst);
         //if(t1<t2)
         queryEdgeTypes.add(t1 + "#" + t2);
       }
@@ -1003,22 +1016,23 @@ public class QueryExecutor {
   public int generateCandidates() {
     int prunedCandidateFiltering = 0;
 
-    for (int i = 0; i < query.getNumNodes(); i++) {
-      Integer nodeType = queryNodeID2Type.get(i);
+    //  for (int i = 0; i < query.getNumNodes(); i++) {
+    for (Integer nodeID : query.getRawIDs()) {
+      //   Integer nodeType = queryNodeID2Type.get(i);
+      Integer nodeType = queryNode2Type.get(nodeID);
       Set<Integer> c1 = graphType2IDSet.get(nodeType);
 
       if (c1 == null) {
         logger.error("generateCandidates Graph has no nodes of type " + nodeType);
         return -1;
-      }
-      else {
-        logger.debug("generateCandidates for " + i + " got " + c1);
+      } else {
+        logger.debug("generateCandidates for " + nodeID + " got " + c1);
       }
 
       // logger.info("Old Size: "+c1.size());
       List<Integer> c2 = new ArrayList<>();
       for (int c : c1) {
-        int kstar = NSContained(i, c);
+        int kstar = NSContained(nodeID, c);
         // logger.info(kstar+" kstar: "+c);
         if (kstar != -1)
           c2.add(c);
@@ -1030,11 +1044,11 @@ public class QueryExecutor {
       }
 
       logger.info("New Size: " + c2.size());
-      Integer rawID = query.getRawID(i);
-      candidates.put(rawID, c2);
+      //  Integer rawID = nodeID;//query.getRawID(i);
+      candidates.put(nodeID, c2);
       prunedCandidateFiltering += (c1.size() - c2.size());
     }
-    logger.info("generateCandidates " +prunedCandidateFiltering);
+    logger.info("generateCandidates " + prunedCandidateFiltering);
     return prunedCandidateFiltering;
   }
 
@@ -1048,25 +1062,25 @@ public class QueryExecutor {
    * @throws NumberFormatException
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    * @see IngestAndQuery#executeQuery()
+   * @deprecated why are we readying the query graph from a file???
    */
-  public int loadQuery() throws Throwable {
-
+  public boolean loadQuery() throws Throwable {
     //initialize (or re-initialize if loading new query)
     query = new Graph();
-    queryNodeID2Type = new HashMap<>();
+    // queryNodeID2Type = new HashMap<>();
     queryNode2Type = new HashMap<Integer, Integer>();
 
     //read query graph
     query.loadGraph(new File(baseDir, queryFile));
 
-    int isClique = getIsClique();
+    boolean isClique = getIsClique();
 
     //read query types
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, queryTypesFile)));
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\t");
-      queryNodeID2Type.put(query.getInternalID(Integer.parseInt(tokens[0])), Integer.parseInt(tokens[1]));
+//      queryNodeID2Type.put(query.getInternalID(Integer.parseInt(tokens[0])), Integer.parseInt(tokens[1]));
       queryNode2Type.put(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]));
     }
     in.close();
@@ -1074,12 +1088,12 @@ public class QueryExecutor {
   }
 
   /**
-   * @see #testQuery(List, Graph, Map)
    * @param queryEdges
    * @param idToType
    * @return
+   * @see #testQuery(List, Graph, Map)
    */
-  private int loadQuery(Set<Edge> queryEdges, Map<Integer, Integer> idToType) {
+  private boolean loadQuery(Set<Edge> queryEdges, Map<Integer, Integer> idToType) {
     if (queryEdges.isEmpty()) logger.error("loadQuery huh? no query edges???");
     loadGraph(queryEdges);
 
@@ -1090,8 +1104,7 @@ public class QueryExecutor {
 
     if (queryNodes.isEmpty()) {
       logger.error("loadQuery huh? no query nodes in " + query);
-    }
-    else {
+    } else {
       logger.debug("loadQuery query nodes " + queryNodes);
     }
 
@@ -1100,11 +1113,11 @@ public class QueryExecutor {
       if (type == null) {
         logger.error("huh? no type for " + node);
       }
-      queryNodeID2Type.put(query.getInternalID(node), type);
+      //  queryNodeID2Type.put(query.getInternalID(node), type);
       queryNode2Type.put(node, type);
     }
 
-    logger.info("loadQuery query maps " + queryNodeID2Type + " and " + queryNode2Type);
+    logger.info("loadQuery query maps " + queryNode2Type);
 
     return getIsClique();
   }
@@ -1117,11 +1130,11 @@ public class QueryExecutor {
    * @param tableName
    * @param uidColumn
    * @param typeColumn
-   * @return
+   * @return true if graph is a clique
    * @see mitll.xdata.binding.TopKSubgraphShortlist#getShortlist(List, List, long)
    */
-  public int loadQuery(HashSet<Edge> queryEdges, Connection connection, String tableName,
-                       String uidColumn, String typeColumn) {
+  public boolean loadQuery(HashSet<Edge> queryEdges, Connection connection, String tableName,
+                           String uidColumn, String typeColumn) {
     loadGraph(queryEdges);
 
 		/*
@@ -1142,11 +1155,11 @@ public class QueryExecutor {
     query.loadGraph(queryEdges);
   }
 
-  private int getIsClique() {
-    int isClique = 0;
+  private boolean getIsClique() {
+    boolean isClique = false;
     if (query.getNumEdges() == (query.getNumNodes() * (query.getNumNodes() - 1) / 2)) {
       logger.error("Query is Clique");
-      isClique = 1;
+      isClique = true;
     }
     return isClique;
   }
@@ -1170,7 +1183,7 @@ public class QueryExecutor {
         logger.info("Got e: " + e);
       }
 
-      queryNodeID2Type.put(query.getInternalID(node), type);
+//      queryNodeID2Type.put(query.getInternalID(node), type);
       queryNode2Type.put(node, type);
     }
   }
@@ -1181,7 +1194,7 @@ public class QueryExecutor {
    */
   private void initQuery() {
     query = new Graph();
-    queryNodeID2Type = new HashMap<>();
+    //  queryNodeID2Type = new HashMap<>();
     queryNode2Type = new HashMap<Integer, Integer>();
     //querySign always gets re-initialized in getQuerySignatures()
     candidates = new HashMap<>();
@@ -1223,10 +1236,9 @@ public class QueryExecutor {
   public void printHeap() {
     logger.info("============================================================================");
     while (!heap.isEmpty()) {
-      FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
-      ArrayList<String> list = fhn.getData();
-      for (int i = 0; i < list.size(); i++)
-        System.out.print(list.get(i) + "\t");
+      FibonacciHeapNode<List<String>> fhn = heap.removeMin();
+      List<String> list = fhn.getData();
+      for (String aList : list) System.out.print(aList + "\t");
       System.out.print(fhn.getKey());
       System.out.println();
     }
@@ -1237,7 +1249,7 @@ public class QueryExecutor {
 /*  public void logHeap() {
     logger.info("============================================================================");
     while (!heap.isEmpty()) {
-      FibonacciHeapNode<ArrayList<String>> fhn = heap.removeMin();
+      FibonacciHeapNode<List<String>> fhn = heap.removeMin();
       ArrayList<String> list = fhn.getData();
       String line = "";
       for (int i = 0; i < list.size(); i++) {
@@ -1258,23 +1270,32 @@ public class QueryExecutor {
    * @throws Throwable
    */
   public void loadSPDIndex() throws Throwable {
-    spd = new double[totalNodes][totalOrderingSize];
+    //  spd = new double[totalNodes][totalOrderingSize];
+    spd = new HashMap<Integer, List<Float>>();
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, spdFile)));
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\s+");
       int node = Integer.parseInt(tokens[0]);
+
+      List<Float> maxWeightForTypeCombo = new ArrayList<Float>();
+      spd.put(node, maxWeightForTypeCombo);
+
       String toks[] = tokens[1].split(";");
-      for (int t2 = 0; t2 < toks.length; t2++)
+      for (String tok : toks) {
         //spd[node-1][t2]=Double.parseDouble(toks[t2]);
-        spd[node][t2] = Double.parseDouble(toks[t2]);
+        //spd[node][t2] = Double.parseDouble(toks[t2]);
+        maxWeightForTypeCombo.add(Float.parseFloat(tok));
+      }
     }
     in.close();
   }
 
   /**
-   * @see #prepareInternals()
+   * TODO : don't store edge lists as arrays
+   *
    * @throws Throwable
+   * @see #prepareInternals()
    */
   public void loadEdgeLists() throws Throwable {
     for (int i = 1; i <= totalTypes; i++) {
@@ -1286,7 +1307,7 @@ public class QueryExecutor {
 
         BufferedReader in = new BufferedReader(new FileReader(edgeListFile));
         String str = "";
-        ArrayList<String> list = new ArrayList<>();
+        List<String> list = new ArrayList<>();
         while ((str = in.readLine()) != null)
           list.add(str);
         in.close();
@@ -1295,13 +1316,17 @@ public class QueryExecutor {
     }
     //also create node pointers to lists.
     for (String s : sortedEdgeLists.keySet()) {
-      HashMap<Integer, ArrayList<Integer>> map = new HashMap<>();//vertex to indices
-      ArrayList<String> list = sortedEdgeLists.get(s);
+      Map<Integer, List<Integer>> map = new HashMap<>();//vertex to indices
+      List<String> list = sortedEdgeLists.get(s);
       for (int i = 0; i < list.size(); i++) {
         String e = list.get(i);
-        int v1 = Integer.parseInt(e.split("#")[0]);
-        int v2 = Integer.parseInt(e.split("#")[1]);
-        ArrayList<Integer> arr1 = new ArrayList<>();
+        String[] split = e.split("#");
+        int v1 = Integer.parseInt(split[0]);
+        int v2 = Integer.parseInt(split[1]);
+
+        // TODO : rationalize this stuff
+
+        List<Integer> arr1 = new ArrayList<>();
         if (map.containsKey(v1))
           arr1 = map.get(v1);
         arr1.add(i);
@@ -1333,43 +1358,56 @@ public class QueryExecutor {
         int chunk = ordering.get(k1).size() / totalTypes;
         int localType = (k2 - 1) / chunk;
         //count[localType]+=graphSign[u-1][oc];
-        Integer rawID = g.getInternalID(u);
-      //  Integer rawID = u;
-     //   Integer rawID = g.getRawID(u);
-        if (rawID == null) {
+        Integer rawID = u;//g.getInternalID(u);
+        //  Integer rawID = u;
+        //   Integer rawID = g.getRawID(u);
+        //if (rawID == null) {
         //  logger.warn("NSContained no node for '" + u + "' in " + g.getRawIDs() );
-        }
-        else {
-          count[localType] += graphSign[rawID][oc];
-          if (querySign[v][oc] > count[localType])
-            return -1;
-          count[localType] -= querySign[v][oc];
-          oc++;
-        }
+        //  }
+        //else {
+        // count[localType] += graphSign[rawID][oc];
+        count[localType] += graphSign.get(rawID).get(oc);//[oc];
+        //     double v1 = querySign[v][oc];
+        double v1 = querySign.get(v).get(oc);
+        if (v1 > count[localType])
+          return -1;
+        count[localType] -= v1;
+        oc++;
+        // }
       }
     }
     return kstar;
   }
 
   public void loadGraphSignatures() throws Throwable {
-    graphSign = new int[totalNodes][totalOrderingSize];
+    //  graphSign = new int[totalNodes][totalOrderingSize];
+    graphSign = new HashMap<>();
     File file = new File(baseDir, topologyFile);
 
-    logger.info("reading topology from " + file.getAbsolutePath() + " base " + baseDir +" top " +topologyFile);
+    logger.info("reading topology from " + file.getAbsolutePath() + " base " + baseDir + " top " + topologyFile);
 
     BufferedReader in = new BufferedReader(new FileReader(file));
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\s+");
       int node = Integer.parseInt(tokens[0]);
+
+      List<Integer> topologyForNode = new ArrayList<>();
+      graphSign.put(node, topologyForNode);
+
       String toks[] = tokens[1].split(";");
-      for (int t2 = 0; t2 < toks.length; t2++)
+      for (String tok : toks) {
 //				graphSign[node-1][t2]=Integer.parseInt(toks[t2]);
-        graphSign[node][t2] = Integer.parseInt(toks[t2]);
+        //  graphSign[node][t2] = Integer.parseInt(toks[t2]);
+        topologyForNode.add(Integer.parseInt(tok));
+      }
     }
     in.close();
   }
 
+  /**
+   * @see TopKSubgraphShortlist#loadTypesAndIndices()
+   */
   public void prepareInternals() {
     logger.info("Loading in indices...");
 
@@ -1385,6 +1423,7 @@ public class QueryExecutor {
 
   /**
    * @throws Throwable
+   * @see #prepareInternals()
    * @see TopKSubgraphShortlist#loadTypesAndIndices()
    */
   public void loadGraphNodesType() {
@@ -1397,7 +1436,7 @@ public class QueryExecutor {
 
     for (int n : node2Type.keySet()) {
       Integer key = node2Type.get(n);
-      logger.debug("\t " + n + "-> "+ key);
+      logger.debug("\t " + n + "-> " + key);
       graphType2IDSet.get(key).add(n);
     }
 
@@ -1420,8 +1459,9 @@ public class QueryExecutor {
       for (int i = 1; i <= totalTypes; i++) {
         for (String s : ordering.get(d - 1)) {
           if (s.length() == d - 1) {
-            ordering.get(d).add(s + i);
-            orderingType2Index.put(s + i, totalOrderingSize);
+            String e = s + i;
+            ordering.get(d).add(e);
+            orderingType2Index.put(e, totalOrderingSize);
             totalOrderingSize++;
           }
         }
@@ -1429,16 +1469,29 @@ public class QueryExecutor {
     }
   }
 
+  /**
+   * @see #executeQuery(boolean)
+   */
   public void getQuerySignatures() {
-    querySign = new int[query.getNumNodes()][totalOrderingSize];
-    for (int i = 0; i < query.getNumNodes(); i++) {
-      HashSet<Path> set = getPaths(i, new HashSet<>());
-      HashMap<String, ArrayList<Integer>> topo = new HashMap<>();
+    //  querySign = new int[query.getNumNodes()][totalOrderingSize];
+    querySign = new HashMap<>();
+    //  for (int i = 0; i < query.getNumNodes(); i++) {
+    for (Integer nodeID : query.getRawIDs()) {
+      Set<Path> set = getPaths(nodeID, new HashSet<>());
+      Map<String, List<Integer>> topo = new HashMap<>();
+      querySign.put(nodeID, new ArrayList<>());
+
       for (Path p : set) {
         String types = "";
-        for (int j = 1; j < p.nodes.size(); j++)
-          types += queryNodeID2Type.get(p.nodes.get(j));
-        ArrayList<Integer> l = new ArrayList<>();
+
+        // TODO : better here too
+        for (int j = 1; j < p.nodes.size(); j++) {
+          //  types += queryNodeID2Type.get(p.nodes.get(j));
+          types += queryNode2Type.get(p.nodes.get(j));
+        }
+
+        // TODO : rationalize this
+        List<Integer> l = new ArrayList<>();
         if (topo.containsKey(types))
           l = topo.get(types);
         int lastNode = p.nodes.get(p.nodes.size() - 1);
@@ -1446,13 +1499,18 @@ public class QueryExecutor {
           l.add(lastNode);
         topo.put(types, l);
       }
-      int c = 0;
+//      int c = 0;
       for (int d = 1; d <= k0; d++) {
         for (String o : ordering.get(d)) {
-          if (topo.containsKey(o))
-            querySign[i][c++] = topo.get(o).size();
-          else
-            querySign[i][c++] = 0;
+          List<Integer> topInfo = topo.get(o);
+
+          List<Integer> integers = querySign.get(nodeID);
+          integers.add(topInfo == null ? 0 : topInfo.size());
+//          if (topo.containsKey(o)) {
+//            querySign[i][c++] = topInfo.size();
+//          }
+//          else
+//            querySign[i][c++] = 0;
         }
       }
     }
@@ -1460,31 +1518,39 @@ public class QueryExecutor {
 
   private double getUpperbound(HashSet<Integer> consideredEdgeIndices, ArrayList<String> pc) {
     double score = 0;
-    HashSet<Edge> coveredEdges = new HashSet<>();
-    HashMap<Integer, Integer> map = new HashMap<>();
-    HashSet<Integer> instantiatedVertices = new HashSet<>();
+    Set<Edge> coveredEdges = new HashSet<>();
+    Map<Integer, Integer> map = new HashMap<>();
+    Set<Integer> instantiatedVertices = new HashSet<>();
     for (int c : consideredEdgeIndices) {
       String e = actualQueryEdges.get(c);
-      int n1 = query.getInternalID(Integer.parseInt(e.split("#")[0]));
-      int n2 = query.getInternalID(Integer.parseInt(e.split("#")[1]));
+      //int n1 = query.getInternalID(Integer.parseInt(e.split("#")[0]));
+      //int n2 = query.getInternalID(Integer.parseInt(e.split("#")[1]));
+
+      String[] split = e.split("#");
+      int n1 = Integer.parseInt(split[0]);
+      int n2 = Integer.parseInt(split[1]);
+
       Edge edge = new Edge(n1, n2, 1.0);
       coveredEdges.add(edge);
       edge = new Edge(n2, n1, 1.0);
       coveredEdges.add(edge);
+
       instantiatedVertices.add(n1);
       instantiatedVertices.add(n2);
-      map.put(n1, Integer.parseInt(pc.get(c).split("#")[0]));
-      map.put(n2, Integer.parseInt(pc.get(c).split("#")[1]));
+
+      String[] split1 = pc.get(c).split("#");
+      map.put(n1, Integer.parseInt(split1[0]));
+      map.put(n2, Integer.parseInt(split1[1]));
     }
 
-    HashSet<Path> globalPathSet = new HashSet<>();
+    Set<Path> globalPathSet = new HashSet<>();
     for (int i : instantiatedVertices)
       globalPathSet.addAll(getPaths(i, coveredEdges));
     //divide non-considered edges into paths and other edges.
     //compute all paths of length<k0 from each node in instantiated nodes.
     while (coveredEdges.size() != actualQueryEdges.size() * 2 && globalPathSet.size() != 0) {
       int maxLength = 0;
-      ArrayList<Integer> maxPath = new ArrayList<>();
+      List<Integer> maxPath = new ArrayList<>();
       for (Path p : globalPathSet) {
         if (p.nodes.size() > maxLength) {
           maxLength = p.nodes.size();
@@ -1500,19 +1566,24 @@ public class QueryExecutor {
       }
       //compute upperbound for this path
       String typeStr = "";
-      for (int ll = 1; ll < maxPath.size(); ll++)
-        typeStr += queryNodeID2Type.get(maxPath.get(ll));
-
+      for (int ll = 1; ll < maxPath.size(); ll++) {
+        // typeStr += queryNodeID2Type.get(maxPath.get(ll));
+        typeStr += queryNode2Type.get(maxPath.get(ll));
+      }
 
       //score+=spd[map.get(maxPath.get(0))-1][orderingType2Index.get(typeStr)];
-      score += spd[g.getInternalID(map.get(maxPath.get(0)))][orderingType2Index.get(typeStr)];
+      //  score += spd[g.getInternalID(map.get(maxPath.get(0)))][orderingType2Index.get(typeStr)];
+      score += spd.get(map.get(maxPath.get(0))).get(orderingType2Index.get(typeStr));
+
       //remove paths in globalPath containing edges on globalPath.
       HashSet<Path> globalPathSetNew = new HashSet<>();
       for (Path p : globalPathSet) {
         int flag = 0;
         for (int ii = 1; ii < p.nodes.size(); ii++) {
           for (int jj = 1; jj < maxPath.size(); jj++) {
-            if (maxPath.get(jj) == p.nodes.get(ii) && maxPath.get(jj - 1) == p.nodes.get(ii - 1)) {
+            // if (maxPath.get(jj) == p.nodes.get(ii) && maxPath.get(jj - 1) == p.nodes.get(ii - 1)) {
+            if (maxPath.get(jj).equals(p.nodes.get(ii)) &&
+                maxPath.get(jj - 1).equals(p.nodes.get(ii - 1))) {
               flag = 1;
               break;
             }
@@ -1525,8 +1596,11 @@ public class QueryExecutor {
     }
     //compute uncovered edges and account for them separately
     for (String edge : queryEdgetoIndex.keySet()) {
-      int n1 = query.getInternalID(Integer.parseInt(edge.split("#")[0]));
-      int n2 = query.getInternalID(Integer.parseInt(edge.split("#")[1]));
+      String[] split = edge.split("#");
+//      int n1 = query.getInternalID(Integer.parseInt(split[0]));
+//      int n2 = query.getInternalID(Integer.parseInt(split[1]));
+      int n1 = Integer.parseInt(split[0]);
+      int n2 = Integer.parseInt(split[1]);
       Edge e = new Edge(n1, n2, 1.0);
       if (!coveredEdges.contains(e)) {
         String tmp = queryEdge2EdgeType.get(edge);
@@ -1538,18 +1612,18 @@ public class QueryExecutor {
     return score;
   }
 
-  private HashSet<Path> getPaths(int i, HashSet<Edge> coveredEdges) {
-    HashSet<Path> set = new HashSet<>();
+  private Set<Path> getPaths(int i, Set<Edge> coveredEdges) {
+    Set<Path> set = new HashSet<>();
     Path sp = new Path();
     sp.nodes.add(i);
     set.add(sp);
-    ArrayList<Integer> currList = new ArrayList<>();
-    HashMap<Integer, Integer> considered = new HashMap<>();
+    List<Integer> currList = new ArrayList<>();
+    Map<Integer, Integer> considered = new HashMap<>();
     considered.put(i, 1);
     currList.add(i);
     for (int k = 0; k < k0; k++) {
-      ArrayList<Integer> newList = new ArrayList<>();
-      HashSet<Integer> newListCopy = new HashSet<>();
+      List<Integer> newList = new ArrayList<>();
+      Set<Integer> newListCopy = new HashSet<>();
       for (int n : currList) {
         //   ArrayList<Edge> nbrs = query.inLinks.get(n);
         Collection<Edge> nbrs = query.getNeighbors(n);
@@ -1562,7 +1636,7 @@ public class QueryExecutor {
             }
             if (coveredEdges.contains(e)) //if the edge has been covered already, you don't want to have a path containing that edge.
               continue;
-            HashSet<Path> extras = new HashSet<>();
+            Set<Path> extras = new HashSet<>();
             for (Path p : set) {
               if (p.nodes.get(p.nodes.size() - 1) == n) {
                 Path q = p.copyPath();
@@ -1690,7 +1764,7 @@ public class QueryExecutor {
   /**
    * Getter for subgraph query results
    */
-  public FibonacciHeap<ArrayList<String>> getHeap() {
+  public FibonacciHeap<List<String>> getHeap() {
     return heap;
   }
 
@@ -1719,8 +1793,9 @@ public class QueryExecutor {
    * Getter for queryEdgetoIndex
    *
    * @return
+   * @see TopKSubgraphShortlist#getPatternSearchResults(HashSet, List)
    */
-  public HashMap<String, Integer> getQueryEdgetoIndex() {
+  public Map<String, Integer> getQueryEdgetoIndex() {
     return queryEdgetoIndex;
   }
 

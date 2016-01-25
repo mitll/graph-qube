@@ -129,19 +129,19 @@ public class TopKTest {
    */
 
   private void doTests(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor) {
-    List<String> exemplarIDs = Arrays.asList("1", "2", "3");
+  //  List<String> exemplarIDs = Arrays.asList("1", "2", "3");
 
-    //List<String> exemplarIDs = Arrays.asList("10", "20", "30");
-    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
+    List<String> exemplarIDs = Arrays.asList("10", "20", "30");
+/*    List<String> exemplarIDs2 = Arrays.asList("2", "4", "7");
     List<String> exemplarIDs3 = Arrays.asList("1", "2");
-    List<String> exemplarIDs4 = Arrays.asList("2", "7", "8");
+    List<String> exemplarIDs4 = Arrays.asList("2", "7", "8");*/
 
     try {
       executor.testQuery(exemplarIDs, graph, idToType);
     } catch (Exception e) {
       e.printStackTrace();
     }
-  try {
+/*  try {
       executor.testQuery(exemplarIDs2, graph, idToType);
     } catch (Exception e) {
       e.printStackTrace();
@@ -155,7 +155,7 @@ public class TopKTest {
       executor.testQuery(exemplarIDs4, graph, idToType);
     } catch (Exception e) {
       e.printStackTrace();
-    }
+    }*/
   }
 
   /**
@@ -168,7 +168,7 @@ public class TopKTest {
     for (Integer rawID : graph.getRawIDs()) {
       int type = 1;
       idToType.put(rawID, type);
-      idToType.put(graph.getInternalID(rawID), type);
+//      idToType.put(graph.getInternalID(rawID), type);
     }
     return idToType;
   }
@@ -246,7 +246,7 @@ public class TopKTest {
     for (Integer rawID : graph.getRawIDs()) {
       int type = (rawID % mod) + 1;
       idToType.put(rawID, type);
-      idToType.put(graph.getInternalID(rawID), type);
+//      idToType.put(graph.getInternalID(rawID), type);
     }
     return idToType;
   }

@@ -48,8 +48,8 @@ public class MultipleIndexConstructor {
   public static int D = 2;
 
   private static Map<Integer, Integer> node2Type = new HashMap<>();
-  private static final Map<String, ArrayList<Edge>> sortedEdgeLists = new HashMap<>();
-  private static final Map<Integer, ArrayList<String>> ordering = new HashMap<>();
+  private static final Map<String, List<Edge>> sortedEdgeLists = new HashMap<>();
+  private static final Map<Integer, List<String>> ordering = new HashMap<>();
   private static final DecimalFormat twoDForm = new DecimalFormat("#.####");
   private static Graph graph = new Graph();
 
@@ -154,9 +154,12 @@ public class MultipleIndexConstructor {
     //Map<Integer, Map<String, Integer>> nodeToTypeToCount = new HashMap<>();
     //Map<Integer, Map<String, Float>> nodeToTypeToTotalWeight = new HashMap<>();
 
-    List<NodeInfo> nodeInfos = new ArrayList<>();
+    // List<NodeInfo> nodeInfos = new ArrayList<>();
+    Map<Integer, NodeInfo> nodeInfos = new HashMap<>();
 
-    for (int i = 0; i < graph.getNumNodes(); i++) {
+    // for (int i = 0; i < graph.getNumNodes(); i++) {
+    int count = 0;
+    for (Integer rawID : graph.getRawIDs()) {
 /*
       if (i % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
@@ -164,10 +167,9 @@ public class MultipleIndexConstructor {
         BitcoinFeaturesBase.logMemory();
       }
 */
-
       NodeInfo nodeInfo = new NodeInfo();
-      nodeInfos.add(nodeInfo);
-      Collection<Edge> values = getUniqueEdges(graph, i);
+      nodeInfos.put(rawID, nodeInfo);
+      Collection<Edge> values = getUniqueEdges(graph, rawID);
 
       for (Edge edge : values) {
         int src = edge.getSrc();
@@ -178,11 +180,11 @@ public class MultipleIndexConstructor {
         nodeInfo.addWeight(types, weight, src);
 
         if (DEBUG) {
-          logger.info("d1 : for " + i + " : " + edge + " src " +
+          logger.info("d1 : for " + count + " : " + edge + " src " +
               src + " node " + nodeInfo);
         }
       }
-      // }
+      count++;
     }
 
     if (DEBUG || true) logger.info("got " + nodeInfos.size() + " nodes ");
@@ -216,34 +218,39 @@ public class MultipleIndexConstructor {
    * @throws IOException
    * @see #computeIndicesFast(Graph)
    */
-  private static long doD2(Graph graph, BufferedWriter outTopology, BufferedWriter outSPD, List<NodeInfo> nodeInfos) throws IOException {
+  private static long doD2(Graph graph, BufferedWriter outTopology, BufferedWriter outSPD,
+                           // List<NodeInfo> nodeInfos
+                           Map<Integer, NodeInfo> nodeInfos
+  ) throws IOException {
     long then2 = System.currentTimeMillis();
-    for (int i = 0; i < graph.getNumNodes(); i++) {
+    // for (int i = 0; i < graph.getNumNodes(); i++) {
+    // int rawID = graph.getRawID(i);
 
-      int rawID = graph.getRawID(i);
-
+    int count = 0;
+    for (Integer rawID : graph.getRawIDs()) {
       int i1 = node2Type.get(rawID) - 1;
       String theNodeType = oneHop[i1];
 
-      if (i % NOTICE_MOD == 0) {
+      if (count++ % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
-        logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
+        logger.debug("Nodes processed: " + count + " out of " + graph.getNumNodes());
         BitcoinFeaturesBase.logMemory();
       }
 
       NodeInfo d2 = new NodeInfo();
 
-      Collection<Edge> values = getUniqueEdges(graph, i);
+      Collection<Edge> values = getUniqueEdges(graph, rawID);
       Map<String, Set<Integer>> typeToNeighbors = new HashMap<>();
 
       for (Edge edge : values) {
         int src = edge.getSrc();
-        int srcNode = graph.getRawID(src);
-        String neighborType = oneHop[node2Type.get(srcNode) - 1];
+//        int srcNode = graph.getRawID(src);
+//        String neighborType = oneHop[node2Type.get(srcNode) - 1];
+        String neighborType = oneHop[node2Type.get(src) - 1];
 
         NodeInfo nodeInfo = nodeInfos.get(src);
 
-        if (DEBUG) logger.info("\tfor " + i + "/" + src +
+        if (DEBUG) logger.info("\tfor " + count + "/" + src +
             " neighbor " + edge + "/" + neighborType +
             " and " + nodeInfo);
 
@@ -252,7 +259,7 @@ public class MultipleIndexConstructor {
           String nType = pair.getKey();
           TypeInfo typeInfo = pair.getValue();
           Set<Integer> neighborNeighbors = typeInfo.getNodes();
-          if (DEBUG) logger.info("\tfor " + i + "/" + src + " type " + nType +
+          if (DEBUG) logger.info("\tfor " + count + "/" + src + " type " + nType +
               " neighborNeighbors " + neighborNeighbors);
 
           String d2Type = neighborType + nType;
@@ -263,7 +270,8 @@ public class MultipleIndexConstructor {
           }
 
           for (Integer candidate : neighborNeighbors) {
-            if (candidate != i) {
+            // if (candidate != i) {
+            if (!candidate.equals(rawID)) {
               seenForType.add(candidate);
             }
           }
@@ -278,7 +286,7 @@ public class MultipleIndexConstructor {
 
           int typeCountOfNeighbor = /*(seenForType.contains(i)) ? seenForType.size() - 1 : */seenForType.size();
 
-          if (DEBUG) logger.info("\t\tfor " + srcNode + " type " + nType + " d2 type " + d2Type +
+          if (DEBUG) logger.info("\t\tfor " + src + " type " + nType + " d2 type " + d2Type +
               " and " + typeInfo +
               " match " + matchingWeight + " weight " + weightOfNeighbor + " count " + typeCountOfNeighbor +
               " seen " + seenForType);
@@ -291,14 +299,14 @@ public class MultipleIndexConstructor {
       }
 
 
-      outTopology.write(i + "\t");
+      outTopology.write(rawID + "\t");
 
-      NodeInfo nodeInfo = nodeInfos.get(i);
+      NodeInfo nodeInfo = nodeInfos.get(rawID);
       writeTopologyFast(outTopology, 0, nodeInfo.typeToInfo);
       writeTopologyFast(outTopology, 1, d2.typeToInfo);
       outTopology.write("\n");
 
-      outSPD.write(i + "\t");
+      outSPD.write(rawID + "\t");
 
       writeSPDIndexFast(outSPD, 0, nodeInfo.typeToInfo);
       writeSPDIndexFast(outSPD, 1, d2.typeToInfo);
@@ -337,8 +345,8 @@ public class MultipleIndexConstructor {
    * @return
    */
   private static Integer getNodeType(Graph graph, int src) {
-    int srcNode = graph.getRawID(src);
-    return node2Type.get(srcNode);
+    // int srcNode = graph.getRawID(src);
+    return node2Type.get(src);
   }
 
   private static class NodeInfo {
@@ -512,34 +520,37 @@ public class MultipleIndexConstructor {
     long pathsCopied = 0;
     Map<Edge, Integer> edgeToVisit = new HashMap<>();
     //for(int i=1;i<=graph.numNodes;i++)
-    for (int i = 0; i < graph.getNumNodes(); i++) {
-      if (i % NOTICE_MOD == 0) {
+    //for (int i = 0; i < graph.getNumNodes(); i++) {
+    int count = 0;
+    for (Integer rawID : graph.getRawIDs()) {
+      if (count % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
-        logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
+        logger.debug("Nodes processed: " + count + " out of " + graph.getNumNodes());
         BitcoinFeaturesBase.logMemory();
       }
-      counts.write(i + "," + graph.getRawID(i) + "," + graph.getNeighbors(i).size() +
-          "\n");
+      count++;
+//      counts.write(i + "," + graph.getRawID(i) + "," + graph.getNeighbors(i).size() +
+//          "\n");
       //out.write(i + "\t");
-      outTopology.write(i + "\t");
-      outSPD.write(i + "\t");
+      outTopology.write(rawID + "\t");
+      outSPD.write(rawID + "\t");
       //int n=graph.node2NodeIdMap.get(i);//this is a big-bug fixed...
       Set<Integer> queue = new HashSet<>();
       Map<Integer, Double> sumWeight = new HashMap<>();
-      queue.add(i);
-      sumWeight.put(i, 0.);
+      queue.add(rawID);
+      sumWeight.put(rawID, 0.);
       Set<Integer> considered = new HashSet<>();
-      considered.add(i);
-      Map<Integer, HashSet<ArrayList<Integer>>> paths = new HashMap<>();
-      ArrayList<Integer> ll = new ArrayList<>();
-      ll.add(i);
-      HashSet<ArrayList<Integer>> hs = new HashSet<>();
+      considered.add(rawID);
+      Map<Integer, Set<List<Integer>>> paths = new HashMap<>();
+      List<Integer> ll = new ArrayList<>();
+      ll.add(rawID);
+      Set<List<Integer>> hs = new HashSet<>();
       hs.add(ll);
-      paths.put(i, hs);
+      paths.put(rawID, hs);
 
       for (int d = 0; d < D; d++) {
         //perform BFS from each node.
-        HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths = new HashMap<>();
+        Map<Integer, Set<List<Integer>>> newPaths = new HashMap<>();
         Set<Integer> newQueue = new HashSet<>();
         Map<Integer, Double> newSumWeight = new HashMap<>();
 
@@ -625,17 +636,17 @@ public class MultipleIndexConstructor {
   }
 
   private static long getPathsCopied(long pathsCopied,
-                                     HashMap<Integer, HashSet<ArrayList<Integer>>> newPaths, int q, int qDash,
-                                     Map<Integer, HashSet<ArrayList<Integer>>> paths) {
-    HashSet<ArrayList<Integer>> hsai = newPaths.get(qDash);
+                                     Map<Integer, Set<List<Integer>>> newPaths, int q, int qDash,
+                                     Map<Integer, Set<List<Integer>>> paths) {
+    Set<List<Integer>> hsai = newPaths.get(qDash);
 
     if (hsai == null) {
       hsai = new HashSet<>();
       newPaths.put(qDash, hsai);
     }
 
-    for (ArrayList<Integer> ai : paths.get(q)) {
-      ArrayList<Integer> nali = new ArrayList<>(ai);
+    for (List<Integer> ai : paths.get(q)) {
+      List<Integer> nali = new ArrayList<>(ai);
       pathsCopied++;
       nali.add(qDash);
       hsai.add(nali);
@@ -681,7 +692,7 @@ public class MultipleIndexConstructor {
 */
 
   private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d,
-                                    Map<Integer, HashSet<ArrayList<Integer>>> paths) throws IOException {
+                                    Map<Integer, Set<List<Integer>>> paths) throws IOException {
     Map<String, Collection<Integer>> topo = new HashMap<>();
     //  Map<Integer, List<Integer>> topo2 = new HashMap<>();
 
@@ -883,7 +894,7 @@ public class MultipleIndexConstructor {
       File file = new File(outDir, fileName);
       logger.info("writing sorted edge lists to " + file.getAbsolutePath());
       BufferedWriter out = new BufferedWriter(new FileWriter(file));
-      ArrayList<Edge> arr = sortedEdgeLists.get(key);
+      List<Edge> arr = sortedEdgeLists.get(key);
       for (Edge e : arr)
         out.write(e.getSrc() + "#" + e.getDst() + "#" + e.getWeight() + "\n");
       out.close();
@@ -954,9 +965,12 @@ public class MultipleIndexConstructor {
 
     for (Edge e : graph.getEdges()) {
       //get internal node-ids for
-  //    logger.info("populateSortedEdgeLists edge " + e);
-      int from = graph.getRawID(e.getSrc());
-      int to   = graph.getRawID(e.getDst());
+      //    logger.info("populateSortedEdgeLists edge " + e);
+//      int from = graph.getRawID(e.getSrc());
+//      int to = graph.getRawID(e.getDst());
+      int from = e.getSrc();
+      int to = e.getDst();
+
       double weight = e.getWeight();
 
 //      logger.info("from index is: " + from + " to index is: " + to);
@@ -978,7 +992,7 @@ public class MultipleIndexConstructor {
           from = to;
           to = tmp;
         }
-        ArrayList<Edge> arr = sortedEdgeLists.get(fromType + "#" + toType);
+        List<Edge> arr = sortedEdgeLists.get(fromType + "#" + toType);
         arr.add(new Edge(from, to, weight));
         sortedEdgeLists.put(fromType + "#" + toType, arr);
       } else {
@@ -1041,22 +1055,21 @@ public class MultipleIndexConstructor {
   }
 
   /**
-   * @param n
+   * @paramx n
    * @seex TopKTest#ingest
-   * @see TopK#
+   * @seex TopK#
    */
 /*  public static Collection<Integer> loadTypes(int n) {
     for (int i = 0; i < n; i++) node2Type.put(i, 1);
     return setTotalTypes();
   }*/
-
   public static Collection<Integer> loadTypes(Map<Integer, Integer> node2TypeToUse) {
     node2Type = node2TypeToUse;
     return setTotalTypes();
   }
 
-  private static HashSet<Integer> setTotalTypes() {
-    HashSet<Integer> integers = new HashSet<>(node2Type.values());
+  private static Set<Integer> setTotalTypes() {
+    Set<Integer> integers = new HashSet<>(node2Type.values());
     totalTypes = integers.size();
     return integers;
   }

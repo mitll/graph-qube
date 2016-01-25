@@ -20,10 +20,7 @@ import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -113,7 +110,7 @@ public class IngestAndQuery {
     /**
      * Read-in and setup query
      */
-    int isClique = executor.loadQuery();
+    boolean isClique = executor.loadQuery();
 
     executor.getQuerySignatures(); //fills in querySign
 
@@ -135,13 +132,13 @@ public class IngestAndQuery {
      * Populate all required HashMaps relating edges to edge-types
      */
     // compute edge types for all edges in query
-    HashSet<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
+    Set<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
 
     //compute queryEdgetoIndex
     executor.computeQueryEdge2Index();
 
     //compute queryEdgeType2Edges
-    HashMap<String, ArrayList<String>> queryEdgeType2Edges = executor.computeQueryEdgeType2Edges();
+    Map<String, List<String>> queryEdgeType2Edges = executor.computeQueryEdgeType2Edges();
 
 
     //Maintain pointers and topk heap
