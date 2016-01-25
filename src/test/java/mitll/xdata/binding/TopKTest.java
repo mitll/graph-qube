@@ -316,7 +316,7 @@ public class TopKTest {
 
         Map<Long, Integer> edgeToWeight = getGraph(n, i);
 
-        Graph graph = new Graph(edgeToWeight);
+        Graph graph = new Graph(edgeToWeight, false);
 
         Runtime.getRuntime().gc();
 
@@ -484,11 +484,13 @@ public class TopKTest {
     logger.debug("EXIT testSearch()");
   }
 
+  boolean populateInLinks2 = false; //for now
+
   private Graph ingestMod(int n, Map<Long, Integer> edgeToWeight, String outdir, int mod) {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndicesMod(edgeToWeight, outdir, mod);
+      Graph graph = beforeComputeIndicesMod(edgeToWeight, outdir, mod, populateInLinks2);
 
       computeIndices(time1, graph);
 
@@ -503,7 +505,7 @@ public class TopKTest {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices(edgeToWeight, outdir);
+      Graph graph = beforeComputeIndices(edgeToWeight, outdir, populateInLinks2);
 
       computeIndices(time1, graph);
 
@@ -529,7 +531,7 @@ public class TopKTest {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndices(edgeToWeight, outdir);
+      Graph graph = beforeComputeIndices(edgeToWeight, outdir, populateInLinks2);
       computeIndicesFast(time1, graph);
 
       return graph;
@@ -550,7 +552,7 @@ public class TopKTest {
     try {
       long time1 = System.currentTimeMillis();
 
-      Graph graph = beforeComputeIndicesMod(edgeToWeight, outdir, mod);
+      Graph graph = beforeComputeIndicesMod(edgeToWeight, outdir, mod, populateInLinks2);
       computeIndicesFast(time1, graph);
 
       return graph;
@@ -581,14 +583,14 @@ public class TopKTest {
    * @see #ingestFastMod(Map, String, int)
    * @see #ingestMod(int, Map, String, int)
    */
-  private Graph beforeComputeIndicesMod(Map<Long, Integer> edgeToWeight, String outDir, int mod) throws IOException {
+  private Graph beforeComputeIndicesMod(Map<Long, Integer> edgeToWeight, String outDir, int mod, boolean populateInLinks2) throws IOException {
     Map<Integer, Integer> node2Type = loadTypesMod(edgeToWeight.keySet(), mod);
     Collection<Integer> types = MultipleIndexConstructor.loadTypes(node2Type);
-    return getGraphBeforeComputeIndices(edgeToWeight, types, outDir);
+    return getGraphBeforeComputeIndices(edgeToWeight, types, outDir, populateInLinks2);
   }
 
-  private Graph beforeComputeIndices(Map<Long, Integer> edgeToWeight, String outDir) throws IOException {
-    return beforeComputeIndicesMod(edgeToWeight, outDir, 1);
+  private Graph beforeComputeIndices(Map<Long, Integer> edgeToWeight, String outDir, boolean populateInLinks2) throws IOException {
+    return beforeComputeIndicesMod(edgeToWeight, outDir, 1, populateInLinks2);
   }
 
   private Map<Integer, Integer> loadTypesMod(Collection<Long> ids, int mod) {
@@ -605,10 +607,10 @@ public class TopKTest {
 
   private Graph getGraphBeforeComputeIndices(Map<Long, Integer> edgeToWeight,
                                              Collection<Integer> types,
-                                             String outDir) throws IOException {
+                                             String outDir, boolean populateInLinks2) throws IOException {
     BitcoinFeaturesBase.logMemory();
 
-    Graph graph = new Graph(edgeToWeight);
+    Graph graph = new Graph(edgeToWeight, populateInLinks2);
 
     BitcoinFeaturesBase.logMemory();
 

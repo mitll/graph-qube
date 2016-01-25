@@ -36,12 +36,15 @@ import java.util.*;
 public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransactions {
   private static final Logger logger = Logger.getLogger(BitcoinIngestUnchartedTransactions.class);
 
-  public static final String ENTITYID = "entityid";
-  public static final String FINENTITY = "FinEntity";
-  public static final int MIN_TRANSACTIONS = 10;
+  private static final String ENTITYID = "entityid";
+  private static final String FINENTITY = "FinEntity";
+  private static final int MIN_TRANSACTIONS = 10;
   public static final int REPORT_MOD = 1000000;
-  public static final int FETCH_SIZE = 1000000;
-  public static final int UPDATE_MOD = 100;
+  private static final int FETCH_SIZE = 1000000;
+  private static final int UPDATE_MOD = 100;
+  private static final int INSERT_ROW_MOD = 100000;
+  public static final int INSERT_MOD = 500000;
+  public static final int OFFSET_STEP = 4000000;
 
   /**
    * Adds equivalent dollar value column
@@ -92,11 +95,11 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     ResultSet resultSet = statement.executeQuery();
     //  logger.debug("Got     result set --- ");
 
-    int count = 0;
+    long count = 0;
     long t0 = System.currentTimeMillis();
 
     double totalUSD = 0;
-    Map<Integer, UserStats> userToStats = new HashMap<Integer, UserStats>();
+    Map<Integer, UserStats> userToStats = new HashMap<>();
     int mod = 1000000;
 
     logMemory();
@@ -154,10 +157,10 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * Filter out accounts that have less than {@link #MIN_TRANSACTIONS} transactions.
    * NOTE : throws out "supernode" #25
    *
-   * @param connection
+   * @param info
    * @return
    * @throws Exception
-   * @see #BitcoinFeaturesUncharted(DBConnection, String, MysqlInfo, boolean, int)
+   * @see BitcoinIngestUncharted#doIngest(String, String, String, String, boolean, long)
    */
   Collection<Integer> getUsers(MysqlInfo info) throws Exception {
     Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
@@ -176,7 +179,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     PreparedStatement statement = uncharted.prepareStatement(filterUsers);
     ResultSet rs = statement.executeQuery();
 
-    Set<Integer> ids = new HashSet<Integer>();
+    Set<Integer> ids = new HashSet<>();
     int c = 0;
 
     while (rs.next()) {
@@ -194,7 +197,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     return ids;
   }
 
-  private static final int MB = (1024 * 1024);
+  //private static final int MB = (1024 * 1024);
 
   private void logMemory() {
     BitcoinFeaturesBase.logMemory();
@@ -215,116 +218,163 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @throws Exception
    * @see BitcoinIngestUnchartedTransactions#loadTransactionTable
    */
-  private int insertRowsInTable(
+  private long insertRowsInTable(
       String tableName,
       MysqlInfo info,
       boolean useTimestamp,
       DBConnection connection,
       Connection uncharted,
-      //     String transactionsTable,
       Map<Integer, UserStats> userToStats,
       double avgUSD,
-      //                        Map<String, String> slotToCol,
       long limit,
       Set<Integer> usersInTransactions) throws Exception {
-    int count;
-    count = 0;
+    long count = 0;
     long t0 = System.currentTimeMillis();
 
-    List<String> cnames = ingestSql.getColumnsForInsert();
     logger.debug("insertRowsInTable  " + userToStats.size() + " users into " + tableName + " limit " + limit);
     logMemory();
 
-    PreparedStatement rstatement =
-        uncharted.prepareStatement("select " +
-            info.getSlotToCol().get(MysqlInfo.TRANSACTION_ID) +
-            ", " +
-            info.getSlotToCol().get(MysqlInfo.SENDER_ID) +
-            ", " +
-            info.getSlotToCol().get(MysqlInfo.RECEIVER_ID) +
-            ", " +
-            info.getSlotToCol().get(MysqlInfo.TX_TIME) +
-            ", " +
-            info.getSlotToCol().get(MysqlInfo.BTC) +
-            ", " +
-            info.getSlotToCol().get("USD") +
-            " from " + info.getTable() + " limit " + limit);
-    rstatement.setFetchSize(FETCH_SIZE);
+    int step = OFFSET_STEP;
+    int offset = 0;
 
-    logMemory();
+    String insertSQL = ingestSql.createInsertSQL(tableName, ingestSql.getColumnsForInsert());
 
-    ResultSet resultSet = rstatement.executeQuery();
-    logMemory();
-
-    Set<Integer> knownUsers = userToStats.keySet();
-
-    logger.info("insertRowsInTable known users " + knownUsers.size());
-
-    int countSelf = 0;
-    int skipped = 0;
-    String insertSQL = ingestSql.createInsertSQL(tableName, cnames);
-
-//    logger.info("insertRowsInTable " + insertSQL);
-    long then = System.currentTimeMillis();
     PreparedStatement statement = connection.getConnection().prepareStatement(insertSQL);
-    while (resultSet.next()) {
-      // double[] additionalFeatures = feats.get(count);
-      count++;
+    Set<Integer> knownUsers = userToStats.keySet();
+    logger.info("insertRowsInTable known users " + knownUsers.size());
+    InsertStats insertStats = new InsertStats();
 
-      int col = 1;
-      int transid = resultSet.getInt(col++);
-      int sourceid = resultSet.getInt(col++);
-      int targetID = resultSet.getInt(col++);
+    long then2 = System.currentTimeMillis();
 
-      if (sourceid == targetID) {
-        countSelf++;
-      } else if (!knownUsers.contains(sourceid) || !knownUsers.contains(targetID)) {
-        skipped++;
-//        if (sourceid == 253977 || targetID == 253977) {
-//          logger.warn("1 ---> insertRowsInTable skipped " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
-//        }
-      } else {
-//        if (sourceid == 253977 || targetID == 253977) {
-//          logger.warn("2 ---> insertRowsInTable inserted " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
-//        }
+    while (count < limit) {
+      String sql = getTransationSQL(info, step, offset);
+      offset += step;
+      PreparedStatement rstatement = uncharted.prepareStatement(sql);
+      rstatement.setFetchSize(FETCH_SIZE);
 
-        usersInTransactions.add(sourceid);
-        usersInTransactions.add(targetID);
+      logMemory();
 
-        Timestamp x = resultSet.getTimestamp(col++);
-        double btc = resultSet.getDouble(col++);
-        double usd = resultSet.getDouble(col++);
+      long then = System.currentTimeMillis();
+      ResultSet resultSet = rstatement.executeQuery();
 
-        double[] additionalFeatures = addAvgDollarFeatures(userToStats, avgUSD, count, sourceid, targetID, usd);
-        try {
-          boolean didUpdate = insertRow(useTimestamp, t0, count, statement, additionalFeatures, transid, sourceid, targetID, x, btc, usd);
+      long now = System.currentTimeMillis();
 
-          if (!didUpdate) {
-            statement.executeUpdate();
-          }
+      logger.info("insertRowsInTable took " + (now - then) / 1000 + " sec to do " + sql);
 
-        } catch (SQLException e) {
-          logger.error("insertRowsInTable got error " + e + " on  " + count);
-        }
-        if (count % REPORT_MOD == 0) {
-          logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
-              + " ms/insert");
-          logMemory();
-        }
+      logMemory();
+
+
+      boolean didAny = false;
+      while (resultSet.next()) {
+        count++;
+        didAny =true;
+        insertTransaction(useTimestamp, userToStats, avgUSD, usersInTransactions, count, t0, resultSet, knownUsers, insertStats, statement);
+      }
+      logger.info("insertRowsInTable took " + ((System.currentTimeMillis() - then2) / 1000) + " seconds to insert " + count + " transactions.");
+      logMemory();
+
+      logger.info("insertRowsInTable skipped " + insertStats.getCountSelf() + " self transactions out of " + count);
+      logger.info("insertRowsInTable skipped " + insertStats.getSkipped() + " missing users out of " + count + " and found " + knownUsers.size() + " known users");
+
+      resultSet.close();
+      rstatement.close();
+
+      if (!didAny) {
+        logger.info("\tcomplete!");
+        break;
       }
     }
-    logger.info("insertRowsInTable took " + ((System.currentTimeMillis() - then) / 1000) + " seconds to insert " + count + " transactions.");
-    logMemory();
 
-    logger.info("insertRowsInTable skipped " + countSelf + " self transactions out of " + count);
-    logger.info("insertRowsInTable skipped " + skipped + " missing users out of " + count + " and found " + knownUsers.size() + " known users");
-    rstatement.close();
     statement.close();
     return count;
   }
 
+  private String getTransationSQL(MysqlInfo info, long limit, int offset) {
+    Map<String, String> slotToCol = info.getSlotToCol();
+    return "select " +
+        slotToCol.get(MysqlInfo.TRANSACTION_ID) +
+        ", " +
+        slotToCol.get(MysqlInfo.SENDER_ID) +
+        ", " +
+        slotToCol.get(MysqlInfo.RECEIVER_ID) +
+        ", " +
+        slotToCol.get(MysqlInfo.TX_TIME) +
+        ", " +
+        slotToCol.get(MysqlInfo.BTC) +
+        ", " +
+        slotToCol.get("USD") +
+        " from " + info.getTable() +
+        " limit " + limit +
+        " offset " + offset;
+  }
+
+  private void insertTransaction(boolean useTimestamp, Map<Integer, UserStats> userToStats, double avgUSD,
+                                 Set<Integer> usersInTransactions, long count, long t0,
+                                 ResultSet resultSet, Set<Integer> knownUsers, InsertStats insertStats,
+                                 PreparedStatement statement) throws SQLException {
+    int col = 1;
+    int transid  = resultSet.getInt(col++);
+    int sourceid = resultSet.getInt(col++);
+    int targetID = resultSet.getInt(col++);
+
+    if (sourceid == targetID) {
+      insertStats.incrSelf();
+    } else if (!knownUsers.contains(sourceid) || !knownUsers.contains(targetID)) {
+      insertStats.incrSkipped();
+//        if (sourceid == 253977 || targetID == 253977) {
+//          logger.warn("1 ---> insertRowsInTable skipped " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
+//        }
+    } else {
+//        if (sourceid == 253977 || targetID == 253977) {
+//          logger.warn("2 ---> insertRowsInTable inserted " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
+//        }
+
+      usersInTransactions.add(sourceid);
+      usersInTransactions.add(targetID);
+
+      Timestamp x = resultSet.getTimestamp(col++);
+      double btc = resultSet.getDouble(col++);
+      double usd = resultSet.getDouble(col++);
+
+      double[] additionalFeatures = addAvgDollarFeatures(userToStats, avgUSD, /*count,*/ sourceid, targetID, usd);
+      try {
+        boolean didUpdate = insertRow(useTimestamp, t0, count, statement, additionalFeatures, transid, sourceid, targetID, x, btc, usd);
+
+        if (!didUpdate) {
+          statement.executeUpdate();
+        }
+
+      } catch (SQLException e) {
+        logger.error("insertRowsInTable got error " + e + " on  " + count);
+      }
+      if (count % INSERT_MOD == 0) {
+        long diff = System.currentTimeMillis() - t0;
+        if (diff > 1000) diff /= 1000;
+        logger.debug("insertRowsInTable count = " + count + "; " + count/diff+ " insert/sec");
+        BitcoinFeaturesBase.logMemory();
+      }
+    }
+  }
+
+  private static class InsertStats {
+
+    private int countSelf = 0;
+    private int skipped = 0;
+
+    public void incrSelf() {countSelf++;}
+    public void incrSkipped() {skipped++;}
+
+    public int getCountSelf() {
+      return countSelf;
+    }
+
+    public int getSkipped() {
+      return skipped;
+    }
+  }
+
   private boolean insertRow(boolean useTimestamp,
-                         long t0, int count,
+                         long t0, long count,
                          PreparedStatement statement,
                          double[] additionalFeatures,
                          int transid, int sourceid, int targetID, Timestamp x, double btc, double usd) throws SQLException {
@@ -351,11 +401,10 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       didUpdate = true;
     }
 
-    if (count % 1000000 == 0) {
+    if (count % INSERT_ROW_MOD == 0) {
       long diff = System.currentTimeMillis() - t0;
       if (diff > 1000) diff /= 1000;
-      logger.debug("insertRow feats count = " + count + "; " + count/diff
-          + " insert/sec");
+      logger.debug("insertRow feats count = " + count + ";\t" + count/diff + " insert/sec");
       logMemory();
     }
     return didUpdate;

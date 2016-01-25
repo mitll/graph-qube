@@ -146,6 +146,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     // Raw Ingest (csv to database table + basic features)
     //
     long then = System.currentTimeMillis();
+    long start = System.currentTimeMillis();
 
     // populate the transactions table
     MysqlInfo info = new MysqlInfo();
@@ -172,11 +173,15 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     logger.info("doIngest userIds size " + userIds.size());
 
     long now = System.currentTimeMillis();
-    logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");
+    logger.debug("doIngest Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");
+
+    then = System.currentTimeMillis();
     Set<Integer> validUsers = doSubgraphs(destinationDbName, userIds);
+    logger.info("doIngest took " + (System.currentTimeMillis()-then)/1000 + " secs to do subgraphs");
+    logger.info("doIngest took " + (System.currentTimeMillis()-start)/1000 + " secs overall");
 
     boolean b = userIds.removeAll(validUsers);
-    logger.info("to remove " + userIds.size());
+    logger.info("doIngest to remove " + userIds.size());
 
     bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName), userIds);
   }

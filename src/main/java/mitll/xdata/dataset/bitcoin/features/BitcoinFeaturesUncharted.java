@@ -262,7 +262,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     ResultSet resultSet = statement.executeQuery();
   //  logger.debug("getTransForUsers Got     result set --- ");
 
-    int mod = 1000000;
+   // int mod = 1000000;
 
     logMemory();
 
@@ -288,10 +288,15 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
         skipped++;
       }
       if (count % 1000000 == 0) {
-        logger.debug("getTransForUsers read " + count + " transactions... " + (System.currentTimeMillis() - 1.0 * t0) / count + " ms/read");
+        double diff = System.currentTimeMillis() - t0;
+        if (diff > 1000) diff /= 1000;
+        logger.debug("getTransForUsers read " + count + " transactions... " + count/diff + " read/sec");
       }
     }
     logger.info("getTransForUsers skipped " + skipped + " out of " + count + " -> " + idToStats.size());
+
+    resultSet.close();
+    statement.close();
 
     return idToStats;
   }

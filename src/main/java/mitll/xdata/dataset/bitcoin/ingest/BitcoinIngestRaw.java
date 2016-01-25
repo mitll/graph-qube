@@ -224,7 +224,7 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
         // do dollars
         double usd = toDollars(rc, day, x, btc);
 
-        feats.add(addAvgDollarFeatures(userToStats, avgUSD, count, sourceid, targetID, usd));
+        feats.add(addAvgDollarFeatures(userToStats, avgUSD, /*count, */sourceid, targetID, usd));
 
         if (count % 1000000 == 0) {
           logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count

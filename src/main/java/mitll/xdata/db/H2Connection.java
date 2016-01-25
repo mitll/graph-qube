@@ -32,6 +32,7 @@ import java.sql.Statement;
  * To change this template use File | Settings | File Templates.
  */
 public class H2Connection implements DBConnection {
+  public static final int CACHE_SIZE = 65536;
   private static Logger logger = Logger.getLogger(H2Connection.class);
 
   private Connection conn;
@@ -77,7 +78,9 @@ public class H2Connection implements DBConnection {
   private void connect(String h2FilePath, boolean create) {
     String url = "jdbc:h2:file:" + h2FilePath + ";"+
         (create ? "" : "IFEXISTS=TRUE;" )+
-        "LOG=0;CACHE_SIZE=65536;LOCK_MODE=0;"+
+        "LOG=0;CACHE_SIZE=" +
+        CACHE_SIZE +
+        ";LOCK_MODE=0;"+
       "QUERY_CACHE_SIZE=" + queryCacheSize + ";" +
     //    "CACHE_SIZE="       + cacheSizeKB + ";" +
         "DATABASE_TO_UPPER=false"    + ";" +

@@ -29,7 +29,7 @@ public class BitcoinIngestTransactions {
 
   protected double[] addAvgDollarFeatures(Map<Integer, UserStats> userToStats,
                                           double avgUSD,
-                                          int count,
+                                      //    int count,
                                           int sourceid, int targetID, double usd) {
     double devFraction = (usd - avgUSD) / avgUSD;
     //    statement.setDouble(i++, devFraction);
@@ -47,14 +47,14 @@ public class BitcoinIngestTransactions {
     double ddevFraction = avgDebit == 0 ? -1 : (usd - avgDebit) / avgDebit;
     addFeats[2] = ddevFraction;
 
-    if (count < DEBUG_OUTPUT_MAX) {
+/*    if (count < DEBUG_OUTPUT_MAX) {
       logger.debug("source " + sourceid + " target " + targetID + " $" + usd + " avg " + avgUSD +
           " dev " + devFraction +
           " cavg  " + avgCredit +
           " cdev " + cdevFraction +
           " davg  " + avgDebit +
           " ddev " + ddevFraction);
-    }
+    }*/
     return addFeats;
   }
 
