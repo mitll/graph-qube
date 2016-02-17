@@ -19,12 +19,13 @@ import java.util.*;
 public class Graph {
   private static final Logger logger = Logger.getLogger(Graph.class);
 
-  //  private int numNodes = 0;
-//  private int numEdges = 0;
   private Set<Edge> edges;
   private Map<Integer, List<Edge>> inLinks;
   private final Map<Integer, Map<Integer, Edge>> inLinks2;
   boolean populateInLinks2 = false;
+
+  private Map<Integer, Integer> node2Type = new HashMap<>();
+
   /**
    * Maps the node to an internal node id.
    */
@@ -144,6 +145,47 @@ public class Graph {
         integerEdgeMap.put(a, e);
       }
     }
+  }
+
+  private NodeInfo getNodeInfo(Integer rawID) {
+    NodeInfo nodeInfo = new NodeInfo(rawID);
+    Collection<Edge> values = getUniqueEdges(rawID);
+
+    for (Edge edge : values) {
+      int src = edge.getSrc();
+      float weight = edge.getFWeight();
+
+//        logger.info("edge " + edge + " src " + src);
+      String types = oneHop[getNodeType(src) - 1];
+      nodeInfo.addWeight(types, weight, src);
+
+//      if (DEBUG) {
+//        logger.info("d1 : for " + count + " : " + edge + " src " +
+//            src + " node " + nodeInfo);
+//      }
+    }
+    return nodeInfo;
+  }
+
+  public Collection<Edge> getUniqueEdges(int i) {
+    Collection<Edge> nbrs = getNeighbors(i);
+    // Set<Integer> seen = new HashSet<>();
+
+    Map<Integer, Edge> srcToEdge = new HashMap<>();
+    Map<Integer, Float> srcToWeight = new HashMap<>();
+
+    for (Edge edge : nbrs) {
+      int src = edge.getSrc();
+      //int srcNode = graph.getRawID(src);
+      Float edgeWeight = srcToWeight.get(src);
+      float fWeight = edge.getFWeight();
+      if (edgeWeight == null || edgeWeight < fWeight) {
+        srcToWeight.put(src, fWeight);
+        srcToEdge.put(src, edge);
+      }
+    }
+
+    return srcToEdge.values();
   }
 
   /**
@@ -564,6 +606,37 @@ public class Graph {
   public Collection<Integer> getRawIDs() {
     return nodeIds;// node2NodeIdMap.keySet();
   }
+
+  public Integer getNodeType(int src) {
+    return node2Type.get(src);
+  }
+
+  public void makeTypeIDs(Collection<Integer> types) {
+    logger.info("makeTypeIDs " + types);
+    oneHop = new String[types.size()];
+    twoHop = new String[types.size()][types.size()];
+
+    int i = 0;
+    for (Integer t : types) {
+      String firstType = Integer.toString(t);
+      oneHop[i] = firstType;
+      int j = 0;
+      for (Integer tt : types) {
+        String secondType = Integer.toString(tt);
+        //    twoHop[i][j++] = firstType+"_"+secondType;
+        String both = firstType + secondType;
+        twoHop[i][j++] = both;
+        logger.info("makeTypeIDs added " + both);
+      }
+      i++;
+    }
+
+    logger.info("makeTypeIDs one " + Arrays.asList(oneHop));
+    logger.info("makeTypeIDs two hop " + Arrays.asList(twoHop));
+  }
+
+  private static String[] oneHop;
+  private static String[][] twoHop;
 
   /**
    * TODO this should be n - the size of the array

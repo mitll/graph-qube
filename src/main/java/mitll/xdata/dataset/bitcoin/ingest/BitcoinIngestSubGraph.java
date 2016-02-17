@@ -370,7 +370,6 @@ public class BitcoinIngestSubGraph {
     MultipleIndexConstructor.outDir = bitcoinDirectory;
     MultipleIndexConstructor.D = BitcoinBinding.SHORTLISTING_D;
 
-
     MultipleIndexConstructor.setGraph(graph);
     logger.info("Loaded graph from database... with D = " + MultipleIndexConstructor.D);
 

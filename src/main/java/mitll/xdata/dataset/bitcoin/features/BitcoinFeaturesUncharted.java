@@ -291,9 +291,11 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
         double diff = System.currentTimeMillis() - t0;
         if (diff > 1000) diff /= 1000;
         logger.debug("getTransForUsers read " + count + " transactions... " + count/diff + " read/sec");
+        logMemory();
       }
     }
     logger.info("getTransForUsers skipped " + skipped + " out of " + count + " -> " + idToStats.size());
+    logMemory();
 
     resultSet.close();
     statement.close();

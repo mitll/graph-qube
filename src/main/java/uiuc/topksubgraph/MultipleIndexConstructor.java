@@ -19,7 +19,6 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.apache.log4j.net.SyslogAppender;
 
 import java.io.*;
 import java.sql.Connection;
@@ -27,6 +26,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 
 /**
@@ -150,49 +151,15 @@ public class MultipleIndexConstructor {
     long totalQueued = 0;
     long totalPaths = 0;
     long pathsCopied = 0;
-    Map<Edge, Integer> edgeToVisit = new HashMap<>();
-    //for(int i=1;i<=graph.numNodes;i++)
-    //Map<Integer, Map<String, Integer>> nodeToTypeToCount = new HashMap<>();
-    //Map<Integer, Map<String, Float>> nodeToTypeToTotalWeight = new HashMap<>();
 
-    // List<NodeInfo> nodeInfos = new ArrayList<>();
     Map<Integer, NodeInfo> nodeInfos = new HashMap<>();
 
-    // for (int i = 0; i < graph.getNumNodes(); i++) {
-    int count = 0;
-    for (Integer rawID : graph.getRawIDs()) {
-/*
-      if (i % NOTICE_MOD == 0) {
-        //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
-        logger.debug("Nodes processed: " + i + " out of " + graph.getNumNodes());
-        BitcoinFeaturesBase.logMemory();
-      }
-*/
-      NodeInfo nodeInfo = new NodeInfo();
-      nodeInfos.put(rawID, nodeInfo);
-      Collection<Edge> values = getUniqueEdges(graph, rawID);
-
-      for (Edge edge : values) {
-        int src = edge.getSrc();
-        float weight = edge.getFWeight();
-
-//        logger.info("edge " + edge + " src " + src);
-        String types = oneHop[getNodeType(graph, src) - 1];
-        nodeInfo.addWeight(types, weight, src);
-
-        if (DEBUG) {
-          logger.info("d1 : for " + count + " : " + edge + " src " +
-              src + " node " + nodeInfo);
-        }
-      }
-      count++;
-    }
+    makeNodeInfos(graph, nodeInfos);
 
     if (DEBUG || true) logger.info("computeIndicesFast got " + nodeInfos.size() + " nodes ");
     // D = 2
 
     Runtime.getRuntime().gc();
-
     BitcoinFeaturesBase.logMemory();
 
     long now = doD2(graph, outTopology, outSPD, nodeInfos);
@@ -209,9 +176,79 @@ public class MultipleIndexConstructor {
         " queued " + totalQueued + " copied " + pathsCopied + " total paths " + totalPaths
     );
 
-    if (DEBUG) logger.info("edge to visit " + edgeToVisit);
+    //if (DEBUG) logger.info("edge to visit " + edgeToVisit);
 
     BitcoinFeaturesBase.logMemory();
+  }
+
+  private static void makeNodeInfos(Graph graph, Map<Integer, NodeInfo> nodeInfos) {
+    for (Integer rawID : graph.getRawIDs()) {
+      NodeInfo nodeInfo = getNodeInfo(graph, rawID);
+      nodeInfos.put(rawID, nodeInfo);
+    }
+  }
+
+
+  private static void makeNodeInfos2(Graph graph, Map<Integer, NodeInfo> nodeInfos) {
+
+//    ConcurrentMap<Integer, NodeInfo> byGender =
+//        graph.getRawIDs()
+//            .parallelStream()
+//            .collect(
+//                Collectors.groupingByConcurrent(Person::getGender));
+
+    Collection<Integer> rawIDs = graph.getRawIDs();
+
+    //    ConcurrentMap<Integer, NodeInfo> byGender = rawIDs.parallelStream()
+    //        .collect(Collectors.groupingByConcurrent(getNodeInfo(graph)))
+    //Stream.of(rawIDs).parallel().forEach(rawID -> getNodeInfo(graph, rawID)).collect(Collectors.toConcurrentMap());
+
+    for (Integer rawID : rawIDs) {
+      NodeInfo nodeInfo = getNodeInfo(graph, rawID);
+      nodeInfos.put(rawID, nodeInfo);
+    }
+  }
+
+  private static NodeInfo getNodeInfo(Graph graph, Integer rawID) {
+    NodeInfo nodeInfo = new NodeInfo(rawID);
+    Collection<Edge> values = getUniqueEdges(graph, rawID);
+
+    for (Edge edge : values) {
+      int src = edge.getSrc();
+      float weight = edge.getFWeight();
+
+//        logger.info("edge " + edge + " src " + src);
+      String types = oneHop[getNodeType(src) - 1];
+      nodeInfo.addWeight(types, weight, src);
+
+//      if (DEBUG) {
+//        logger.info("d1 : for " + count + " : " + edge + " src " +
+//            src + " node " + nodeInfo);
+//      }
+    }
+    return nodeInfo;
+  }
+
+
+  private static Collection<Edge> getUniqueEdges(Graph graph, int i) {
+    Collection<Edge> nbrs = graph.getNeighbors(i);
+    // Set<Integer> seen = new HashSet<>();
+
+    Map<Integer, Edge> srcToEdge = new HashMap<>();
+    Map<Integer, Float> srcToWeight = new HashMap<>();
+
+    for (Edge edge : nbrs) {
+      int src = edge.getSrc();
+      //int srcNode = graph.getRawID(src);
+      Float edgeWeight = srcToWeight.get(src);
+      float fWeight = edge.getFWeight();
+      if (edgeWeight == null || edgeWeight < fWeight) {
+        srcToWeight.put(src, fWeight);
+        srcToEdge.put(src, edge);
+      }
+    }
+
+    return srcToEdge.values();
   }
 
   /**
@@ -239,14 +276,14 @@ public class MultipleIndexConstructor {
       if (count++ % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
         long now = System.currentTimeMillis();
-        long diff = (now-then2)/1000;
+        long diff = (now - then2) / 1000;
         long l = diff == 0 ? count : count / diff;
 
         logger.debug("doD2 : Nodes processed: " + count + " out of " + graph.getNumNodes() + " rate " + l + " nodes/sec");
         BitcoinFeaturesBase.logMemory();
       }
 
-      NodeInfo d2 = new NodeInfo();
+      NodeInfo d2 = new NodeInfo(rawID);
 
       Collection<Edge> values = getUniqueEdges(graph, rawID);
       Map<String, Set<Integer>> typeToNeighbors = new HashMap<>();
@@ -264,7 +301,7 @@ public class MultipleIndexConstructor {
             " and " + nodeInfo);
 
         float weight = edge.getFWeight();
-        for (Map.Entry<String, TypeInfo> pair : nodeInfo.typeToInfo.entrySet()) {
+        for (Map.Entry<String, TypeInfo> pair : nodeInfo.getTypeToInfo().entrySet()) {
           String nType = pair.getKey();
           TypeInfo typeInfo = pair.getValue();
           Set<Integer> neighborNeighbors = typeInfo.getNodes();
@@ -311,14 +348,14 @@ public class MultipleIndexConstructor {
       outTopology.write(rawID + "\t");
 
       NodeInfo nodeInfo = nodeInfos.get(rawID);
-      writeTopologyFast(outTopology, 0, nodeInfo.typeToInfo);
-      writeTopologyFast(outTopology, 1, d2.typeToInfo);
+      writeTopologyFast(outTopology, 0, nodeInfo.getTypeToInfo());
+      writeTopologyFast(outTopology, 1, d2.getTypeToInfo());
       outTopology.write("\n");
 
       outSPD.write(rawID + "\t");
 
-      writeSPDIndexFast(outSPD, 0, nodeInfo.typeToInfo);
-      writeSPDIndexFast(outSPD, 1, d2.typeToInfo);
+      writeSPDIndexFast(outSPD, 0, nodeInfo.getTypeToInfo());
+      writeSPDIndexFast(outSPD, 1, d2.getTypeToInfo());
 
       outSPD.write("\n");
     }
@@ -327,159 +364,13 @@ public class MultipleIndexConstructor {
     return now;
   }
 
-  private static Collection<Edge> getUniqueEdges(Graph graph, int i) {
-    Collection<Edge> nbrs = graph.getNeighbors(i);
-    // Set<Integer> seen = new HashSet<>();
-
-    Map<Integer, Edge> srcToEdge = new HashMap<>();
-    Map<Integer, Float> srcToWeight = new HashMap<>();
-
-    for (Edge edge : nbrs) {
-      int src = edge.getSrc();
-      //int srcNode = graph.getRawID(src);
-      Float edgeWeight = srcToWeight.get(src);
-      float fWeight = edge.getFWeight();
-      if (edgeWeight == null || edgeWeight < fWeight) {
-        srcToWeight.put(src, fWeight);
-        srcToEdge.put(src, edge);
-      }
-    }
-
-    return srcToEdge.values();
-  }
 
   /**
-   * @param graph
-   * @param src   internal id?
+   * @param src internal id?
    * @return
    */
-  private static Integer getNodeType(Graph graph, int src) {
-    // int srcNode = graph.getRawID(src);
+  private static Integer getNodeType(int src) {
     return node2Type.get(src);
-  }
-
-  private static class NodeInfo {
-    Map<String, TypeInfo> typeToInfo = new HashMap<>();
-
-    /**
-     * @param type
-     * @param weight
-     * @param nodeID
-     * @see #computeIndicesFast(Graph)
-     */
-    public void addWeight(String type, float weight, int nodeID) {
-      TypeInfo info = typeToInfo.get(type);
-      if (info == null) {
-        info = new TypeInfo(weight, nodeID);
-        typeToInfo.put(type, info);
-      } else {
-        info.max(weight, nodeID);
-      }
-    }
-/*
-    public void incrMax(String type, TypeInfo other) {
-      TypeInfo info = typeToInfo.get(type);
-      if (info == null) {
-        info = new TypeInfo(other);
-        typeToInfo.put(type, info);
-      } else {
-        info.incrMax(other);
-      }
-    }*/
-
-    public void incrMax(String type, int typeCountOfNeighbor, float weightOfNeighbor) {
-      TypeInfo info = typeToInfo.get(type);
-      if (info == null) {
-        info = new TypeInfo(typeCountOfNeighbor, weightOfNeighbor, weightOfNeighbor);
-        typeToInfo.put(type, info);
-      } else {
-        info.incrMax(typeCountOfNeighbor, weightOfNeighbor);
-      }
-    }
-
-    public String toString() {
-      return typeToInfo.toString();
-    }
-  }
-
-  private static class TypeInfo {
-    private int count = 1;
-    private float totalWeight = 0f;
-    private float prevMax = 0f;
-    private Set<Integer> nodes = new HashSet<>();
-
-/*
-    public TypeInfo(TypeInfo other) {
-      this(other.count, other.totalWeight, other.prevMax);
-    }
-*/
-
-    /**
-     * @param count
-     * @param max
-     * @param prevMax
-     * @see #incrMax(int, float)
-     */
-    public TypeInfo(int count, float max, float prevMax) {
-      this.count = count;
-      this.totalWeight = max;
-      this.prevMax = prevMax;
-    }
-
-    public TypeInfo(float weight, int nodeID) {
-      this.totalWeight = weight;
-      count = 1;
-      nodes.add(nodeID);
-    }
-
-    public void max(float weight, int nodeID) {
-      boolean newFound = newMax(weight);
-      //if (newFound) nodes.add(nodeID);
-      nodes.add(nodeID);
-      count = getCount() + 1;
-    }
-
-    private boolean newMax(float weight) {
-      boolean newMax = weight > totalWeight;
-
-      // TODO : correct???
-      if (prevMax == 0 && weight == totalWeight) {
-        prevMax = totalWeight;
-      }
-      if (newMax) {
-        prevMax = totalWeight;
-        totalWeight = weight;
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    public int getCount() {
-      return count;
-    }
-
-    public float getMaxWeight() {
-      return totalWeight;
-    }
-
-    public float getPrevMax() {
-      return prevMax;
-    }
-
-    public void incrMax(int otherCount, float otherWeight) {
-      //count += otherCount;
-      count = otherCount;
-      newMax(otherWeight);
-    }
-
-    public String toString() {
-      return "Count " + getCount() + " : " + getMaxWeight() + " prev " + getPrevMax() + " neighbors " + nodes;
-    }
-
-    public Set<Integer> getNodes() {
-      return nodes;
-    }
   }
 
   /**
@@ -730,7 +621,7 @@ public class MultipleIndexConstructor {
             //if (edge != edgeFast) logger.info("err -- not the same " + edge + " vs " +edgeFast);
 
             totWeight += edge.getWeight();
-            Integer typeOfDestNode = getNodeType(graph, a);
+            Integer typeOfDestNode = getNodeType(a);
             // types += typeOfDestNode; // TODO : string concatenation...
 
             typeSequence[j - 1] = typeOfDestNode - 1;
@@ -1040,10 +931,8 @@ public class MultipleIndexConstructor {
   /**
    * Load types file
    *
-   * @return
    * @throws FileNotFoundException
    * @throws IOException
-   * @paramx typesFile
    * @see #main(String[])
    */
   private static void loadTypesFile()
@@ -1072,6 +961,12 @@ public class MultipleIndexConstructor {
     for (int i = 0; i < n; i++) node2Type.put(i, 1);
     return setTotalTypes();
   }*/
+
+  /**
+   * @see TopKTest#beforeComputeIndicesMod
+   * @param node2TypeToUse
+   * @return
+   */
   public static Collection<Integer> loadTypes(Map<Integer, Integer> node2TypeToUse) {
     node2Type = node2TypeToUse;
     return setTotalTypes();
@@ -1138,13 +1033,15 @@ public class MultipleIndexConstructor {
 
     rs.close();
     queryStatement.close();
-    //connection.close();
 
     makeTypeIDs(types);
   }
 
+  /**
+   * @see #loadTypesFromDatabase(DBConnection, String, String, String)
+   * @param types
+   */
   public static void makeTypeIDs(Collection<Integer> types) {
-
     logger.info("makeTypeIDs " + types);
     oneHop = new String[types.size()];
     twoHop = new String[types.size()][types.size()];
@@ -1159,7 +1056,7 @@ public class MultipleIndexConstructor {
         //    twoHop[i][j++] = firstType+"_"+secondType;
         String both = firstType + secondType;
         twoHop[i][j++] = both;
-        logger.info("makeTypeIDs added " + both);
+        //logger.info("makeTypeIDs added " + both);
       }
       i++;
     }

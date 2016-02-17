@@ -125,7 +125,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     BitcoinFeaturesBase.logMemory();
 
     logger.info("ingest complete --------> ");
-    Thread.sleep(10000000);
+  //  Thread.sleep(10000000);
   }
 
   private static long getLimit(long limit, String arg) {

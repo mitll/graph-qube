@@ -39,7 +39,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   private static final String ENTITYID = "entityid";
   private static final String FINENTITY = "FinEntity";
   private static final int MIN_TRANSACTIONS = 10;
-  public static final int REPORT_MOD = 1000000;
+ // public static final int REPORT_MOD = 1000000;
   private static final int FETCH_SIZE = 1000000;
   private static final int UPDATE_MOD = 100;
   private static final int INSERT_ROW_MOD = 100000;
