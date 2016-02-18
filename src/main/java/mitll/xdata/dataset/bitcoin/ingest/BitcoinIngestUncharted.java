@@ -147,9 +147,29 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
   private void doIngest(String dataSourceJDBC, String transactionsTable, String destinationDbName, String writeDir,
                         //boolean skipLoadTransactions,
                         long limit) throws Throwable {
-    long then = System.currentTimeMillis();
-    long start = then;
+    long start = System.currentTimeMillis();
+    BitcoinFeaturesUncharted bitcoinFeaturesUncharted = new BitcoinFeaturesUncharted();
 
+    Set<Integer> userIds = loadTransactionsAndWriteFeatures(dataSourceJDBC, transactionsTable, destinationDbName, writeDir, limit, bitcoinFeaturesUncharted);
+
+    long then2 = System.currentTimeMillis();
+    Set<Integer> validUsers = doSubgraphs(destinationDbName, userIds);
+    logger.info("doIngest took " + (System.currentTimeMillis() - then2) / 1000 + " secs to do subgraphs");
+    logger.info("doIngest took " + (System.currentTimeMillis() - start) / 1000 + " secs overall");
+
+    boolean b = userIds.removeAll(validUsers);
+    logger.info("doIngest to remove " + userIds.size());
+
+    bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName), userIds);
+  }
+
+  private Set<Integer> loadTransactionsAndWriteFeatures(String dataSourceJDBC,
+                                                        String transactionsTable,
+                                                        String destinationDbName,
+                                                        String writeDir,
+                                                        long limit,
+                                                        BitcoinFeaturesUncharted bitcoinFeaturesUncharted) throws Exception {
+    long then = System.currentTimeMillis();
     // populate the transactions table
     MysqlInfo info = new MysqlInfo();
     info.setJdbc(dataSourceJDBC);
@@ -172,25 +192,13 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-    BitcoinFeaturesUncharted bitcoinFeaturesUncharted = new BitcoinFeaturesUncharted();
-    Set<Integer> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir,
-        //info, limit,
-        users, idToStats);
+    Set<Integer> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir,  users, idToStats);
 
     logger.info("doIngest userIds size " + userIds.size());
 
     long now = System.currentTimeMillis();
     logger.debug("doIngest Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " +
         (now - then) / 1000 + " seconds");
-
-    then = System.currentTimeMillis();
-    Set<Integer> validUsers = doSubgraphs(destinationDbName, userIds);
-    logger.info("doIngest took " + (System.currentTimeMillis() - then) / 1000 + " secs to do subgraphs");
-    logger.info("doIngest took " + (System.currentTimeMillis() - start) / 1000 + " secs overall");
-
-    boolean b = userIds.removeAll(validUsers);
-    logger.info("doIngest to remove " + userIds.size());
-
-    bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName), userIds);
+    return userIds;
   }
 }

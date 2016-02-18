@@ -270,7 +270,7 @@ public class BitcoinIngestSubGraph {
     try {
       DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
-      int i = doSQLUpdate(connection, "drop table " + MARGINAL_GRAPH);
+      int i = doSQLUpdate(connection, "drop table " + MARGINAL_GRAPH + " if exists");
 
       String createSQL = "create table " + MARGINAL_GRAPH + " (" +
           SOURCE +
