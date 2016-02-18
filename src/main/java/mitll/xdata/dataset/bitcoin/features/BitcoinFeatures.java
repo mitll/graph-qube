@@ -20,9 +20,7 @@ import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -33,27 +31,65 @@ import java.util.*;
  * To change this template use File | Settings | File Templates.
  */
 public class BitcoinFeatures extends BitcoinFeaturesBase {
-  private static final int MIN_TRANSACTIONS = 10;
-  private static final boolean LIMIT = false;
-  private static final int BITCOIN_OUTLIER = 25;
-  private static final int USER_LIMIT = 10000000;
-  private static final int MIN_DEBITS = 5;
-  private static final int MIN_CREDITS = 5;
-  private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
+//  private static final int MIN_TRANSACTIONS = 10;
+//  private static final boolean LIMIT = false;
+//  private static final int BITCOIN_OUTLIER = 25;
+//  private static final int USER_LIMIT = 10000000;
+//  private static final int MIN_DEBITS = 5;
+//  private static final int MIN_CREDITS = 5;
+//  private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
   private static final int SPECLEN = 100;//
-  private static final int NUM_STANDARD_FEATURES = 10;
+//  private static final int NUM_STANDARD_FEATURES = 10;
   //public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
-  private static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
+//  private static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
   public static final String BITCOIN_FEATURES_STANDARDIZED_TSV = "bitcoin_features_standardized.tsv";
   // private static final boolean USE_SPECTRAL_FEATURES = true;
   // double specWeight = 1.0;
   // private final double statWeight = 15.0;
   // private final double iarrWeight = 30.0;
   // private final double ppWeight   = 20.0;
-  private boolean useSpectral = false;
+ // private boolean useSpectral = false;
 
   private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
-  private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
+
+  /**
+   * Populate map so we can tell when to skip transactions from users who have done < 25 transactions.
+   *
+   * @param users
+   * @param stot
+   * @param skipped
+   * @param source
+   * @param target
+   * @return
+   */
+  protected boolean getSkipped(Collection<Integer> users, Map<Integer, Set<Integer>> stot, int source, int target) {
+    if (users.contains(source) && users.contains(target)) {
+      Set<Integer> integers = stot.get(source);
+      if (integers == null) stot.put(source, integers = new HashSet<Integer>());
+      if (!integers.contains(target)) integers.add(target);
+      return false;
+    } else {
+      return true;
+    }
+//    return skipped;
+  }
+
+  protected void writePairs(String outfile, Map<Integer, Set<Integer>> stot) throws IOException {
+    BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
+    int cc = 0;
+    for (Map.Entry<Integer, Set<Integer>> pair : stot.entrySet()) {
+      for (Integer i : pair.getValue()) {
+        writer.write(storeTwo(pair.getKey(), i) + "\n");
+        cc++;
+      }
+    }
+    writer.close();
+
+    logger.debug("writePairs wrote " + cc + " pairs to " + outfile);
+
+    Runtime.getRuntime().gc();
+  }
+  // private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
   private enum PERIOD {HOUR, DAY, WEEK, MONTH}
 
@@ -88,7 +124,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
    */
   private BitcoinFeatures(DBConnection connection, String writeDirectory, String datafile, boolean useSpectralFeatures) throws Exception {
     long then = System.currentTimeMillis();
-    this.useSpectral = useSpectralFeatures;
+  //  this.useSpectral = useSpectralFeatures;
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
     logger.debug("reading users from db " + connection);
@@ -326,7 +362,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
     calendar.set(Integer.parseInt(year), imonth, Integer.parseInt(day));
   }
 
-    /**
+  /**
    * TODO : fill this in -- note we want only the real components:
    * <p>
    * Julia from Wade:
@@ -393,7 +429,6 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
 
     return r;
   }
-
 
 
   @SuppressWarnings("CanBeFinal")

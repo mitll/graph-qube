@@ -79,10 +79,8 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     logMemory();
 
     String sql = "select " +
-        info.getSlotToCol().get(MysqlInfo.SENDER_ID) +
-        ", " +
-        info.getSlotToCol().get(MysqlInfo.RECEIVER_ID) +
-        ", " +
+        info.getSlotToCol().get(MysqlInfo.SENDER_ID) +", " +
+        info.getSlotToCol().get(MysqlInfo.RECEIVER_ID) + ", " +
         info.getSlotToCol().get(MysqlInfo.USD) +
         " from " + info.getTable() + " limit " + limit;
 
@@ -263,7 +261,6 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
       logMemory();
 
-
       boolean didAny = false;
       while (resultSet.next()) {
         count++;
@@ -292,17 +289,12 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   private String getTransationSQL(MysqlInfo info, long limit, int offset) {
     Map<String, String> slotToCol = info.getSlotToCol();
     return "select " +
-        slotToCol.get(MysqlInfo.TRANSACTION_ID) +
-        ", " +
-        slotToCol.get(MysqlInfo.SENDER_ID) +
-        ", " +
-        slotToCol.get(MysqlInfo.RECEIVER_ID) +
-        ", " +
-        slotToCol.get(MysqlInfo.TX_TIME) +
-        ", " +
-        slotToCol.get(MysqlInfo.BTC) +
-        ", " +
-        slotToCol.get("USD") +
+        slotToCol.get(MysqlInfo.TRANSACTION_ID) + ", " +
+        slotToCol.get(MysqlInfo.SENDER_ID) + ", " +
+        slotToCol.get(MysqlInfo.RECEIVER_ID) + ", " +
+        slotToCol.get(MysqlInfo.TX_TIME) + ", " +
+        slotToCol.get(MysqlInfo.BTC) + ", " +
+        slotToCol.get(MysqlInfo.USD) +
         " from " + info.getTable() +
         " limit " + limit +
         " offset " + offset;
@@ -336,9 +328,10 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       double btc = resultSet.getDouble(col++);
       double usd = resultSet.getDouble(col++);
 
-      double[] additionalFeatures = addAvgDollarFeatures(userToStats, avgUSD, /*count,*/ sourceid, targetID, usd);
+      double[] additionalFeatures = addAvgDollarFeatures(userToStats, avgUSD, sourceid, targetID, usd);
       try {
-        boolean didUpdate = insertRow(useTimestamp, t0, count, statement, additionalFeatures, transid, sourceid, targetID, x, btc, usd);
+        boolean didUpdate = insertRow(useTimestamp, t0, count, statement, additionalFeatures, transid,
+            sourceid, targetID, x, btc, usd);
 
         if (!didUpdate) {
           statement.executeUpdate();

@@ -240,7 +240,6 @@ public class TopKSubgraphShortlist extends Shortlist {
   }
 
   /**
-   * @param connection
    * @param tableName
    */
   private boolean existsTable(String tableName) {
@@ -309,7 +308,7 @@ public class TopKSubgraphShortlist extends Shortlist {
   /**
    * Do SQL, query something, return that something
    *
-   * @param createSQL
+   * @param sql
    * @return
    * @throws SQLException
    */
@@ -760,9 +759,9 @@ public class TopKSubgraphShortlist extends Shortlist {
 
 
   /**
-   * @param exemplarIDs
-   * @param queryNode2InfluentEntityInd
-   * @param uiucQueryEdgetoIndex
+   * @paramx exemplarIDs
+   * @paramx queryNode2InfluentEntityInd
+   * @paramx uiucQueryEdgetoIndex
    */
   private Map<String, SortedSet<String>> computeResultNode2EdgeListMap(List<String> edges, int numNodes) {
     Map<String, SortedSet<String>> node2EdgeList = new HashMap<>();

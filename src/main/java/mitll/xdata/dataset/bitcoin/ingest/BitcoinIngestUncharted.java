@@ -154,14 +154,15 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     info.setTable(transactionsTable);
 
     Collection<Integer> users = new BitcoinIngestUnchartedTransactions().getUsers(info);
-    //Collection<Integer> usersInTranscations = users;
+
     if (!skipLoadTransactions) {
       logger.info("doIngest userIds size " + users.size());
 
       users = new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
           "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit, users);
 
-      logger.info("doIngest after userIds size " + users.size() + " includes " + users.contains(253479) + " or " + users.contains(12329212));
+      logger.info("doIngest after userIds size " + users.size() +
+          " includes " + users.contains(253479) + " or " + users.contains(12329212));
     }
 
     // Extract features for each account

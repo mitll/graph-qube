@@ -1042,7 +1042,7 @@ public class MultipleIndexConstructor {
    * @param types
    */
   public static void makeTypeIDs(Collection<Integer> types) {
-    logger.info("makeTypeIDs " + types);
+//    logger.info("makeTypeIDs " + types);
     oneHop = new String[types.size()];
     twoHop = new String[types.size()][types.size()];
 

@@ -75,13 +75,6 @@ public class BitcoinBinding extends Binding {
 	private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
 	private static final String PAIRID_COLUMN = "SORTED_PAIR";
 
-	//  Comparator<String> entityComparator = new Comparator<String>() {
-	//	  @Override
-	//	  public int compare(String entity1, String entity2) {
-	//		  return entityCompare(entity1, entity2);
-	//	  }
-	//  };
-
 	/**
 	 * @see mitll.xdata.GraphQuBEServer#main(String[])
 	 * @param connection
@@ -146,6 +139,10 @@ public class BitcoinBinding extends Binding {
 
 		// logger.debug("cols " + tableToColumns);
 
+		//setupForOldSubgraphSearch(connection, useFastBitcoinConnectedTest, resourceDir);
+	}
+
+	private void setupForOldSubgraphSearch(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
 		try {
 			//  InputStream userFeatures = this.getClass().getResourceAsStream(File.separator +resourceDir + File.separator +BITCOIN_FEATURES);
 			logger.debug("indexing node features");

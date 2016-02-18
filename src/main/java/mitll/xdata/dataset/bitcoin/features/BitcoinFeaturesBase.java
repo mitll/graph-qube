@@ -20,7 +20,6 @@ import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.scoring.FeatureNormalizer;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedWriter;
@@ -45,12 +44,12 @@ public class BitcoinFeaturesBase {
 
   public static final int MIN_TRANSACTIONS = 10;
 
-  private static final boolean LIMIT = false;
+//  private static final boolean LIMIT = false;
   private static final int BITCOIN_OUTLIER = 25;
-  private static final int USER_LIMIT = 10000000;
-  private static final int MIN_DEBITS = 5;
-  private static final int MIN_CREDITS = 5;
-  private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
+//  private static final int USER_LIMIT = 10000000;
+//  private static final int MIN_DEBITS = 5;
+//  private static final int MIN_CREDITS = 5;
+//  private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
   private static final int SPECLEN = 100;//
   private static final int NUM_STANDARD_FEATURES = 10;
   //public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
@@ -65,11 +64,11 @@ public class BitcoinFeaturesBase {
   private final boolean useSpectral = false;
 
   private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
-  private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
+//  private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
   private enum PERIOD {HOUR, DAY, WEEK, MONTH}
 
-  private final PERIOD period = PERIOD.DAY; // bin by day for now
+//  private final PERIOD period = PERIOD.DAY; // bin by day for now
 
 /*  public BitcoinFeaturesBase(String h2DatabaseFile, String writeDirectory, String datafile) throws Exception {
     this(new H2Connection(h2DatabaseFile, 38000000), writeDirectory, datafile, false);
@@ -115,7 +114,7 @@ public class BitcoinFeaturesBase {
   }*/
 
   /**
-   * @see BitcoinFeaturesUncharted#BitcoinFeaturesUncharted(DBConnection, String, MysqlInfo, boolean, long, Collection)
+   * @see BitcoinFeaturesUncharted#writeFeatures(DBConnection, String, long, Collection, Map)
    * @param connection
    * @param writeDirectory
    * @param then
@@ -441,7 +440,7 @@ public class BitcoinFeaturesBase {
    *
    * @param transForUsers
    * @param user
-   * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String, String, boolean)
+   * @see #populateUserToFeatures(Collection, Map, List, Map, Map)
    */
   private Features getFeaturesForUser(Map<Integer, UserFeatures> transForUsers, Integer user) {
     UserFeatures stats = transForUsers.get(user);
@@ -585,98 +584,6 @@ public class BitcoinFeaturesBase {
       return  transactions;
   }*/
 
-  /**
-   * The binding reads the file produced here to support connected lookup.
-   *
-   * @param users
-   * @param dataFilename
-   * @param outfile
-   * @throws Exception
-   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#populateInMemoryAdjacency()
-   * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String, String, boolean)
-   */
-/*  private void writePairs(Collection<Integer> users,
-                          String dataFilename, String outfile) throws Exception {
-
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
-    String line;
-    int count = 0;
-    long t0 = System.currentTimeMillis();
-    int max = Integer.MAX_VALUE;
-    int bad = 0;
-
-    //  Map<Integer,UserFeatures> idToStats = new HashMap<Integer,UserFeatures>();
-    //  Set<Long> connectedPairs = new HashSet<Long>(10000000);
-    int c = 0;
-    Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
-    int skipped = 0;
-    while ((line = br.readLine()) != null) {
-      count++;
-      if (count > max) break;
-      String[] split = line.split("\\s+"); // 4534248 25      25      2013-01-27 22:41:38     9.91897304
-      if (split.length != 6) {
-        bad++;
-        if (bad < 10) logger.warn("badly formed line " + line);
-      }
-
-      int source = Integer.parseInt(split[1]);
-      int target = Integer.parseInt(split[2]);
-
-      skipped = getSkipped(users, stot, skipped, source, target);
-      // long key = storeTwo(source, target);
-      //if (!connectedPairs.contains(key)) connectedPairs.add(key);
-      if (c++ % 1000000 == 0) logger.debug("read " + c + " from " + dataFilename);
-
-      if (count % 10000000 == 0) {
-        logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count
-            + " ms/read");
-      }
-    }
-    logger.debug("skipped " + skipped + " transactions where either the source or target has been pruned");
-    br.close();
-
-    //for (Long pair : connectedPairs) writer.write(pair+"\n");
-    writePairs(outfile, stot);
-    if (bad > 0) logger.warn("Got " + bad + " transactions...");
-  }*/
-
-  /**
-   * Skip transactions from users who have done < 25 transactions.
-   *
-   * @param users
-   * @param stot
-   * @param skipped
-   * @param source
-   * @param target
-   * @return
-   */
-  protected boolean getSkipped(Collection<Integer> users, Map<Integer, Set<Integer>> stot, int source, int target) {
-    if (users.contains(source) && users.contains(target)) {
-      Set<Integer> integers = stot.get(source);
-      if (integers == null) stot.put(source, integers = new HashSet<Integer>());
-      if (!integers.contains(target)) integers.add(target);
-      return false;
-    } else {
-      return true;
-    }
-//    return skipped;
-  }
-
-  protected void writePairs(String outfile, Map<Integer, Set<Integer>> stot) throws IOException {
-    BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
-    int cc = 0;
-    for (Map.Entry<Integer, Set<Integer>> pair : stot.entrySet()) {
-      for (Integer i : pair.getValue()) {
-        writer.write(storeTwo(pair.getKey(), i) + "\n");
-        cc++;
-      }
-    }
-    writer.close();
-
-    logger.debug("writePairs wrote " + cc + " pairs to " + outfile);
-
-    Runtime.getRuntime().gc();
-  }
 
   /**
    * Store two integers in a long.
@@ -797,222 +704,6 @@ public class BitcoinFeaturesBase {
 
     calendar.set(Integer.parseInt(year), imonth, Integer.parseInt(day));
   }*/
-
-  /**
-   * The features we collect for each user (160)
-   * <p>
-   * credit spectrum (50 values)
-   * debit spectrum (50 values)
-   * merged spectrum  (50 values)
-   * credit mean, std
-   * credit inter arrival times mean, std
-   * debit mean, std
-   * debit inter arrival times mean, std
-   * incoming link perplexity
-   * outgoing link perplexity
-   */
-  class UserFeatures {
-    private final int id;
-    final List<Transaction> debits = new ArrayList<Transaction>();
-    final List<Transaction> credits = new ArrayList<Transaction>();
-    final Map<Integer, Integer> targetToCount = new HashMap<Integer, Integer>();
-    final Map<Integer, Integer> sourceToCount = new HashMap<Integer, Integer>();
-
-    float[] expandedDebits, expandedCredits, expandedMerged;
-    float[] dspectrum, cspectrum, mspectrum;
-
-    public UserFeatures(int id) {
-      this.id = id;
-    }
-
-    /**
-     * @param t
-     * @see BitcoinFeatures#getTransForUsers(String, java.util.Collection)
-     */
-    public void addDebit(Transaction t) {
-      debits.add(t);
-      Integer outgoing = targetToCount.get(t.target);
-      targetToCount.put(t.target, outgoing == null ? 1 : outgoing + 1);
-    }
-
-    public void addCredit(Transaction t) {
-      credits.add(t);
-
-      Integer incoming = sourceToCount.get(t.source);
-      sourceToCount.put(t.source, incoming == null ? 1 : incoming + 1);
-    }
-
-    public void calc() {
-      Collections.sort(debits);
-      Collections.sort(credits);
-
-      expandedDebits = getExpanded(debits, period, true);
-      expandedCredits = getExpanded(credits, period, false);
-      expandedMerged = getExpanded(credits, debits, period);
-
-      if (useSpectral) {
-        dspectrum = getSpectrum(expandedDebits);
-        cspectrum = getSpectrum(expandedCredits);
-        mspectrum = getSpectrum(expandedMerged);
-      }
-    }
-
-    public List<Double> getCreditMeanAndStd() {
-      if (credits.isEmpty()) {
-        return EMPTY_DOUBLES;
-      }
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Transaction transaction : credits) {
-        descriptiveStatistics.addValue(transaction.amount);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    public List<Double> getDebitMeanAndStd() {
-      if (debits.isEmpty()) {
-        return EMPTY_DOUBLES;
-      }
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Transaction transaction : debits) {
-        descriptiveStatistics.addValue(-transaction.amount);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    private float[] getExpanded(List<Transaction> debits, PERIOD period, boolean subtract) {
-      long quanta = period.equals(PERIOD.DAY) ? DAY_IN_MILLIS : period.equals(PERIOD.HOUR) ? HOUR_IN_MILLIS : DAY_IN_MILLIS;
-
-      if (debits.isEmpty()) return new float[0];
-
-      long first = debits.get(0).time;
-      long last = debits.get(debits.size() - 1).time;
-      long bins = (last - first) / quanta;
-      float[] expDebits = new float[(int) bins + 1];
-
-      for (Transaction debit : debits) {
-        long day = (debit.time - first) / quanta;
-        expDebits[(int) day] += (subtract ? -1 : +1) * debit.amount;
-      }
-
-      return expDebits;
-    }
-
-    private float[] getExpanded(List<Transaction> credits, List<Transaction> debits, PERIOD period) {
-      long quanta = period.equals(PERIOD.DAY) ? DAY_IN_MILLIS : period.equals(PERIOD.HOUR) ? HOUR_IN_MILLIS : DAY_IN_MILLIS;
-
-      // TODO : this is slow of course...
-      List<Transaction> merged = new ArrayList<Transaction>(debits);
-      merged.addAll(credits);
-      Collections.sort(merged);
-
-      long first = merged.get(0).time;
-      long last = merged.get(merged.size() - 1).time;
-      long bins = (last - first) / quanta;
-      float[] expDebits = new float[(int) bins + 1];
-
-      for (Transaction debit : debits) {
-        long day = (debit.time - first) / quanta;
-        expDebits[(int) day] += -debit.amount;
-      }
-
-      for (Transaction credit : credits) {
-        long day = (credit.time - first) / quanta;
-        expDebits[(int) day] += credit.amount;
-      }
-
-      return expDebits;
-    }
-
-    public double getInPerplexity() {
-      return getPerplexity(sourceToCount);
-    }
-
-    public double getOutPerplexity() {
-      return getPerplexity(targetToCount);
-    }
-
-    public double getPerplexity(Map<Integer, Integer> sourceToCount) {
-      float total = 0f;
-      for (int count : sourceToCount.values()) {
-        total += (float) count;
-      }
-      float sum = 0;
-      double log2 = Math.log(2);
-
-      // logger.debug(this + " perp " + sourceToCount);
-      for (int count : sourceToCount.values()) {
-        float prob = (float) count / total;
-        //   logger.debug("source " + count + " prob " + prob + " total " + total);
-        sum += prob * (Math.log(prob) / log2);
-      }
-      return Math.pow(2, -sum);
-    }
-
-    public List<Double> getCreditInterarrMeanAndStd() {
-      List<Long> creditInterarrivalTimes = getCreditInterarrivalTimes();
-      if (creditInterarrivalTimes.isEmpty()) return EMPTY_DOUBLES;
-
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Long inter : creditInterarrivalTimes) {
-        descriptiveStatistics.addValue(inter);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    public List<Double> getDebitInterarrMeanAndStd() {
-      List<Long> debitInterarrivalTimes = getDebitInterarrivalTimes();
-      if (debitInterarrivalTimes.isEmpty()) return EMPTY_DOUBLES;
-
-      DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-      for (Long inter : debitInterarrivalTimes) {
-        descriptiveStatistics.addValue(inter);
-      }
-      return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
-    }
-
-    private List<Long> getDebitInterarrivalTimes() {
-      return getInterarrivalTimes(debits);
-    }
-
-    private List<Long> getCreditInterarrivalTimes() {
-      return getInterarrivalTimes(credits);
-    }
-
-    public List<Long> getInterarrivalTimes(List<Transaction> times) {
-      List<Long> diffs = new ArrayList<Long>();
-      for (int i = 0; i < times.size() - 1; i += 1) {
-        long diff = times.get(i + 1).time - times.get(i).time;
-        if (period == PERIOD.DAY) {
-          diff /= DAY_IN_MILLIS;
-        } else if (period == PERIOD.HOUR) {
-          diff /= HOUR_IN_MILLIS;
-        }
-        diffs.add(diff);
-      }
-      return diffs;
-    }
-
-    public boolean isValid() {
-      //  logger.debug(this + " " + " num debits " + debits.size() + " num credits " + credits.size());
-      return debits.size() > MIN_DEBITS || credits.size() > MIN_CREDITS;
-    }
-
-    public float[] getCreditSpec() {
-      return cspectrum;
-    }
-
-    public float[] getDebitSpec() {
-      return dspectrum;
-    }
-
-    public float[] getMergeSpec() {
-      return mspectrum;
-    }
-
-    public String toString() {
-      return "" + id;
-    }
-  }
 
   /**
    * TODO : fill this in -- note we want only the real components:
@@ -1159,37 +850,6 @@ public class BitcoinFeaturesBase {
     return ids;
   }
 
-  //@SuppressWarnings("CanBeFinal")
-  static final class Transaction implements Comparable<Transaction> {
-    final int source;
-    final int target;
-    final long time;
-    final double amount;
-/*    public Transaction(ResultSet rs) throws Exception {
-      int i = 1;
-      source = rs.getInt(i++);
-      target = rs.getInt(i++);
-      //time = rs.getTimestamp(i++).getTime();
-      time = rs.getLong(i++);
-      amount = rs.getDouble(i);
-    }*/
-
-    public Transaction(int source, int target, long time, double amount) {
-      this.source = source;
-      this.target = target;
-      this.time = time;
-      this.amount = amount;
-    }
-
-    @Override
-    public int compareTo(Transaction o) {
-      return
-          time < o.time ? -1 : time > o.time ? +1 :
-              amount < o.amount ? -1 : amount > o.amount ? +1 :
-                  target < o.target ? -1 : target > o.target ? +1 : 0;
-    }
-  }
-
   private static final int MB = (1024 * 1024);
 
   public static void logMemory() {
@@ -1207,6 +867,7 @@ public class BitcoinFeaturesBase {
       logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
     }
   }
+
   public static void rlogMemory() {
     Runtime rt = Runtime.getRuntime();
     long free = rt.freeMemory();
@@ -1215,12 +876,7 @@ public class BitcoinFeaturesBase {
     long l = max / MB;
     long l1 = used / MB;
 
-    float fmax = (float)l;
-    float fused = (float) l1;
-
-
-      logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
-
+    logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
   }
 
 /*  public static void main(String[] args) {
