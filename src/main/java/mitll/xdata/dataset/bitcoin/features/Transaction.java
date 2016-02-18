@@ -18,11 +18,11 @@ package mitll.xdata.dataset.bitcoin.features;
 /**
  * Created by go22670 on 2/17/16.
  */ //@SuppressWarnings("CanBeFinal")
-final class Transaction implements Comparable<Transaction> {
-  final int source;
-  final int target;
-  final long time;
-  final double amount;
+public class Transaction implements Comparable<Transaction> {
+  private final int source;
+  private final int target;
+  private final long time;
+  private final double amount;
 /*    public Transaction(ResultSet rs) throws Exception {
     int i = 1;
     source = rs.getInt(i++);
@@ -45,5 +45,21 @@ final class Transaction implements Comparable<Transaction> {
         time < o.time ? -1 : time > o.time ? +1 :
             amount < o.amount ? -1 : amount > o.amount ? +1 :
                 target < o.target ? -1 : target > o.target ? +1 : 0;
+  }
+
+  public int getSource() {
+    return source;
+  }
+
+  public int getTarget() {
+    return target;
+  }
+
+  public long getTime() {
+    return time;
+  }
+
+  public double getAmount() {
+    return amount;
   }
 }

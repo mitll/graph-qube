@@ -869,6 +869,11 @@ public class BitcoinFeaturesBase {
   }
 
   public static void rlogMemory() {
+    String message = getMemoryStatus();
+    logger.debug(message);
+  }
+
+  public static String getMemoryStatus() {
     Runtime rt = Runtime.getRuntime();
     long free = rt.freeMemory();
     long used = rt.totalMemory() - free;
@@ -876,7 +881,7 @@ public class BitcoinFeaturesBase {
     long l = max / MB;
     long l1 = used / MB;
 
-    logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
+    return "heap info free " + free / MB + "M used " + l1 + "M max " + l + "M";
   }
 
 /*  public static void main(String[] args) {

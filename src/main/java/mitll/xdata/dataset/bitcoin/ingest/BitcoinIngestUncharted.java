@@ -19,11 +19,14 @@ import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesUncharted;
 import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
+import mitll.xdata.dataset.bitcoin.features.UserFeatures;
 import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -116,7 +119,8 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     BitcoinFeaturesBase.logMemory();
 
     new BitcoinIngestUncharted().doIngest(dataFilename, USERTRANSACTIONS_2013_LARGERTHANDOLLAR, dbName, writeDir,
-        skipLoadTransactions, limit);
+        //skipLoadTransactions,
+        limit);
 
     BitcoinFeaturesBase.logMemory();
 
@@ -125,7 +129,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     BitcoinFeaturesBase.logMemory();
 
     logger.info("ingest complete --------> ");
-  //  Thread.sleep(10000000);
+    //  Thread.sleep(10000000);
   }
 
   private static long getLimit(long limit, String arg) {
@@ -141,12 +145,10 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
   }
 
   private void doIngest(String dataSourceJDBC, String transactionsTable, String destinationDbName, String writeDir,
-                        boolean skipLoadTransactions, long limit) throws Throwable {
-    //
-    // Raw Ingest (csv to database table + basic features)
-    //
+                        //boolean skipLoadTransactions,
+                        long limit) throws Throwable {
     long then = System.currentTimeMillis();
-    long start = System.currentTimeMillis();
+    long start = then;
 
     // populate the transactions table
     MysqlInfo info = new MysqlInfo();
@@ -154,32 +156,37 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     info.setTable(transactionsTable);
 
     Collection<Integer> users = new BitcoinIngestUnchartedTransactions().getUsers(info);
+    Map<Integer, UserFeatures> idToStats = new HashMap<>();
 
-    if (!skipLoadTransactions) {
-      logger.info("doIngest userIds size " + users.size());
+//    if (!skipLoadTransactions) {
+    logger.info("doIngest userIds size " + users.size() + " and " +idToStats.size());
 
-      users = new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
-          "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit, users);
+    users = new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
+        "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit, users, idToStats);
 
-      logger.info("doIngest after userIds size " + users.size() +
-          " includes " + users.contains(253479) + " or " + users.contains(12329212));
-    }
+    logger.info("doIngest after userIds size " + users.size()
+        //  + " includes " + users.contains(253479) + " or " + users.contains(12329212)
+    );
+    //  }
 
     // Extract features for each account
     new File(writeDir).mkdirs();
 
     BitcoinFeaturesUncharted bitcoinFeaturesUncharted = new BitcoinFeaturesUncharted();
-    Set<Integer> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir, info, limit, users);
+    Set<Integer> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir,
+        //info, limit,
+        users, idToStats);
 
     logger.info("doIngest userIds size " + userIds.size());
 
     long now = System.currentTimeMillis();
-    logger.debug("doIngest Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " + (now - then) / 1000 + " seconds");
+    logger.debug("doIngest Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " +
+        (now - then) / 1000 + " seconds");
 
     then = System.currentTimeMillis();
     Set<Integer> validUsers = doSubgraphs(destinationDbName, userIds);
-    logger.info("doIngest took " + (System.currentTimeMillis()-then)/1000 + " secs to do subgraphs");
-    logger.info("doIngest took " + (System.currentTimeMillis()-start)/1000 + " secs overall");
+    logger.info("doIngest took " + (System.currentTimeMillis() - then) / 1000 + " secs to do subgraphs");
+    logger.info("doIngest took " + (System.currentTimeMillis() - start) / 1000 + " secs overall");
 
     boolean b = userIds.removeAll(validUsers);
     logger.info("doIngest to remove " + userIds.size());

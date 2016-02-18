@@ -17,16 +17,14 @@ package mitll.xdata.dataset.bitcoin.features;
 
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
-import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -36,28 +34,32 @@ import java.util.*;
  * To change this template use File | Settings | File Templates.
  */
 public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
-  private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
-  private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
+  //  private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
+//  private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
   private static final Logger logger = Logger.getLogger(BitcoinFeaturesUncharted.class);
   private static final String ENTITYID = "entityid";
   private static final String FINENTITY = "FinEntity";
+  private static final int MAX_MEMORY_ROWS = 38000000;
 
   /**
    * @param h2DatabaseFile
    * @param writeDirectory
-   * @param info
-   * @param limit
+   * @paramx info
+   * @paramx limit
    * @throws Exception
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#doIngest(String, String, String, String, boolean, long)
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#doIngest
    */
-  public Set<Integer> writeFeatures(String h2DatabaseFile, String writeDirectory, MysqlInfo info, long limit,
-                                    Collection<Integer> users) throws Exception {
-    return writeFeatures(getConnection(h2DatabaseFile), writeDirectory, info, false, limit, users);
+  public Set<Integer> writeFeatures(String h2DatabaseFile, String writeDirectory, //MysqlInfo info, long limit,
+                                    Collection<Integer> users,
+                                    Map<Integer, UserFeatures> transForUsers
+  ) throws Exception {
+    return writeFeatures(getConnection(h2DatabaseFile), writeDirectory, //info, limit,
+        users,transForUsers);
   }
 
   public H2Connection getConnection(String h2DatabaseFile) {
-    return new H2Connection(h2DatabaseFile, 38000000);
+    return new H2Connection(h2DatabaseFile, MAX_MEMORY_ROWS);
   }
 
   /**
@@ -82,16 +84,17 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @seex #main(String[])
    * @see #writeFeatures(String, String, MysqlInfo, long, Collection)
    */
-  private Set<Integer> writeFeatures(DBConnection connection, String writeDirectory, MysqlInfo info,
-                                     boolean useSpectralFeatures,
-                                     long limit,
-                                     Collection<Integer> users) throws Exception {
+  private Set<Integer> writeFeatures(DBConnection connection, String writeDirectory,
+                                     //MysqlInfo info,
+                                     //long limit,
+                                     Collection<Integer> users,
+                                     Map<Integer, UserFeatures> transForUsers) throws Exception {
     long then = System.currentTimeMillis();
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
     logger.debug("writeFeatures reading users from db " + connection + " users " + users.size());
 
-    Map<Integer, UserFeatures> transForUsers = getTransForUsers(info, users, limit);
+  //  Map<Integer, UserFeatures> transForUsers = getTransForUsers(info, users, limit);
 
     return writeFeatures(connection, writeDirectory, then, users, transForUsers);
   }
@@ -123,7 +126,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     statement.executeUpdate();
     ResultSet rs = statement.executeQuery();
 
-    Set<Integer> ids = new HashSet<Integer>();
+    Set<Integer> ids = new HashSet<>();
     int c = 0;
 
     while (rs.next()) {
@@ -144,13 +147,14 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @param users transactions must be between the subset of non-trivial users (who have more than 10 transactions)
    * @return user id->User Features map
    * @throws Exception
-   * @see #writeFeatures(DBConnection, String, MysqlInfo, boolean, long, Collection)
+   * @see #writeFeatures(DBConnection, String, MysqlInfo, long, Collection)
    */
-  private Map<Integer, UserFeatures> getTransForUsers(MysqlInfo info, Collection<Integer> users, long limit) throws Exception {
+/*  private Map<Integer, UserFeatures> getTransForUsers(MysqlInfo info, Collection<Integer> users, long limit)
+      throws Exception {
     int count = 0;
     long t0 = System.currentTimeMillis();
 
-    Map<Integer, UserFeatures> idToStats = new HashMap<Integer, UserFeatures>();
+    Map<Integer, UserFeatures> idToStats = new HashMap<>();
 
     logMemory();
 
@@ -186,12 +190,10 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
 
       //     boolean onlyGetDailyData = period == PERIOD.DAY;
       if (users.contains(source) && users.contains(target)) {
-        long time1 = resultSet.getTimestamp(col++).getTime();
-        long time = (time1 / DAY_IN_MILLIS) * DAY_IN_MILLIS;
-
+        long day = roundToDay(resultSet.getTimestamp(col++).getTime());
         double amount = resultSet.getDouble(col++);
 
-        addTransaction(idToStats, source, target, time, amount);
+        addTransaction(idToStats, source, target, day, amount);
       } else {
         skipped++;
       }
@@ -210,4 +212,8 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
 
     return idToStats;
   }
+
+  private long roundToDay(long time1) {
+    return (time1 / DAY_IN_MILLIS) * DAY_IN_MILLIS;
+  }*/
 }

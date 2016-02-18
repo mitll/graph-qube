@@ -17,16 +17,28 @@ package mitll.xdata.dataset.bitcoin.ingest;
 
 import org.apache.log4j.Logger;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by go22670 on 8/6/15.
  */
 public class BitcoinIngestTransactions {
   private static final Logger logger = Logger.getLogger(BitcoinIngestTransactions.class);
-  public static final int DEBUG_OUTPUT_MAX = 2;
+  //public static final int DEBUG_OUTPUT_MAX = 2;
   IngestSql ingestSql = new IngestSql();
 
+  /**
+   * @see BitcoinIngestUnchartedTransactions#insertTransaction
+   * @param userToStats
+   * @param avgUSD
+   * @param sourceid
+   * @param targetID
+   * @param usd
+   * @return
+   */
   protected double[] addAvgDollarFeatures(Map<Integer, UserStats> userToStats,
                                           double avgUSD,
                                       //    int count,

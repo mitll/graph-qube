@@ -16,7 +16,6 @@
 package mitll.xdata.dataset.bitcoin.features;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.log4j.Logger;
 
 import java.util.*;
 
@@ -34,7 +33,7 @@ import java.util.*;
  * outgoing link perplexity
  */
 public class UserFeatures {
-  private static final Logger logger = Logger.getLogger(UserFeatures.class);
+  //private static final Logger logger = Logger.getLogger(UserFeatures.class);
 
   private static final int MIN_DEBITS = 5;
   private static final int MIN_CREDITS = 5;
@@ -71,15 +70,15 @@ public class UserFeatures {
    */
   public void addDebit(Transaction t) {
     debits.add(t);
-    Integer outgoing = targetToCount.get(t.target);
-    targetToCount.put(t.target, outgoing == null ? 1 : outgoing + 1);
+    Integer outgoing = targetToCount.get(t.getTarget());
+    targetToCount.put(t.getTarget(), outgoing == null ? 1 : outgoing + 1);
   }
 
   public void addCredit(Transaction t) {
     credits.add(t);
 
-    Integer incoming = sourceToCount.get(t.source);
-    sourceToCount.put(t.source, incoming == null ? 1 : incoming + 1);
+    Integer incoming = sourceToCount.get(t.getSource());
+    sourceToCount.put(t.getSource(), incoming == null ? 1 : incoming + 1);
   }
 
   public void calc() {
@@ -103,7 +102,7 @@ public class UserFeatures {
     }
     DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
     for (Transaction transaction : credits) {
-      descriptiveStatistics.addValue(transaction.amount);
+      descriptiveStatistics.addValue(transaction.getAmount());
     }
     return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
   }
@@ -114,7 +113,7 @@ public class UserFeatures {
     }
     DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
     for (Transaction transaction : debits) {
-      descriptiveStatistics.addValue(-transaction.amount);
+      descriptiveStatistics.addValue(-transaction.getAmount());
     }
     return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
   }
@@ -124,20 +123,20 @@ public class UserFeatures {
 
     if (debits.isEmpty()) return new float[0];
 
-    long first = debits.get(0).time;
-    long last = debits.get(debits.size() - 1).time;
+    long first = debits.get(0).getTime();
+    long last = debits.get(debits.size() - 1).getTime();
     long bins = (last - first) / quanta;
     float[] expDebits = new float[(int) bins + 1];
 
     for (Transaction debit : debits) {
-      long day = (debit.time - first) / quanta;
-      expDebits[(int) day] += (subtract ? -1 : +1) * debit.amount;
+      long day = (debit.getTime() - first) / quanta;
+      expDebits[(int) day] += (subtract ? -1 : +1) * debit.getAmount();
     }
 
     return expDebits;
   }
 
-  private float[] getExpanded(List<Transaction> credits, List<Transaction> debits, PERIOD period) {
+  private float[] getExpanded(Collection<Transaction> credits, Collection<Transaction> debits, PERIOD period) {
     long quanta = period.equals(PERIOD.DAY) ? DAY_IN_MILLIS : period.equals(PERIOD.HOUR) ? HOUR_IN_MILLIS : DAY_IN_MILLIS;
 
     // TODO : this is slow of course...
@@ -145,19 +144,19 @@ public class UserFeatures {
     merged.addAll(credits);
     Collections.sort(merged);
 
-    long first = merged.get(0).time;
-    long last = merged.get(merged.size() - 1).time;
+    long first = merged.get(0).getTime();
+    long last = merged.get(merged.size() - 1).getTime();
     long bins = (last - first) / quanta;
     float[] expDebits = new float[(int) bins + 1];
 
     for (Transaction debit : debits) {
-      long day = (debit.time - first) / quanta;
-      expDebits[(int) day] += -debit.amount;
+      long day = (debit.getTime() - first) / quanta;
+      expDebits[(int) day] += -debit.getAmount();
     }
 
     for (Transaction credit : credits) {
-      long day = (credit.time - first) / quanta;
-      expDebits[(int) day] += credit.amount;
+      long day = (credit.getTime() - first) / quanta;
+      expDebits[(int) day] += credit.getAmount();
     }
 
     return expDebits;
@@ -189,7 +188,7 @@ public class UserFeatures {
   }
 
   public List<Double> getCreditInterarrMeanAndStd() {
-    List<Long> creditInterarrivalTimes = getCreditInterarrivalTimes();
+    Collection<Long> creditInterarrivalTimes = getCreditInterarrivalTimes();
     if (creditInterarrivalTimes.isEmpty()) return EMPTY_DOUBLES;
 
     DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
@@ -200,7 +199,7 @@ public class UserFeatures {
   }
 
   public List<Double> getDebitInterarrMeanAndStd() {
-    List<Long> debitInterarrivalTimes = getDebitInterarrivalTimes();
+    Collection<Long> debitInterarrivalTimes = getDebitInterarrivalTimes();
     if (debitInterarrivalTimes.isEmpty()) return EMPTY_DOUBLES;
 
     DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
@@ -221,7 +220,7 @@ public class UserFeatures {
   private List<Long> getInterarrivalTimes(List<Transaction> times) {
     List<Long> diffs = new ArrayList<>();
     for (int i = 0; i < times.size() - 1; i += 1) {
-      long diff = times.get(i + 1).time - times.get(i).time;
+      long diff = times.get(i + 1).getTime() - times.get(i).getTime();
       if (period == PERIOD.DAY) {
         diff /= DAY_IN_MILLIS;
       } else if (period == PERIOD.HOUR) {
