@@ -562,20 +562,10 @@ public class Graph {
   public int getNumNodes() {
     return nodeIds.size();
   }
-/*
-
-  protected void setNumNodes(int numNodes) {
-    this.numNodes = numNodes;
-  }
-*/
 
   public int getNumEdges() {
     return edges.size();
   }
-
-//  protected void setNumEdges(int numEdges) {
-//    this.numEdges = numEdges;
-//  }
 
   public Set<Edge> getEdges() {
     return edges;
@@ -611,7 +601,7 @@ public class Graph {
     return node2Type.get(src);
   }
 
-  public void makeTypeIDs(Collection<Integer> types) {
+/*  public void makeTypeIDs(Collection<Integer> types) {
     logger.info("makeTypeIDs " + types);
     oneHop = new String[types.size()];
     twoHop = new String[types.size()][types.size()];
@@ -633,7 +623,7 @@ public class Graph {
 
     logger.info("makeTypeIDs one " + Arrays.asList(oneHop));
     logger.info("makeTypeIDs two hop " + Arrays.asList(twoHop));
-  }
+  }*/
 
   private static String[] oneHop;
   private static String[][] twoHop;

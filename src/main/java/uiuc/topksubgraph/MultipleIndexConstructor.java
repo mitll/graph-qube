@@ -26,7 +26,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 
@@ -181,31 +180,31 @@ public class MultipleIndexConstructor {
     BitcoinFeaturesBase.logMemory();
   }
 
+  /**
+   * @param graph
+   * @param nodeInfos
+   * @see #computeIndicesFast(Graph)
+   */
   private static void makeNodeInfos(Graph graph, Map<Integer, NodeInfo> nodeInfos) {
+    long then = System.currentTimeMillis();
     for (Integer rawID : graph.getRawIDs()) {
-      NodeInfo nodeInfo = getNodeInfo(graph, rawID);
-      nodeInfos.put(rawID, nodeInfo);
+      nodeInfos.put(rawID, getNodeInfo(graph, rawID));
     }
+    long now = System.currentTimeMillis();
+    logger.debug("makeNodeInfos took " + (now - then) + " millis");
   }
 
-
-  private static void makeNodeInfos2(Graph graph, Map<Integer, NodeInfo> nodeInfos) {
-
-//    ConcurrentMap<Integer, NodeInfo> byGender =
-//        graph.getRawIDs()
-//            .parallelStream()
-//            .collect(
-//                Collectors.groupingByConcurrent(Person::getGender));
-
+  private static void makeNodeInfosParallel(Graph graph, Map<Integer, NodeInfo> nodeInfos) {
     Collection<Integer> rawIDs = graph.getRawIDs();
 
-    //    ConcurrentMap<Integer, NodeInfo> byGender = rawIDs.parallelStream()
-    //        .collect(Collectors.groupingByConcurrent(getNodeInfo(graph)))
-    //Stream.of(rawIDs).parallel().forEach(rawID -> getNodeInfo(graph, rawID)).collect(Collectors.toConcurrentMap());
+    List<NodeInfo> nodeInfoList =
+        rawIDs.stream()
+            .parallel()
+            .map(id -> getNodeInfo(graph, id))
+            .collect(Collectors.toCollection(ArrayList::new));
 
-    for (Integer rawID : rawIDs) {
-      NodeInfo nodeInfo = getNodeInfo(graph, rawID);
-      nodeInfos.put(rawID, nodeInfo);
+    for (NodeInfo nodeInfo : nodeInfoList) {
+      nodeInfos.put(nodeInfo.getNodeID(), nodeInfo);
     }
   }
 
@@ -232,14 +231,12 @@ public class MultipleIndexConstructor {
 
   private static Collection<Edge> getUniqueEdges(Graph graph, int i) {
     Collection<Edge> nbrs = graph.getNeighbors(i);
-    // Set<Integer> seen = new HashSet<>();
 
     Map<Integer, Edge> srcToEdge = new HashMap<>();
     Map<Integer, Float> srcToWeight = new HashMap<>();
 
     for (Edge edge : nbrs) {
       int src = edge.getSrc();
-      //int srcNode = graph.getRawID(src);
       Float edgeWeight = srcToWeight.get(src);
       float fWeight = edge.getFWeight();
       if (edgeWeight == null || edgeWeight < fWeight) {
@@ -261,89 +258,16 @@ public class MultipleIndexConstructor {
    * @see #computeIndicesFast(Graph)
    */
   private static long doD2(Graph graph, BufferedWriter outTopology, BufferedWriter outSPD,
-                           // List<NodeInfo> nodeInfos
                            Map<Integer, NodeInfo> nodeInfos
   ) throws IOException {
     long then2 = System.currentTimeMillis();
-    // for (int i = 0; i < graph.getNumNodes(); i++) {
-    // int rawID = graph.getRawID(i);
 
     int count = 0;
     for (Integer rawID : graph.getRawIDs()) {
-      int i1 = node2Type.get(rawID) - 1;
-      String theNodeType = oneHop[i1];
+      logD2(graph, then2, count);
+      count++;
 
-      if (count++ % NOTICE_MOD == 0) {
-        //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
-        long now = System.currentTimeMillis();
-        long diff = (now - then2) / 1000;
-        long l = diff == 0 ? count : count / diff;
-
-        logger.debug("doD2 : Nodes processed: " + count + " out of " + graph.getNumNodes() + " rate " + l + " nodes/sec");
-        BitcoinFeaturesBase.logMemory();
-      }
-
-      NodeInfo d2 = new NodeInfo(rawID);
-
-      Collection<Edge> values = getUniqueEdges(graph, rawID);
-      Map<String, Set<Integer>> typeToNeighbors = new HashMap<>();
-
-      for (Edge edge : values) {
-        int src = edge.getSrc();
-//        int srcNode = graph.getRawID(src);
-//        String neighborType = oneHop[node2Type.get(srcNode) - 1];
-        String neighborType = oneHop[node2Type.get(src) - 1];
-
-        NodeInfo nodeInfo = nodeInfos.get(src);
-
-        if (DEBUG) logger.info("\tfor " + count + "/" + src +
-            " neighbor " + edge + "/" + neighborType +
-            " and " + nodeInfo);
-
-        float weight = edge.getFWeight();
-        for (Map.Entry<String, TypeInfo> pair : nodeInfo.getTypeToInfo().entrySet()) {
-          String nType = pair.getKey();
-          TypeInfo typeInfo = pair.getValue();
-          Set<Integer> neighborNeighbors = typeInfo.getNodes();
-          if (DEBUG) logger.info("\tfor " + count + "/" + src + " type " + nType +
-              " neighborNeighbors " + neighborNeighbors);
-
-          String d2Type = neighborType + nType;
-          Set<Integer> seenForType = typeToNeighbors.get(d2Type);
-
-          if (seenForType == null) {
-            typeToNeighbors.put(d2Type, seenForType = new HashSet<Integer>());
-          }
-
-          for (Integer candidate : neighborNeighbors) {
-            // if (candidate != i) {
-            if (!candidate.equals(rawID)) {
-              seenForType.add(candidate); // TODO : hotspot
-            }
-          }
-
-          boolean sameType = nType.equals(theNodeType);
-
-          float neighborWeight = typeInfo.getMaxWeight();
-          boolean matchingWeight = neighborWeight == weight;
-          float weightOfNeighbor = sameType && matchingWeight ? typeInfo.getPrevMax() : neighborWeight;
-          // String d2Type = nType +neighborType;
-          //String d2Type = nType + neighborType;
-
-          int typeCountOfNeighbor = /*(seenForType.contains(i)) ? seenForType.size() - 1 : */seenForType.size();
-
-          if (DEBUG) logger.info("\t\tfor " + src + " type " + nType + " d2 type " + d2Type +
-              " and " + typeInfo +
-              " match " + matchingWeight + " weight " + weightOfNeighbor + " count " + typeCountOfNeighbor +
-              " seen " + seenForType);
-
-          d2.incrMax(d2Type, typeCountOfNeighbor, weightOfNeighbor + weight);
-
-          if (DEBUG) logger.info("\t\td2 " + d2);
-        }
-//        }
-      }
-
+      NodeInfo d2 = getD2NodeInfo(graph, nodeInfos, rawID);
 
       outTopology.write(rawID + "\t");
 
@@ -364,6 +288,77 @@ public class MultipleIndexConstructor {
     return now;
   }
 
+  private static NodeInfo getD2NodeInfo(Graph graph, Map<Integer, NodeInfo> nodeInfos, Integer rawID) {
+    NodeInfo d2 = new NodeInfo(rawID);
+
+    String theNodeType = oneHop[node2Type.get(rawID) - 1];
+    Map<String, Set<Integer>> typeToNeighbors = new HashMap<>();
+
+    for (Edge edge : getUniqueEdges(graph, rawID)) {
+      int src = edge.getSrc();
+      String neighborType = oneHop[node2Type.get(src) - 1];
+
+      NodeInfo nodeInfo = nodeInfos.get(src);
+
+//        if (DEBUG) logger.info("\tfor " + count + "/" + src + " neighbor " + edge + "/" + neighborType +
+//            " and " + nodeInfo);
+
+      float weight = edge.getFWeight();
+      for (Map.Entry<String, TypeInfo> pair : nodeInfo.getTypeToInfo().entrySet()) {
+        String nType = pair.getKey();
+        TypeInfo typeInfo = pair.getValue();
+        Set<Integer> neighborNeighbors = typeInfo.getNodes();
+//          if (DEBUG) logger.info("\tfor " + count + "/" + src + " type " + nType +
+//              " neighborNeighbors " + neighborNeighbors);
+
+        String d2Type = neighborType + nType;
+        Set<Integer> seenForType = typeToNeighbors.get(d2Type);
+
+        if (seenForType == null) {
+          typeToNeighbors.put(d2Type, seenForType = new HashSet<>());
+        }
+
+        for (Integer candidate : neighborNeighbors) {
+          if (!candidate.equals(rawID)) {
+            seenForType.add(candidate); // TODO : hotspot
+          }
+        }
+
+        boolean sameType = nType.equals(theNodeType);
+
+        float neighborWeight = typeInfo.getMaxWeight();
+        boolean matchingWeight = neighborWeight == weight;
+        float weightOfNeighbor = sameType && matchingWeight ? typeInfo.getPrevMax() : neighborWeight;
+
+        int typeCountOfNeighbor = /*(seenForType.contains(i)) ? seenForType.size() - 1 : */seenForType.size();
+
+        if (DEBUG) logger.info("\t\tfor " + src + " type " + nType + " d2 type " + d2Type +
+            " and " + typeInfo +
+            " match " + matchingWeight + " weight " + weightOfNeighbor + " count " + typeCountOfNeighbor +
+            " seen " + seenForType);
+
+        d2.incrMax(d2Type, typeCountOfNeighbor, weightOfNeighbor + weight);
+
+        if (DEBUG) logger.info("\t\td2 " + d2);
+      }
+    }
+    return d2;
+  }
+
+  private static void logD2(Graph graph, long then2, int count) {
+    if (count % NOTICE_MOD == 0) {
+      //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
+      long now = System.currentTimeMillis();
+      long diff = (now - then2) / 1000;
+      long l = diff == 0 ? count : count / diff;
+
+      float percent = 100f * (float) count / (float) graph.getNumNodes();
+      int ip = Math.round(percent);
+      logger.debug("doD2 : Nodes processed: " + count + " out of " + graph.getNumNodes() + " (" + ip + "%) rate " + l + " nodes/sec");
+      BitcoinFeaturesBase.logMemory();
+    }
+    //return count;
+  }
 
   /**
    * @param src internal id?
@@ -779,7 +774,6 @@ public class MultipleIndexConstructor {
    * @see TopKTest#getGraphBeforeComputeIndices
    */
   public static void saveSortedEdgeList(String outDir) throws IOException {
-
     logger.info("out dir " + outDir);
     //Make outDir if neccessary
     File directory = new File(outDir);
@@ -963,9 +957,9 @@ public class MultipleIndexConstructor {
   }*/
 
   /**
-   * @see TopKTest#beforeComputeIndicesMod
    * @param node2TypeToUse
    * @return
+   * @see TopKTest#beforeComputeIndicesMod
    */
   public static Collection<Integer> loadTypes(Map<Integer, Integer> node2TypeToUse) {
     node2Type = node2TypeToUse;
@@ -1038,8 +1032,8 @@ public class MultipleIndexConstructor {
   }
 
   /**
-   * @see #loadTypesFromDatabase(DBConnection, String, String, String)
    * @param types
+   * @see #loadTypesFromDatabase(DBConnection, String, String, String)
    */
   public static void makeTypeIDs(Collection<Integer> types) {
 //    logger.info("makeTypeIDs " + types);
