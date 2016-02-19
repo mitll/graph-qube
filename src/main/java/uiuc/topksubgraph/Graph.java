@@ -1,13 +1,7 @@
 package uiuc.topksubgraph;
 
-import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
-import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.sql.*;
 import java.util.*;
 
 /**
@@ -19,12 +13,12 @@ import java.util.*;
 public class Graph {
   private static final Logger logger = Logger.getLogger(Graph.class);
 
-  private Set<Edge> edges;
-  private Map<Integer, List<Edge>> inLinks;
-  private final Map<Integer, Map<Integer, Edge>> inLinks2;
+  protected Set<Edge> edges = new HashSet<>();
+  protected Map<Integer, List<Edge>> inLinks = new HashMap<>();
+  protected final Map<Integer, Map<Integer, Edge>> inLinks2 = new HashMap<>();
   boolean populateInLinks2 = false;
 
-  private Map<Integer, Integer> node2Type = new HashMap<>();
+  private final Map<Integer, Integer> node2Type = new HashMap<>();
 
   /**
    * Maps the node to an internal node id.
@@ -37,23 +31,25 @@ public class Graph {
    * TODO: this is dumb - this is just an integer array!!!
    */
 //  private final Map<Integer, Integer> nodeId2NodeMap = new HashMap<>();
-  private final Set<Integer> nodeIds = new HashSet<>();
+  protected final Set<Integer> nodeIds = new HashSet<>();
 
   /**
    * Constructor
    */
+/*
   public Graph() {
     setEdges(new HashSet<>());
     setInLinks(new HashMap<>());
     inLinks2 = new HashMap<>();
   }
+*/
 
-  public Graph(Map<Long, Integer> edgeToWeight,boolean populateInLinks2) {
+/*  public Graph(Map<Long, Integer> edgeToWeight,boolean populateInLinks2) {
     this();
     this.populateInLinks2 = populateInLinks2;
     simpleIds2(edgeToWeight);
     loadGraphFromMemory(edgeToWeight);
-  }
+  }*/
 
 /*  public Integer getInternalID(int rawID) {
     if (node2NodeIdMap == null) {
@@ -69,8 +65,8 @@ public class Graph {
    * <p>
    * Only when translating back into the outside world after we have results do we go back and translate IDs.
    *
-   * @param internalID
    * @return
+   * @paramx internalID
    */
 /*  public Integer getRawID(int internalID) {
     Integer integer = nodeId2NodeMap.get(internalID);
@@ -86,7 +82,7 @@ public class Graph {
    * @param node1
    * @param node2
    * @return
-   * @see #createRandomGraph(boolean)
+   * @see QueryExecutor#getQueryEdges(List, Graph)
    */
   protected Edge getEdge(int node1, int node2) {
     if (inLinks.containsKey(node2)) {
@@ -99,7 +95,16 @@ public class Graph {
     return null;
   }
 
+  public boolean areConnected(int node1, int node2) {
+    boolean b = getEdge(node1, node2) != null;
+    if (!b && getEdge(node2, node1) != null)
+      logger.error("huh? thought graph was undirected " + getEdge(node1, node2) +
+          " but " + getEdge(node2, node1));
+    return b;
+  }
+
   /**
+   * ONLY WORKS if populateInLinks2 is true
    * @param node1
    * @param node2
    * @return
@@ -114,40 +119,7 @@ public class Graph {
     }
   }
 
-  /**
-   * Adds edge to graph considering direction from a to b
-   *
-   * @param a
-   * @param b
-   * @param weight
-   */
-  protected void addEdge(int a, int b, double weight) {
-    Edge e = new Edge(a, b, weight);
-    if (!edges.contains(e)) {
-      edges.add(e);
-//       logger.info("addEdge adding " + e);
-      List<Edge> al = inLinks.get(b);
-
-      if (inLinks.get(b) == null) {
-        al = new ArrayList<>();
-        inLinks.put(b, al);
-      }
-
-      al.add(e);
-
-      if (populateInLinks2) {
-        Map<Integer, Edge> integerEdgeMap = inLinks2.get(b);
-        if (integerEdgeMap == null) {
-          integerEdgeMap = new HashMap<>();
-          inLinks2.put(b, integerEdgeMap);
-        }
-
-        integerEdgeMap.put(a, e);
-      }
-    }
-  }
-
-  private NodeInfo getNodeInfo(Integer rawID) {
+  /*  private NodeInfo getNodeInfo(Integer rawID) {
     NodeInfo nodeInfo = new NodeInfo(rawID);
     Collection<Edge> values = getUniqueEdges(rawID);
 
@@ -165,9 +137,9 @@ public class Graph {
 //      }
     }
     return nodeInfo;
-  }
+  }*/
 
-  public Collection<Edge> getUniqueEdges(int i) {
+/*  public Collection<Edge> getUniqueEdges(int i) {
     Collection<Edge> nbrs = getNeighbors(i);
     // Set<Integer> seen = new HashSet<>();
 
@@ -186,76 +158,9 @@ public class Graph {
     }
 
     return srcToEdge.values();
-  }
+  }*/
 
-  /**
-   * Loads the graph from an h2 database
-   *
-   * @param dbConnection
-   * @throws Throwable
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection)
-   * @deprecated
-   */
-  public void loadGraph(DBConnection dbConnection, String tableName, String edgeName) throws SQLException {
-    loadGraph(dbConnection.getConnection(), tableName, edgeName);
-  }
-
-  /**
-   * Loads the graph from an h2 database
-   *
-   * @throws SQLException
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndicesFromMemory(String, DBConnection, Map)
-   */
-  public void loadGraphFromMemory(Map<Long, Integer> edgeToWeight) {
-//    int nodeCount = 0;//node2NodeIdMap.size();
-//    setNumNodes(0);
-//    setNumEdges(0);
-
-    logger.info("loadGraphFromMemory map " + 0 + " vs " + edgeToWeight.size());
-
-    int c = 0;
-    for (Map.Entry<Long, Integer> edgeAndCount : edgeToWeight.entrySet()) {
-      Long key = edgeAndCount.getKey();
-
-      int from = BitcoinFeaturesBase.getLow(key);
-      int to = BitcoinFeaturesBase.getHigh(key);
-      int weight = edgeAndCount.getValue();
-
-      // if (c < 20)
-      // logger.info("loadGraphFromMemory " + from + " -> " + to + " = " + weight);
-
-      c++;
-      if (c % 1000000 == 0) {
-        logger.debug("loadGraphFromMemory read  " + c);
-        BitcoinFeaturesBase.rlogMemory();
-      }
-/*
-      if (node2NodeIdMap.containsKey(from))
-        from = node2NodeIdMap.get(from);
-      else {
-        node2NodeIdMap.put(from, nodeCount);
-        nodeId2NodeMap.put(nodeCount, from);
-        from = nodeCount;
-        nodeCount++;
-      }
-
-      if (node2NodeIdMap.containsKey(to))
-        to = node2NodeIdMap.get(to);
-      else {
-        node2NodeIdMap.put(to, nodeCount);
-        nodeId2NodeMap.put(nodeCount, to);
-        to = nodeCount;
-        nodeCount++;
-      }*/
-
-      addNodeAndEdge(from, to, weight);
-    }
-
-//    setNumNodes(nodeIds.size());
-//    setNumEdges(c);
-  }
-
-/*  private void simpleIds(Map<Long, Integer> edgeToWeight) {
+  /*  private void simpleIds(Map<Long, Integer> edgeToWeight) {
     for (Long key : edgeToWeight.keySet()) {
       int from = BitcoinFeaturesBase.getLow(key);
       int to = BitcoinFeaturesBase.getHigh(key);
@@ -268,294 +173,9 @@ public class Graph {
     }
   }*/
 
-  public void simpleIds2(Map<Long, Integer> edgeToWeight) {
-    //Map<Integer,Integer> extToInternal = new HashMap<>();
-    int count = 0;
-    for (Long key : edgeToWeight.keySet()) {
-      int from = BitcoinFeaturesBase.getLow(key);
-      int to = BitcoinFeaturesBase.getHigh(key);
-
-/*      Integer finternal = node2NodeIdMap.get(from);
-      if (finternal == null) {
-        finternal = count++;
-        node2NodeIdMap.put(from, finternal);
-        nodeId2NodeMap.put(finternal, from);
-      }
-
-      Integer tinternal = node2NodeIdMap.get(to);
-      if (tinternal == null) {
-        tinternal = count++;
-        node2NodeIdMap.put(to, tinternal);
-        nodeId2NodeMap.put(tinternal, to);
-      }*/
-
-      nodeIds.add(from);
-      nodeIds.add(to);
-
-    }
-  }
-
-  /**
-   * Loads the graph from an h2 database
-   *
-   * @param connection
-   * @param tableName
-   * @throws SQLException
-   * @see Graph#loadGraph(DBConnection, String, String)
-   */
-  public void loadGraphAgain(Connection connection, String tableName) throws SQLException {
-    // int nodeCount = node2NodeIdMap.size();
-//    setNumNodes(0);
-//    setNumEdges(0);
-
-		/*
-     * Do database query
-		 */
-    String sqlQuery = "select * from " + tableName;
-
-    logger.info("loadGraphAgain doing " + sqlQuery);
-    PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
-    ResultSet rs = queryStatement.executeQuery();
-
-		/*
-     * Loop through database table rows...
-		 */
-    int c = 0;
-    while (rs.next()) {
-      c++;
-      if (c % 100000 == 0) logger.debug("read  " + c);
-
-      int i = 1;
-      int from = rs.getInt(i++);
-      int to = rs.getInt(i++);
-      int weight = rs.getInt(i++);
-
-/*      if (node2NodeIdMap.containsKey(from))
-        from = node2NodeIdMap.get(from);
-      else {
-        node2NodeIdMap.put(from, nodeCount);
-        nodeId2NodeMap.put(nodeCount, from);
-        from = nodeCount;
-        nodeCount++;
-      }
-      if (node2NodeIdMap.containsKey(to))
-        to = node2NodeIdMap.get(to);
-      else {
-        node2NodeIdMap.put(to, nodeCount);
-        nodeId2NodeMap.put(nodeCount, to);
-        to = nodeCount;
-        nodeCount++;
-      }*/
-
-      addNodeAndEdge(from, to, weight);
-    }
-
-    rs.close();
-    queryStatement.close();
-
-//    setNumNodes(nodeIds.size());
-//    setNumEdges(c);
-
-    logger.info("read " + c + " found " + getNumNodes() + " nodes and " + getNumEdges() + " edges");
-  }
-
-  /**
-   * Loads the graph from an h2 database
-   *
-   * @param connection
-   * @param tableName
-   * @param edgeName
-   * @throws SQLException
-   * @see Graph#loadGraph(DBConnection, String, String)
-   */
-  private void loadGraph(Connection connection, String tableName, String edgeName) throws SQLException {
-    // int nodeCount = node2NodeIdMap.size();
-//    setNumNodes(0);
-//    setNumEdges(0);
-
-		/*
-		 * Do database query
-		 */
-    //Connection connection = dbConnection.getConnection();
-
-    String sqlQuery = "select * from " + tableName + ";";
-
-    PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
-    ResultSet rs = queryStatement.executeQuery();
-		
-		/*
-		 * Loop through database table rows...
-		 */
-    int c = 0;
-    while (rs.next()) {
-      c++;
-      if (c % 100000 == 0) logger.debug("read  " + c);
-
-      Array array = rs.getArray("sorted_pair");
-      Object rsArray = array.getArray();
-      Object[] sortedPair = (Object[]) rsArray;
-
-      double weight = rs.getDouble(edgeName);
-
-//			double tot_out = rs.getDouble("tot_out");
-//			double tot_in = rs.getDouble("tot_in");
-//			double tot_usd = rs.getDouble("tot_usd");
-//			double num_trans = rs.getDouble("num_trans");
-//			weight = tot_usd/num_trans;
-//			weight = 1;
-
-      int from = (Integer) sortedPair[0];
-      int to = (Integer) sortedPair[1];
-//			long from = (Long)sortedPair[0];
-//			long to = (Long)sortedPair[1];
-
-      //logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
-
-/*      if (node2NodeIdMap.containsKey(from))
-        from = node2NodeIdMap.get(from);
-      else {
-        node2NodeIdMap.put(from, nodeCount);
-        nodeId2NodeMap.put(nodeCount, from);
-        from = nodeCount;
-        nodeCount++;
-      }
-      if (node2NodeIdMap.containsKey(to))
-        to = node2NodeIdMap.get(to);
-      else {
-        node2NodeIdMap.put(to, nodeCount);
-        nodeId2NodeMap.put(nodeCount, to);
-        to = nodeCount;
-        nodeCount++;
-      }*/
-
-//			if (tot_out == 0.0) {this.addEdge(to,from,weight);}
-//			if (tot_in == 0.0) {this.addEdge(from,to,weight);}
-//			
-//			if (tot_out != 0.0 && tot_in != 0.0) {
-//				this.addEdge(from, to, weight);
-//				this.addEdge(to, from, weight);
-//			}
-
-      addNodeAndEdge(from, to, weight);
-    }
-
-    rs.close();
-    queryStatement.close();
-
-//    setNumNodes(nodeIds.size());
-//    setNumEdges(c);
-  }
-
-  private void addNodeAndEdge(int from, int to, double weight) {
-    nodeIds.add(from);
-    nodeIds.add(to);
-    this.addEdge(from, to, weight);
-    this.addEdge(to, from, weight);
-  }
-
-  /**
-   * Loads the graph from a HashSet of edges
-   *
-   * @param edges
-   */
-  public void loadGraph(Collection<Edge> edges) {
-//    int nodeCount = node2NodeIdMap.size();
-//    setNumNodes(0);
-//    setNumEdges(0);
-		
-		/*
-		 * Loop through edges...
-		 */
-    int c = 0;
-    for (Edge edg : edges) {
-      c++;
-      if (c % 100000 == 0) logger.debug("read  " + c);
-
-      //get edge information
-      int from = edg.getSrc();
-      int to = edg.getDst();
-      double weight = edg.getWeight();
-
-      //logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
-
-/*      if (node2NodeIdMap.containsKey(from))
-        from = node2NodeIdMap.get(from);
-      else {
-        node2NodeIdMap.put(from, nodeCount);
-        nodeId2NodeMap.put(nodeCount, from);
-        from = nodeCount;
-        nodeCount++;
-      }
-      if (node2NodeIdMap.containsKey(to))
-        to = node2NodeIdMap.get(to);
-      else {
-        node2NodeIdMap.put(to, nodeCount);
-        nodeId2NodeMap.put(nodeCount, to);
-        to = nodeCount;
-        nodeCount++;
-      }*/
-
-      addNodeAndEdge(from, to, weight);
-    }
-
-//    setNumNodes(nodeCount);
-//    setNumEdges(c);
-
-    report();
-  }
-
-  private void report() {
+  protected void report() {
     logger.info("numNodes: " + getNumNodes());
     logger.info("numEdges: " + getNumEdges());
-  }
-
-  /**
-   * Loads the graph from a file
-   *
-   * @param f
-   * @throws Throwable
-   */
-  public void loadGraph(File f) throws Throwable {
-    BufferedReader in = new BufferedReader(new FileReader(f));
-    String str = "";
-//    int nodeCount = node2NodeIdMap.size();
-    while ((str = in.readLine()) != null) {
-      if (str.startsWith("#")) {
-        if (str.contains("#Nodes")) {
-//          setNumNodes(Integer.parseInt(str.split("\\s+")[1].trim()));
-//          setNumEdges(Integer.parseInt(in.readLine().split("\\s+")[1].trim()));
-        }
-        //System.err.println(str);
-        continue;
-      }
-      String tokens[] = str.split("#|\\t");
-      int from = Integer.parseInt(tokens[0]);
-      int to = Integer.parseInt(tokens[1]);
-/*      if (node2NodeIdMap.containsKey(from))
-        from = node2NodeIdMap.get(from);
-      else {
-        node2NodeIdMap.put(from, nodeCount);
-        nodeId2NodeMap.put(nodeCount, from);
-        from = nodeCount;
-        nodeCount++;
-      }
-      if (node2NodeIdMap.containsKey(to))
-        to = node2NodeIdMap.get(to);
-      else {
-        node2NodeIdMap.put(to, nodeCount);
-        nodeId2NodeMap.put(nodeCount, to);
-        to = nodeCount;
-        nodeCount++;
-      }*/
-      if (tokens.length > 2) {
-        this.addEdge(from, to, Double.parseDouble(tokens[2]));
-        this.addEdge(to, from, Double.parseDouble(tokens[2]));
-      } else {
-        this.addEdge(from, to, 1);
-        this.addEdge(to, from, 1);
-      }
-    }
-    in.close();
   }
 
 
@@ -571,7 +191,7 @@ public class Graph {
     return edges;
   }
 
-  protected void setEdges(Set<Edge> edges) {
+  private void setEdges(Set<Edge> edges) {
     this.edges = edges;
   }
 
@@ -583,7 +203,7 @@ public class Graph {
     return inLinks.keySet();
   }
 
-  protected void setInLinks(Map<Integer, List<Edge>> inLinks) {
+  private void setInLinks(Map<Integer, List<Edge>> inLinks) {
     this.inLinks = inLinks;
   }
 

@@ -23,6 +23,7 @@ import mitll.xdata.db.H2Connection;
 import org.apache.log4j.Logger;
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
+import uiuc.topksubgraph.MutableGraph;
 import uiuc.topksubgraph.QueryExecutor;
 
 import java.io.File;
@@ -332,8 +333,7 @@ public class BitcoinIngestSubGraph {
                                                DBConnection dbConnection,
                                                Map<Long, Integer> edgeToWeight) throws Throwable {
     // Load graph into topk-subgraph Graph object
-    Graph g = new Graph();
-    g.loadGraphFromMemory(edgeToWeight);
+    Graph g = new MutableGraph(edgeToWeight);
     computeIndices(bitcoinDirectory, dbConnection, g);
   }
 
@@ -351,8 +351,7 @@ public class BitcoinIngestSubGraph {
   private static void computeIndices(String bitcoinDirectory,
                                      DBConnection dbConnection) throws Throwable {
     // Load graph into topk-subgraph Graph object
-    Graph g = new Graph();
-    g.loadGraph(dbConnection, MARGINAL_GRAPH, NUM_TRANS);
+    Graph g = new MutableGraph(dbConnection, MARGINAL_GRAPH, NUM_TRANS);
     computeIndices(bitcoinDirectory, dbConnection, g);
   }
 

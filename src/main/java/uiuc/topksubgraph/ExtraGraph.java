@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Created by go22670 on 1/11/16.
  */
-public class ExtraGraph extends Graph {
+public class ExtraGraph extends MutableGraph {
   @SuppressWarnings("unchecked")
 
   /**
@@ -60,7 +60,7 @@ public class ExtraGraph extends Graph {
     String randomFile = args[1];
     String graphFile = args[2];
     g.saveGraph(new File(args[0] + File.separator + randomFile));
-    g.loadGraph(new File(args[0] + File.separator + graphFile));
+    //g.loadGraph(new File(args[0] + File.separator + graphFile));
   }
 
 /*  public void findConnectedComponents(String baseDir, String graphFile) throws Throwable {
@@ -88,11 +88,11 @@ public class ExtraGraph extends Graph {
   /**
    * http://www.sciencedirect.com/science/article/pii/S0022000097915348
    *
-   * @param maxNeeded
-   * @param g
+   * @paramx maxNeeded
+   * @paramx g
    * @throws Throwable
    */
-  public void generateCohenLists(String baseDir, String graphFile, String cohenEstimatesFile) throws Throwable {
+  public void generateCohenLists(String baseDir, /*String graphFile,*/ String cohenEstimatesFile) throws Throwable {
     double matrix[][];
     int maxNeeded = 10;
     int maxDist = 100;
@@ -108,7 +108,7 @@ public class ExtraGraph extends Graph {
     }
     double graphDiameter = 0;
     HashMap<Integer, Integer> rankMap = new HashMap<>();
-    loadGraph(new File(baseDir + File.separator + graphFile));
+   // loadGraph(new File(baseDir + File.separator + graphFile));
     System.out.println("Generating lists");
     matrix = new double[getNumNodes()][maxDist];
     for (int k = 0; k < cohenK; k++) {
@@ -219,7 +219,7 @@ public class ExtraGraph extends Graph {
    * using Dijkstra's algorithm
    *
    * @param node
-   * @param graph
+   * @paramx graph
    * @return
    */
   private double[] computeMinDistances(int node) {

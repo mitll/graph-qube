@@ -73,27 +73,3 @@ public class Edge {
 //    this.weight = weight;
 //  }
 }
-
-/**
- * @see MultipleIndexConstructor#populateSortedEdgeLists(Graph)
- */
-class EdgeComparator implements Comparator<Edge> {
-  @Override
-  public int compare(Edge e1, Edge e2) {
-    double e1wt = e1.getWeight();
-    double e2wt = e2.getWeight();
-    int comp = 0;
-    if (e1wt > e2wt)
-      comp = -1;
-    else if (e1wt < e2wt)
-      comp = 1;
-
-    if (comp == 0) {
-      comp = Integer.valueOf(e1.getSrc()).compareTo(e1.getSrc());
-    }
-    if (comp == 0) {
-      comp = Integer.valueOf(e1.getDst()).compareTo(e1.getDst());
-    }
-    return comp;
-  }
-}

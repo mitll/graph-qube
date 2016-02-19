@@ -54,7 +54,7 @@ public class QueryExecutor {
 
   private final List<Integer> types;
   private final Map<Integer, Set<Integer>> graphType2IDSet;
-  private int totalNodes;
+  //private int totalNodes;
   private int totalOrderingSize;
   private final Map<Integer, List<String>> ordering;
   private final Map<String, Integer> orderingType2Index;
@@ -66,7 +66,7 @@ public class QueryExecutor {
   private final Map<String, Map<Integer, List<Integer>>> node2EdgeListPointers;
 
   //  private double[][] spd;
-  Map<Integer, List<Float>> spd;
+  private Map<Integer, List<Float>> spd;
   private Graph query;
   //  private HashMap<Integer, Integer> queryNodeID2Type;
   private Map<Integer, Integer> queryNode2Type;
@@ -136,7 +136,7 @@ public class QueryExecutor {
 
     types = new ArrayList<>();
     graphType2IDSet = new HashMap<>();
-    totalNodes = 0;
+    //totalNodes = 0;
     totalOrderingSize = 0;
     ordering = new HashMap<>();
     orderingType2Index = new HashMap<>();
@@ -151,7 +151,7 @@ public class QueryExecutor {
     //query initialized by loadQuery()
     //  queryNodeID2Type = new HashMap<>();
 
-    queryNode2Type = new HashMap<Integer, Integer>();
+    queryNode2Type = new HashMap<>();
 
     //querySign initalized by getQuerySignatures()
 
@@ -291,15 +291,14 @@ public class QueryExecutor {
     /**
      * NS Containment Check and Candidate Generation
      */
-    long time1 = new Date().getTime();
+    long time1 = System.currentTimeMillis();
 
     int prunedCandidateFiltering = generateCandidates();
     //if (prunedCandidateFiltering < 0) {
     //	return;
     //}
 
-    long timeA = new Date().getTime();
-    logger.info("Candidate Generation Time: " + (timeA - time1));
+    logger.info("Candidate Generation Time: " + (System.currentTimeMillis() - time1) + " millis.");
 
 
     /**
@@ -905,7 +904,7 @@ public class QueryExecutor {
    * @throws NumberFormatException
    * @see #executeQuery(boolean)
    */
-  public void computePointers(Set<String> queryEdgeTypes,
+  public void computePointers(Collection<String> queryEdgeTypes,
                               Map<String, List<String>> queryEdgeType2Edges)
       throws NumberFormatException {
     pointers = new HashMap<>();
@@ -1075,12 +1074,9 @@ public class QueryExecutor {
    */
   public boolean loadQuery() throws Throwable {
     //initialize (or re-initialize if loading new query)
-    query = new Graph();
+    query = new MutableGraph(new File(baseDir, queryFile));
     // queryNodeID2Type = new HashMap<>();
-    queryNode2Type = new HashMap<Integer, Integer>();
-
-    //read query graph
-    query.loadGraph(new File(baseDir, queryFile));
+    queryNode2Type = new HashMap<>();
 
     boolean isClique = getIsClique();
 
@@ -1145,7 +1141,7 @@ public class QueryExecutor {
    * @return true if graph is a clique
    * @see mitll.xdata.binding.TopKSubgraphShortlist#getShortlist(List, List, long)
    */
-  public boolean loadQuery(HashSet<Edge> queryEdges, Connection connection, String tableName,
+  public boolean loadQuery(Collection<Edge> queryEdges, Connection connection, String tableName,
                            String uidColumn, String typeColumn) {
     loadGraph(queryEdges);
 
@@ -1164,7 +1160,7 @@ public class QueryExecutor {
     initQuery();
 
     //read query graph
-    query.loadGraph(queryEdges);
+    query = new MutableGraph(queryEdges);
   }
 
   private boolean getIsClique() {
@@ -1207,7 +1203,7 @@ public class QueryExecutor {
   private void initQuery() {
     query = new Graph();
     //  queryNodeID2Type = new HashMap<>();
-    queryNode2Type = new HashMap<Integer, Integer>();
+    queryNode2Type = new HashMap<>();
     //querySign always gets re-initialized in getQuerySignatures()
     candidates = new HashMap<>();
     actualQueryEdges = new ArrayList<>();
@@ -1283,14 +1279,14 @@ public class QueryExecutor {
    */
   public void loadSPDIndex() throws Throwable {
     //  spd = new double[totalNodes][totalOrderingSize];
-    spd = new HashMap<Integer, List<Float>>();
+    spd = new HashMap<>();
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, spdFile)));
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\s+");
       int node = Integer.parseInt(tokens[0]);
 
-      List<Float> maxWeightForTypeCombo = new ArrayList<Float>();
+      List<Float> maxWeightForTypeCombo = new ArrayList<>();
       spd.put(node, maxWeightForTypeCombo);
 
       String toks[] = tokens[1].split(";");
@@ -1454,7 +1450,7 @@ public class QueryExecutor {
 
     logger.info("loadGraphNodesType graphType2IDSet " + graphType2IDSet.size());// + " : " + graphType2IDSet.size());
 
-    totalNodes = node2Type.size();
+    //totalNodes = node2Type.size();
     //fix the ordering
     //generate the map from type string to index.
     totalOrderingSize = 0;
@@ -1725,6 +1721,7 @@ public class QueryExecutor {
 		 */
     String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName + ";";
 
+    long then = System.currentTimeMillis();
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();
 
@@ -1735,7 +1732,7 @@ public class QueryExecutor {
     while (rs.next()) {
       c++;
       if (c % 100000 == 0) {
-        logger.debug("read  " + c);
+        logger.debug("loadTypesFromDatabase : read  " + c);
       }
 
       //Retrieve by column name
@@ -1748,7 +1745,10 @@ public class QueryExecutor {
         totalTypes = type;
     }
 
-    logger.info("loadTypesFromDatabase got " + node2Type.size() + " from " + sqlQuery);
+    long now = System.currentTimeMillis();
+
+    logger.info("loadTypesFromDatabase got " + node2Type.size() + " from " + sqlQuery + " took " + (now-then) + " millis");
+
     rs.close();
     queryStatement.close();
   }
@@ -1805,7 +1805,7 @@ public class QueryExecutor {
    * Getter for queryEdgetoIndex
    *
    * @return
-   * @see TopKSubgraphShortlist#getPatternSearchResults(HashSet, List)
+   * @see TopKSubgraphShortlist#getPatternSearchResults
    */
   public Map<String, Integer> getQueryEdgetoIndex() {
     return queryEdgetoIndex;

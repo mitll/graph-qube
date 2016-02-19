@@ -193,8 +193,7 @@ public class IngestAndQuery {
     long time1 = new Date().getTime();
 
     // Load-in graph
-    Graph g = new Graph();
-    g.loadGraph(new File(MultipleIndexConstructor.baseDir, MultipleIndexConstructor.graphFile));
+    Graph g = new MutableGraph(new File(MultipleIndexConstructor.baseDir, MultipleIndexConstructor.graphFile));
     MultipleIndexConstructor.setGraph(g);
     logger.info("Loaded graph file...");
 

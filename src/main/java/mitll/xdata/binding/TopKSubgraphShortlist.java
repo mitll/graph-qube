@@ -23,7 +23,7 @@ import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
 import uiuc.topksubgraph.Edge;
-import uiuc.topksubgraph.Graph;
+import uiuc.topksubgraph.MutableGraph;
 import uiuc.topksubgraph.QueryExecutor;
 
 import java.io.File;
@@ -81,10 +81,10 @@ public class TopKSubgraphShortlist extends Shortlist {
 
     //load graph (this may just need to be rolled up into BitcoinBinding)
     logger.info("Loading graph. This should only happen once...");
-    Graph g = new Graph();
+    MutableGraph g = null;
     try {
       //  g.loadGraph(binding.connection, "MARGINAL_GRAPH", "NUM_TRANS");
-      g.loadGraphAgain(binding.connection, MARGINAL_GRAPH);
+      g = new MutableGraph(binding.connection, MARGINAL_GRAPH);
     } catch (Exception e) {
       logger.info("Got: " + e);
     }
@@ -168,13 +168,13 @@ public class TopKSubgraphShortlist extends Shortlist {
      * Get all pairs of query nodes...
 		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
 		 */
-    HashSet<Edge> queryEdges = getQueryEdges(exemplarIDs);
+    Collection<Edge> queryEdges = getQueryEdges(exemplarIDs);
 
     for (Edge qe : queryEdges) {
-      logger.info("qe: " + qe);
+      logger.info("getShortlist qe: " + qe);
     }
     boolean isClique = executor.loadQuery(queryEdges, binding.connection, usersTable, userIdColumn, typeColumn);
-    if (isClique) logger.info("isClique: " + isClique);
+    if (isClique) logger.info("getShortlist isClique: " + isClique);
 
     //set system out to out-file...
     QueryExecutor.queryFile = "queries/queryGraph.FanOutService.txt";
@@ -188,13 +188,10 @@ public class TopKSubgraphShortlist extends Shortlist {
     } catch (FileNotFoundException e) {
       logger.info("got: " + e);
     }
-    // executeQuery(isClique);
-    executor.executeQuery(isClique);
+    if (!queryEdges.isEmpty()) executor.executeQuery(isClique);
 
-    logger.info("Original entity ordering from Influent query: " + exemplarIDs);
-    List<FL_PatternSearchResult> results = getPatternSearchResults(queryEdges, exemplarIDs);
-
-    return results;
+    logger.info("getShortlist : original entity ordering from Influent query: " + exemplarIDs);
+    return getPatternSearchResults(queryEdges, exemplarIDs);
   }
 
   /**
@@ -204,35 +201,43 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @return
    * @see #getShortlist(List, List, long)
    */
-  private HashSet<Edge> getQueryEdges(List<String> exemplarIDs) {
-    HashSet<Edge> queryEdges = new HashSet<Edge>();
-    Edge edg;
-    int e1, e2;
-    //String pair;
+  private Collection<Edge> getQueryEdges(List<String> exemplarIDs) {
+    Set<Edge> queryEdges = new HashSet<Edge>();
 
-    logger.info("ran on " + exemplarIDs);
+
+    logger.info("getQueryEdges : ran on " + exemplarIDs);
 
     if (exemplarIDs.size() > 1) {
       for (int i = 0; i < exemplarIDs.size(); i++) {
         for (int j = i + 1; j < exemplarIDs.size(); j++) {
-          String e1ID = exemplarIDs.get(i);
-          e1 = Integer.parseInt(e1ID);
-          String e2ID = exemplarIDs.get(j);
-          e2 = Integer.parseInt(e2ID);
-          if (Integer.parseInt(e1ID) <= Integer.parseInt(e2ID)) {
-            //  pair = "(" + e1 + "," + e2 + ")";
-            edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
-          } else {
-            //  pair = "(" + e2 + "," + e1 + ")";
-            edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
-          }
 
-          // if (existsPair(graphTable, pairIDColumn, pair)) {
-          if (existsPairTransactions(BitcoinBinding.TRANSACTIONS, e1ID, e2ID)) {
+          String e1ID = exemplarIDs.get(i);
+          int e1 = Integer.parseInt(e1ID);
+          String e2ID = exemplarIDs.get(j);
+          int e2 = Integer.parseInt(e2ID);
+
+          if (executor.g.areConnected(e1, e2)) {
+            Edge edg;
+            if (Integer.parseInt(e1ID) <= Integer.parseInt(e2ID)) {
+              //  pair = "(" + e1 + "," + e2 + ")";
+              edg = new Edge(e1, e2, 1.0);  //put in here something to get weight if wanted...
+            } else {
+              //  pair = "(" + e2 + "," + e1 + ")";
+              edg = new Edge(e2, e1, 1.0);  //put in here something to get weight if wanted...
+            }
+
             queryEdges.add(edg);
           } else {
-            logger.warn("no edge between " + e1ID + " and " + e2ID);
+            logger.warn("getQueryEdges: no edge between " + e1ID + " and " + e2ID);
+
           }
+          // if (existsPair(graphTable, pairIDColumn, pair)) {
+  /*        if (existsPairTransactions(BitcoinBinding.TRANSACTIONS, e1ID, e2ID)) {
+            queryEdges.add(edg);
+          } else {
+            logger.warn("getQueryEdges: no edge between " + e1ID + " and " + e2ID);
+          }*/
+
         }
       }
     }
@@ -253,7 +258,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
   }
 
-  private boolean existsPairTransactions(String tableName, String source, String target) {
+/*  private boolean existsPairTransactions(String tableName, String source, String target) {
     try {
       String sql = "select count(*) as CNT from " + tableName +
           " where " + "(" +
@@ -277,7 +282,7 @@ public class TopKSubgraphShortlist extends Shortlist {
       logger.info("got e: " + e);
       return false;
     }
-  }
+  }*/
 
   /**
    * @param tableName
@@ -378,7 +383,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @return
    * @see #getShortlist(List, List, long)
    */
-  private List<FL_PatternSearchResult> getPatternSearchResults(HashSet<Edge> queryEdges, List<String> exemplarIDs) {
+  private List<FL_PatternSearchResult> getPatternSearchResults(Collection<Edge> queryEdges, List<String> exemplarIDs) {
 
     // Heap of results from uiuc.topksubgraph
     FibonacciHeap<List<String>> heap = executor.getHeap();
@@ -395,9 +400,9 @@ public class TopKSubgraphShortlist extends Shortlist {
       queryNode2InfluentEntityInd.put(node, i);
       i++;
     }
-		
+
 		/*
-		 * Map between influent and uiuc.topksubraph index structure for query edges 
+     * Map between influent and uiuc.topksubraph index structure for query edges
 		 */
     Map<String, Integer> uiucQueryEdgetoIndex = executor.getQueryEdgetoIndex();
     Map<Integer, Integer> uiucInd2InfluentInd = new HashMap<Integer, Integer>();
@@ -412,8 +417,8 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
 
     // Compute map between influent entity ind and list of edges
-    Map<SortedSet<String>, Integer> queryEdgeList2InfluentEntityInd = computeQueryEdgeList2InfluentEntityIndMap(exemplarIDs,
-        queryNode2InfluentEntityInd, uiucQueryEdgetoIndex);
+    Map<SortedSet<String>, Integer> queryEdgeList2InfluentEntityInd =
+        computeQueryEdgeList2InfluentEntityIndMap(exemplarIDs, queryNode2InfluentEntityInd, uiucQueryEdgetoIndex);
 		
 		/*
 		 * Convert query to FL_PatternSearchResult and add to results...
@@ -525,16 +530,12 @@ public class TopKSubgraphShortlist extends Shortlist {
 				/*
 				 * Get mapping between nodes and all edges they are involved in (for node correspondence mapping b/w query and result)
 				 */
-        Map<String, SortedSet<String>> resultNode2EdgeList = computeResultNode2EdgeListMap(list, nodes.size());
-				
+        Map<String, SortedSet<String>> resultNode2EdgeList = computeResultNode2EdgeListMap(list/*, nodes.size()*/);
 
 				/*
 				 * Loop through all nodes
 				 */
-        Iterator<String> iter = nodes.iterator();
-        while (iter.hasNext()) {
-          String node = iter.next();
-
+        for (String node : nodes) {
           FL_EntityMatchResult entityMatchResult = new FL_EntityMatchResult();
 
           int entityInd = queryEdgeList2InfluentEntityInd.get(resultNode2EdgeList.get(node));
@@ -603,7 +604,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 		 */
 
     // List of type FL_LinkMatchResult to store all edge information from subgraph
-    ArrayList<FL_LinkMatchResult> links = new ArrayList<FL_LinkMatchResult>();
+    List<FL_LinkMatchResult> links = new ArrayList<FL_LinkMatchResult>();
     for (int i = 0; i < uiucQueryEdgetoIndex.size(); i++)
       links.add(new FL_LinkMatchResult());
 
@@ -763,7 +764,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @paramx queryNode2InfluentEntityInd
    * @paramx uiucQueryEdgetoIndex
    */
-  private Map<String, SortedSet<String>> computeResultNode2EdgeListMap(List<String> edges, int numNodes) {
+  private Map<String, SortedSet<String>> computeResultNode2EdgeListMap(List<String> edges/*, int numNodes*/) {
     Map<String, SortedSet<String>> node2EdgeList = new HashMap<>();
 
     for (int i = 0; i < edges.size(); i++) {
@@ -796,11 +797,11 @@ public class TopKSubgraphShortlist extends Shortlist {
    * <p>
    * TODO : why do we have to encode the nodes on an edge as a string like src#dst ???
    *
-   * @param nodes
    * @param list
+   * @paramx nodes
    */
   private Set<String> getSubgraphNodes(Collection<String> list) {
-    Set<String> nodes = new HashSet<String>();
+    Set<String> nodes = new HashSet<>();
 
     for (String aList : list) {
       // Get parts of edge

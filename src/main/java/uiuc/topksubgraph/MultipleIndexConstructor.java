@@ -80,7 +80,7 @@ public class MultipleIndexConstructor {
     logger.info("Building Sorted Edge List Index...");
 
     //load the graph
-    graph.loadGraph(new File(baseDir, graphFile));
+    graph = new MutableGraph(new File(baseDir, graphFile));
 
     //load types file
     loadTypesFile();
@@ -284,7 +284,7 @@ public class MultipleIndexConstructor {
       outSPD.write("\n");
     }
     long now = System.currentTimeMillis();
-    logger.info("took " + (now - then2) + " to do D2");
+    logger.info("doD2 : took " + ((now - then2)/60000) + " minutes to do D2");
     return now;
   }
 
@@ -771,7 +771,7 @@ public class MultipleIndexConstructor {
    *
    * @throws IOException
    * @paramx graphFile
-   * @see TopKTest#getGraphBeforeComputeIndices
+   * @seex TopKTest#getGraphBeforeComputeIndices
    */
   public static void saveSortedEdgeList(String outDir) throws IOException {
     logger.info("out dir " + outDir);
@@ -959,7 +959,7 @@ public class MultipleIndexConstructor {
   /**
    * @param node2TypeToUse
    * @return
-   * @see TopKTest#beforeComputeIndicesMod
+   * @seex TopKTest#beforeComputeIndicesMod
    */
   public static Collection<Integer> loadTypes(Map<Integer, Integer> node2TypeToUse) {
     node2Type = node2TypeToUse;

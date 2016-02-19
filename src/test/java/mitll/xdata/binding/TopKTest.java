@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
+import uiuc.topksubgraph.MutableGraph;
 import uiuc.topksubgraph.QueryExecutor;
 
 import java.io.IOException;
@@ -316,7 +317,7 @@ public class TopKTest {
 
         Map<Long, Integer> edgeToWeight = getGraph(n, i);
 
-        Graph graph = new Graph(edgeToWeight, false);
+        Graph graph = new MutableGraph(edgeToWeight, false);
 
         Runtime.getRuntime().gc();
 
@@ -610,7 +611,7 @@ public class TopKTest {
                                              String outDir, boolean populateInLinks2) throws IOException {
     BitcoinFeaturesBase.logMemory();
 
-    Graph graph = new Graph(edgeToWeight, populateInLinks2);
+    Graph graph = new MutableGraph(edgeToWeight, populateInLinks2);
 
     BitcoinFeaturesBase.logMemory();
 
