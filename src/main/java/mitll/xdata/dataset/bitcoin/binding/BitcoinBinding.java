@@ -377,7 +377,7 @@ public class BitcoinBinding extends Binding {
 	 * @param k
 	 * @param skipSelf
 	 * @return
-	 * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
+	 * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
 	 */
 	@Override
 	protected List<String> getNearestNeighbors(String id, int k, boolean skipSelf) {
@@ -392,7 +392,7 @@ public class BitcoinBinding extends Binding {
 	 * @param id1
 	 * @param id2
 	 * @return
-	 * @see #searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
+	 * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
 	 */
 	@Override
 	protected double getSimilarity(String id1, String id2) {
@@ -1141,7 +1141,7 @@ public class BitcoinBinding extends Binding {
 		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "12", "616759" }));
 
 		logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-		result = binding.searchByExample(descriptor, null, 0, 10);
+		result = binding.searchByExample(descriptor, null, 0, 10, true);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 		System.out.println("result = " + AvroUtils.encodeJSON((FL_PatternSearchResults) result));
 

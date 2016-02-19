@@ -24,82 +24,82 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SimplePatternSearch implements FL_PatternSearch {
+  public static final boolean USE_HMM = false;
   private static Logger logger = Logger.getLogger(SimplePatternSearch.class);
 
   private Binding kivaBinding = null;
   private Binding bitcoinBinding = null;
 
-  public SimplePatternSearch() {}
+  public SimplePatternSearch() {
+  }
 
-    @Override
-    public Void setTimeout(FL_Future future, long timeout) throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public Void setTimeout(FL_Future future, long timeout) throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
-    @Override
-    public boolean getCompleted(FL_Future future) throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return false;
-    }
+  @Override
+  public boolean getCompleted(FL_Future future) throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return false;
+  }
 
-    @Override
-    public String getError(FL_Future future) throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public String getError(FL_Future future) throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
-    @Override
-    public double getProgress(FL_Future future) throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return 0;
-    }
+  @Override
+  public double getProgress(FL_Future future) throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return 0;
+  }
 
-    @Override
-    public long getExpectedDuration(FL_Future future) throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return 0;
-    }
+  @Override
+  public long getExpectedDuration(FL_Future future) throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return 0;
+  }
 
-    @Override
-    public Void stop(FL_Future future) throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public Void stop(FL_Future future) throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
-    @Override
-    public List<FL_Future> getFutures() throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public List<FL_Future> getFutures() throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
   public Binding getBinding(FL_PatternDescriptor example) {
-        boolean useKiva = useKiva(example);
+    boolean useKiva = useKiva(example);
 
-        logger.debug("for " + example + " use kiva : " + useKiva);
-        if (useKiva && kivaBinding != null) {
-            return kivaBinding;
-        } else if (bitcoinBinding != null) {
-            return bitcoinBinding;
-        }
-        return null;
+    logger.debug("getBinding for example " + example + " use kiva : " + useKiva);
+    if (useKiva && kivaBinding != null) {
+      return kivaBinding;
+    } else if (bitcoinBinding != null) {
+      return bitcoinBinding;
     }
+    return null;
+  }
 
-    @Override
-    public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-            FL_BoundedRange dateRange, boolean useAptima) throws AvroRemoteException {
-        // TODO : support dateRange
-        return searchByExample(example, service, start, max, true);
-    }
+  @Override
+  public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
+                                FL_BoundedRange dateRange, boolean useAptima) throws AvroRemoteException {
+    // TODO : support dateRange
+    return searchByExample(example, service, start, max, USE_HMM);
+  }
 
-    public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-                                  boolean hmm) throws AvroRemoteException {
-    	return searchByExample(example, service, start, max, hmm, Long.MIN_VALUE, Long.MAX_VALUE);
-    }
+  public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
+                                boolean hmm) throws AvroRemoteException {
+    return searchByExample(example, service, start, max, hmm, Long.MIN_VALUE, Long.MAX_VALUE);
+  }
 
   /**
-   * @see mitll.xdata.GraphQuBEServer#getRoute(SimplePatternSearch)
-   * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
    * @param example
    * @param service
    * @param start
@@ -109,30 +109,32 @@ public class SimplePatternSearch implements FL_PatternSearch {
    * @param endTime
    * @return
    * @throws AvroRemoteException
+   * @see mitll.xdata.GraphQuBEServer#getRoute(SimplePatternSearch)
+   * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
    */
-    public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-                                  boolean hmm, long startTime, long endTime) throws AvroRemoteException {
-        // TODO : support dateRange
+  public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
+                                boolean hmm, long startTime, long endTime) throws AvroRemoteException {
+    // TODO : support dateRange
 
-      if (example == null) {
-        new Exception("illegal arg exception").printStackTrace();
-      }
-
-        // returns FL_Future or FL_PatternSearchResults
-
-        // inspected IDs in example and pick which binding to run against
-        Binding binding = getBinding(example);
-
-        if (binding != null) {
-            logger.debug("search : example '" + example + "' hmm " + hmm + " binding " + binding);
-            return binding.searchByExample(example, start, max, hmm, startTime, endTime);
-        } else {
-            logger.error("no binding");
-        }
-
-        // return dummy result - maybe this is better than nothing?
-        return makeNoBindingResponse();
+    if (example == null) {
+      new Exception("illegal arg exception").printStackTrace();
     }
+
+    // returns FL_Future or FL_PatternSearchResults
+
+    // inspected IDs in example and pick which binding to run against
+    Binding binding = getBinding(example);
+
+    if (binding != null) {
+      logger.debug("searchByExample : example '" + example + "' hmm " + hmm + " binding " + binding);
+      return binding.searchByExample(example, start, max, hmm, startTime, endTime);
+    } else {
+      logger.error("no binding");
+    }
+
+    // return dummy result - maybe this is better than nothing?
+    return makeNoBindingResponse();
+  }
 
   private FL_PatternSearchResults makeNoBindingResponse() {
     FL_Entity entity = new FL_Entity();
@@ -164,56 +166,56 @@ public class SimplePatternSearch implements FL_PatternSearch {
   }
 
   /**
-     * @see #getBinding(influent.idl.FL_PatternDescriptor)
-     * @param example
-     * @return
-     */
-    private boolean useKiva(FL_PatternDescriptor example) {
-        List<String> ids = Binding.getExemplarIDs(example);
-        return useKiva(ids);
-    }
+   * @param example
+   * @return
+   * @see #getBinding(influent.idl.FL_PatternDescriptor)
+   */
+  private boolean useKiva(FL_PatternDescriptor example) {
+    List<String> ids = Binding.getExemplarIDs(example);
+    return useKiva(ids);
+  }
 
-    private boolean useKiva(List<String> ids) {
-        boolean useKiva = false;
-        for (String id : ids) {
-            if (id.startsWith("l") || id.startsWith("p")) {
-                useKiva = true;
-                break;
-            }
-        }
-        return useKiva;
+  private boolean useKiva(List<String> ids) {
+    boolean useKiva = false;
+    for (String id : ids) {
+      if (id.startsWith("l") || id.startsWith("p")) {
+        useKiva = true;
+        break;
+      }
     }
+    return useKiva;
+  }
 
-    @Override
-    public FL_PatternSearchResults getResults(FL_Future future) throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public FL_PatternSearchResults getResults(FL_Future future) throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
-    @Override
-    public List<FL_PatternDescriptor> getPatternTemplates() throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public List<FL_PatternDescriptor> getPatternTemplates() throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
-    @Override
-    public List<FL_Service> getServices() throws AvroRemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public List<FL_Service> getServices() throws AvroRemoteException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
-    @Override
-    public Object searchByTemplate(String template, String service, long start, long max, FL_BoundedRange dateRange)
-            throws AvroRemoteException {
-        // dummy result to return
-        FL_Future future = new FL_Future();
-        future.setUid("12345678");
-        future.setLabel("searchByTemplate task");
-        future.setService(null);
-        future.setStarted(System.currentTimeMillis());
-        future.setCompleted(-1L);
-        return future;
-    }
+  @Override
+  public Object searchByTemplate(String template, String service, long start, long max, FL_BoundedRange dateRange)
+      throws AvroRemoteException {
+    // dummy result to return
+    FL_Future future = new FL_Future();
+    future.setUid("12345678");
+    future.setLabel("searchByTemplate task");
+    future.setService(null);
+    future.setStarted(System.currentTimeMillis());
+    future.setCompleted(-1L);
+    return future;
+  }
 
   public void setKivaBinding(Binding kivaBinding) {
     this.kivaBinding = kivaBinding;

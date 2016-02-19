@@ -451,11 +451,10 @@ public class TopKSubgraphShortlist extends Shortlist {
     return results;
   }
 
-  private void addLinkMatchResultForEdge(Set<String> nodes, List<FL_LinkMatchResult> links, String edgeInfo) {
   /*
    * Process the edge to build FL_Link
    */
-
+  private void addLinkMatchResultForEdge(Set<String> nodes, List<FL_LinkMatchResult> links, String edgeInfo) {
     // Container to hold FL_Link (has other metadata involved)
     FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
 

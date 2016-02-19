@@ -42,6 +42,7 @@ import java.util.List;
 import static spark.Spark.*;
 
 public class GraphQuBEServer {
+  public static final boolean USE_HMM = false;
   private static Logger logger = Logger.getLogger(GraphQuBEServer.class);
 
   private static final int DEFAULT_MAX = 5;
@@ -91,10 +92,10 @@ public class GraphQuBEServer {
       bitcoinFeatureDirectory = args[3];
     }
 
-    boolean useFastBitcoinConnectedTest = USE_IN_MEMORY_ADJACENCY_DEFAULT;
+/*    boolean useFastBitcoinConnectedTest = USE_IN_MEMORY_ADJACENCY_DEFAULT;
     if (args.length >= 4) {
       useFastBitcoinConnectedTest = "true".equalsIgnoreCase(args[3]);
-    }
+    }*/
 
     logger.debug("using port = " + port);
     logger.debug("using kivaDirectory = " + kivaDirectory);
@@ -206,7 +207,8 @@ public class GraphQuBEServer {
         }
 
         try {
-          String json = testBinding.searchByExampleJson(ids, 0, max, startTime, endTime);
+          boolean rescoreWithHMM = USE_HMM;
+          String json = testBinding.searchByExampleJson(ids, 0, max, startTime, endTime, rescoreWithHMM);
           response.type("application/json");
 
           return json;
@@ -293,7 +295,7 @@ public class GraphQuBEServer {
 
         try {
           Object result = patternSearch.searchByExample(example, service, start, max,
-              hmm == null || (hmm != null && !hmm.equalsIgnoreCase("false")), startTime, endTime);
+              hmm == null || (!hmm.equalsIgnoreCase("false")), startTime, endTime);
           String json = null;
           if (result instanceof FL_PatternSearchResults) {
             try {

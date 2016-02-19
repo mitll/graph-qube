@@ -127,7 +127,7 @@ public class CartesianShortlist extends Shortlist {
 
 
   /**
-   * @see Binding#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long)
+   * @see Binding#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean)
    * @return true if each node connected to at least one other node
    */
   private boolean connectedGroup(List<String> ids) {

@@ -52,7 +52,7 @@ public class KivaBindingTest {
         // perform search by example
         FL_PatternDescriptor patternDescriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] {partnerID}));
         logger.debug("descriptor = " + patternDescriptor);
-        Object object = binding.searchByExample(patternDescriptor, null, 0, max);
+        Object object = binding.searchByExample(patternDescriptor, null, 0, max, true);
         
         // got back result
         Assert.assertTrue(object instanceof FL_PatternSearchResults);
@@ -87,7 +87,7 @@ public class KivaBindingTest {
         // perform search by example
         FL_PatternDescriptor patternDescriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] {lenderID, partnerID}));
         logger.debug("descriptor = " + patternDescriptor);
-        Object object = binding.searchByExample(patternDescriptor, null, 0, max);
+        Object object = binding.searchByExample(patternDescriptor, null, 0, max, true);
         
         // got back result
         Assert.assertTrue(object instanceof FL_PatternSearchResults);
