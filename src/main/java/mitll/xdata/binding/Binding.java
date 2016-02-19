@@ -1975,7 +1975,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 	 * @param columnNames
 	 * @return edgeAttributes HashMap; abstract because the way src and dest are used may depend on dataset
 	 */
-	protected abstract HashMap<String,String> getEdgeAttributes(String src, String dest, Set<String> columnNames);
+	protected abstract Map<String,String> getEdgeAttributes(String src, String dest, Set<String> columnNames);
 
 	/**
 	 * @return true if pair of nodes are connected

@@ -179,9 +179,8 @@ public class BitcoinBinding extends Binding {
 	}
 
 	@Override
-	public HashMap<String,String> getEdgeAttributes(String src, String dest, Set<String> columnNames) {
-
-		HashMap<String,String> attributes = new HashMap<String,String>();
+	public Map<String,String> getEdgeAttributes(String src, String dest, Set<String> columnNames) {
+		Map<String,String> attributes = new HashMap<String,String>();
 
 		String sql = "select ";
 		int count = 0;
@@ -203,7 +202,6 @@ public class BitcoinBinding extends Binding {
 			ResultSet rs = queryStatement.executeQuery(); rs.next();
 
 			for (String columnName : columnNames) {
-
 				// retrieve from rs as appropriate type
 				//String attributeType = edgeAttributeName2Type.get(columnName);
 

@@ -273,7 +273,8 @@ public class TopKTest {
       long then = System.currentTimeMillis();
       List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, Arrays.asList("555261", "400046", "689982", "251593"), max);
       long now = System.currentTimeMillis();
-      logger.info("time to do a search " + (now - then) + " millis ");
+      logger.info("to get " + shortlist1.size() +
+           " took to do a search " + (now - then) + " millis ");
 
       if (shortlist1.size() > max) {
         shortlist1 = shortlist1.subList(0, max);

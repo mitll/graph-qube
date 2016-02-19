@@ -326,8 +326,8 @@ public class QueryExecutor {
      */
     executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
 
-    long time2 = new Date().getTime();
-    logger.info("Overall Time: " + (time2 - time1));
+    long time2 = System.currentTimeMillis();
+    logger.info("executeQuery Overall Time: " + (time2 - time1));
 
 
     //FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();
@@ -491,7 +491,7 @@ public class QueryExecutor {
         edgesOfMaxType = queryEdgeType2Edges.get(max.split("#")[1] + "#" + max.split("#")[0]);
       }
       if (isClique) {
-        ArrayList<String> edgesOfMaxType2 = new ArrayList<>();
+        List<String> edgesOfMaxType2 = new ArrayList<>();
         edgesOfMaxType2.add(edgesOfMaxType.get(0));
         edgesOfMaxType = edgesOfMaxType2;
       }
@@ -505,44 +505,45 @@ public class QueryExecutor {
 //				logger.info("Here comes the queryEdge: "+queryEdge);
 
         // setup containers for candidate edges
-        HashSet<ArrayList<String>> currCandidates = new HashSet<>();
-        HashSet<ArrayList<String>> pcCurr = new HashSet<>();
+        Set<List<String>> currCandidates = new HashSet<>();
+        Set<List<String>> pcCurr = new HashSet<>();
 
         //which query edge are we working with
         int index = queryEdgetoIndex.get(queryEdge);
 
         // keep track of the query edges (and indices) we're currently considering...
-        HashSet<String> consideredEdges = new HashSet<>();
-        HashSet<Integer> consideredEdgeIndices = new HashSet<>();
+        Set<String> consideredEdges = new HashSet<>();
+        Set<Integer> consideredEdgeIndices = new HashSet<>();
         consideredEdges.add(queryEdge);
         consideredEdgeIndices.add(index);
 //				logger.info("ConsideredEdges: "+consideredEdges);
 //				logger.info("consideredEdgeIndices"+consideredEdgeIndices);
 
-        // get candidate edge, "e", flip around , if necessary, to match
+        // get candidate edge, "candidateEdge", flip around , if necessary, to match
         // edge-type "polarity" of queryEdge
-        String e = sortedEdgeLists.get(max).get(pointers.get(max));
+        String candidateEdge = sortedEdgeLists.get(max).get(pointers.get(max));
         int q1 = queryNode2Type.get(Integer.parseInt(queryEdge.split("#")[0]));
-        int e1 = Integer.parseInt(e.split("#")[0]);
+        String[] edgeSplit = candidateEdge.split("#");
+        int e1 = Integer.parseInt(edgeSplit[0]);
 
         if (!graphType2IDSet.get(q1).contains(e1))
-          e = e.split("#")[1] + "#" + e.split("#")[0] + "#" + e.split("#")[2];
+          candidateEdge = edgeSplit[1] + "#" + edgeSplit[0] + "#" + edgeSplit[2];
 
         // place candidate-edge under consideration in it's hypothesized position
         // in a possible matching sub-graph ("list"). Add list to pcCurr
         ArrayList<String> list = new ArrayList<>();
         for (int i = 0; i < queryEdgetoIndex.size(); i++)
           list.add("");
-        list.set(index, e);
+        list.set(index, candidateEdge);
         pcCurr.add(list);
 
-        // if homogeneous edge-type (i.e. i#i or j#j) and query graph not a clique
+        // if homogeneous edge-type (i.candidateEdge. i#i or j#j) and query graph not a clique
         // track edge twice because itself and it's reflection are valid candidates
         if (max.split("#")[0].equals(max.split("#")[1]) && !isClique) {
           ArrayList<String> list1 = new ArrayList<>();
           for (int i = 0; i < queryEdgetoIndex.size(); i++)
             list1.add("");
-          list1.set(index, e.split("#")[1] + "#" + e.split("#")[0] + "#" + e.split("#")[2]);
+          list1.set(index, edgeSplit[1] + "#" + edgeSplit[0] + "#" + edgeSplit[2]);
           pcCurr.add(list1);
         }
 
@@ -563,7 +564,7 @@ public class QueryExecutor {
          * compute scores for current partial candidates
 				 * add partial candidates to currCandidates if heap says they're worth considering 
 				 */
-        for (ArrayList<String> pc : pcCurr) {
+        for (List<String> pc : pcCurr) {
           //compute actualScore of candidate
           double actualScore = 0.;
           for (int i : consideredEdgeIndices)
@@ -614,14 +615,14 @@ public class QueryExecutor {
         if (currCandidates.size() == 0)
           continue;
         while (consideredEdges.size() != queryEdgetoIndex.size()) {
-          HashSet<ArrayList<String>> newCandidates = new HashSet<>();
+          Set<List<String>> newCandidates = new HashSet<>();
           //get set of edges in Q that connect to consideredEdges but not in consideredEdges
-          HashSet<String> verticesCovered = new HashSet<>();
+          Set<String> verticesCovered = new HashSet<>();
           for (String s : consideredEdges) {
             verticesCovered.add(s.split("#")[0]);
             verticesCovered.add(s.split("#")[1]);
           }
-          ArrayList<String> nextEdgeCandidates = new ArrayList<>();
+          List<String> nextEdgeCandidates = new ArrayList<>();
           for (String s : actualQueryEdges) {
             String v1 = s.split("#")[0];
             String v2 = s.split("#")[1];
@@ -662,15 +663,15 @@ public class QueryExecutor {
           }
           int t1 = queryNode2Type.get(n1);
           int t2 = queryNode2Type.get(n2);
-          String nextEdgeType = t1 + "#" + t2;//this is T_{e'}
+          String nextEdgeType = t1 + "#" + t2;//this is T_{candidateEdge'}
           if (t1 > t2)
             nextEdgeType = t2 + "#" + t1;
           int edgeIndex = queryEdgetoIndex.get(nextEdge);
           consideredEdges.add(nextEdge);
           consideredEdgeIndices.add(edgeIndex);
 //					logger.info("currCandidates: "+currCandidates);
-          for (ArrayList<String> c : currCandidates) {
-            //Find matching edges from useful edge list of T_{e'} and extend candidate c to candidate c'.
+          for (List<String> c : currCandidates) {
+            //Find matching edges from useful edge list of T_{candidateEdge'} and extend candidate c to candidate c'.
             int node1 = -1;
             int node2 = -1;
             if (e1 != -1)
@@ -808,7 +809,7 @@ public class QueryExecutor {
         }
 
         //Update Heap using CurrCandidates
-        for (ArrayList<String> c : currCandidates) {
+        for (List<String> c : currCandidates) {
           double actualScore = 0.;
           for (int i : consideredEdgeIndices)
             actualScore += Double.parseDouble(c.get(i).split("#")[2]);
@@ -1524,7 +1525,7 @@ public class QueryExecutor {
     }
   }
 
-  private double getUpperbound(HashSet<Integer> consideredEdgeIndices, ArrayList<String> pc) {
+  private double getUpperbound(Set<Integer> consideredEdgeIndices, List<String> pc) {
     double score = 0;
     Set<Edge> coveredEdges = new HashSet<>();
     Map<Integer, Integer> map = new HashMap<>();
