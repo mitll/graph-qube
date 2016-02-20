@@ -55,7 +55,7 @@ d3.select('#qbe').on('click', function() {
     var id4 = d3.select("#id4")[0][0].value;
     var start = d3.select("#start")[0][0].value;
     var end = d3.select("#end")[0][0].value;
-    console.log("value "+ id1 + " " + id2 + " " + id3 + " " + id4);
+    console.log("sending value "+ id1 + " " + id2 + " " + id3 + " " + id4);
 
     d3.select("#resultTitle").html("Please wait...");
 

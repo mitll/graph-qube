@@ -15,6 +15,7 @@
 
 package uiuc.topksubgraph;
 
+import mitll.xdata.binding.Binding;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
@@ -121,7 +122,7 @@ public class MutableGraph extends Graph {
    * @param connection
    * @param tableName
    * @throws SQLException
-   * @see #loadGraph(DBConnection, String, String)
+   * @see mitll.xdata.binding.TopKSubgraphShortlist#TopKSubgraphShortlist(Binding)
    */
   public MutableGraph(Connection connection, String tableName) throws SQLException {
     // int nodeCount = node2NodeIdMap.size();

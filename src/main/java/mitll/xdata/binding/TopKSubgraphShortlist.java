@@ -20,6 +20,7 @@ import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.bitcoin.ingest.StatementResult;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
+import org.jgrapht.util.ArrayUnenforcedSet;
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
 import uiuc.topksubgraph.Edge;
@@ -47,9 +48,9 @@ import java.util.regex.Pattern;
 public class TopKSubgraphShortlist extends Shortlist {
   private static final Logger logger = Logger.getLogger(TopKSubgraphShortlist.class);
   private static final String MARGINAL_GRAPH = "MARGINAL_GRAPH";
-  public static final boolean SKIP_LINK_PROPERTIES = true;
+  public static final boolean SKIP_LINK_PROPERTIES = false;
 
-  private int K = 500;
+  private int K = 50;
   private int D = 2;
 
   private String usersTable = "users";
@@ -495,13 +496,33 @@ public class TopKSubgraphShortlist extends Shortlist {
     return link;
   }
 
+  Map<String,Map<String,List<FL_Property>>> srcToDestToProps = new HashMap<>();
+
+  int num = 0;
+
+  /**
+   * TODO : Super slow???
+   * @param src
+   * @param dest
+   * @return
+   */
   private List<FL_Property> makeLinkProperties(String src, String dest) {
     List<FL_Property> linkProperties;
+
+    Map<String, List<FL_Property>> orDefault = srcToDestToProps.get(src);
+    if (orDefault == null) srcToDestToProps.put(src, orDefault = new HashMap<String, List<FL_Property>>());
+    List<FL_Property> orDefault1 = orDefault.get(dest);
+
+    if (orDefault1 != null) return orDefault1;
+
     if (binding.compareEntities(src, dest) == 1) {
       linkProperties = getLinkProperties(dest, src);
     } else {
       linkProperties = getLinkProperties(src, dest);
     }
+    orDefault.put(dest,linkProperties);
+
+    if (num++ % 100 == 0) logger.info("did " + num);
     return linkProperties;
   }
 

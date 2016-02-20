@@ -24,7 +24,6 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.hmm.VectorObservation;
-import mitll.xdata.scoring.Transaction;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -43,293 +42,292 @@ import java.util.Map.Entry;
  * File Templates.
  */
 public class BitcoinBinding extends Binding {
-	private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
+  private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
 
-	public static final String DATASET_ID = "bitcoin_small";
-	public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
+  public static final String DATASET_ID = "bitcoin_small";
+  public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
 
-	private static final String BITCOIN_FEATURES = BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
-	public static final String TRANSACTIONS = "transactions";
-
-
-
-	private static final int BUCKET_SIZE = 2;
-	// private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
-	private static final String TRANSID = "transid";
+  private static final String BITCOIN_FEATURES = BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
+  public static final String TRANSACTIONS = "transactions";
 
 
-	private NodeSimilaritySearch userIndex;
+  private static final int BUCKET_SIZE = 2;
+  // private static final String BITCOIN_IDS = BITCOIN_FEATS_TSV + BitcoinFeatures.BITCOIN_IDS_TSV;
+  private static final String TRANSID = "transid";
 
-	private PreparedStatement pairConnectedStatement;
-	private PreparedStatement edgeMetadataKeyStatement;
-	private boolean useFastBitcoinConnectedTest = true;
 
-	// TopKSubgraphShortlist Parameters
-	private static final int DEFAULT_SHORTLIST_SIZE = 1000;
-	public static final int SHORTLISTING_D = 2;
+  private NodeSimilaritySearch userIndex;
 
-	public static final String USER_FEATURES_TABLE = "users";
-	private static final String USERID_COLUMN = "user";
-	private static final String TYPE_COLUMN = "type";
+  private PreparedStatement pairConnectedStatement;
+  private PreparedStatement edgeMetadataKeyStatement;
+  private boolean useFastBitcoinConnectedTest = true;
 
-	private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
-	private static final String PAIRID_COLUMN = "SORTED_PAIR";
+  // TopKSubgraphShortlist Parameters
+  private static final int DEFAULT_SHORTLIST_SIZE = 1000;
+  public static final int SHORTLISTING_D = 2;
 
-	/**
-	 * @see mitll.xdata.GraphQuBEServer#main(String[])
-	 * @param connection
-	 * @param resourceDir
-	 */
-	public BitcoinBinding(DBConnection connection, String resourceDir) {
-		this(connection, true, resourceDir);
-	}
+  public static final String USER_FEATURES_TABLE = "users";
+  private static final String USERID_COLUMN = "user";
+  private static final String TYPE_COLUMN = "type";
 
-	/**
-	 *
-	 * @param connection
-	 * @param useFastBitcoinConnectedTest
-	 * @param resourceDir
-	 * @throws Exception
-	 * @see #BitcoinBinding(DBConnection, boolean, String)
-	 */
-	private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
-		super(connection);
+  private static final String GRAPH_TABLE = "MARGINAL_GRAPH";
+  private static final String PAIRID_COLUMN = "SORTED_PAIR";
 
-		datasetId = DATASET_ID;
-		datasetResourceDir = BITCOIN_FEATS_TSV;
+  /**
+   * @param connection
+   * @param resourceDir
+   * @see mitll.xdata.GraphQuBEServer#main(String[])
+   */
+  public BitcoinBinding(DBConnection connection, String resourceDir) {
+    this(connection, true, resourceDir);
+  }
+
+  /**
+   * @param connection
+   * @param useFastBitcoinConnectedTest
+   * @param resourceDir
+   * @throws Exception
+   * @see #BitcoinBinding(DBConnection, boolean, String)
+   */
+  private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
+    super(connection);
+
+    datasetId = DATASET_ID;
+    datasetResourceDir = BITCOIN_FEATS_TSV;
 
 		/* 
-		 * Setup Shortlist-er
+     * Setup Shortlist-er
 		 */
-		shortlist = new TopKSubgraphShortlist(this);
+    shortlist = new TopKSubgraphShortlist(this);
 
-		// Set and update all TopKSubgraphShortlist specific parameters
-		if (getShortlist() instanceof TopKSubgraphShortlist) {
-			TopKSubgraphShortlist shortlist = (TopKSubgraphShortlist) getShortlist();
+    // Set and update all TopKSubgraphShortlist specific parameters
+    if (getShortlist() instanceof TopKSubgraphShortlist) {
+      TopKSubgraphShortlist shortlist = (TopKSubgraphShortlist) getShortlist();
 
-			shortlist.setK(DEFAULT_SHORTLIST_SIZE);
-			shortlist.setD(SHORTLISTING_D);
-			shortlist.refreshQueryExecutorParameters();
-			shortlist.setUsersTable(USER_FEATURES_TABLE);
-			shortlist.setUserIdColumn(USERID_COLUMN);
-			shortlist.setTypeColumn(TYPE_COLUMN);
-			shortlist.setGraphTable(GRAPH_TABLE);
-			shortlist.setPairIDColumn(PAIRID_COLUMN);
+      shortlist.setK(DEFAULT_SHORTLIST_SIZE);
+      shortlist.setD(SHORTLISTING_D);
+      shortlist.refreshQueryExecutorParameters();
+      shortlist.setUsersTable(USER_FEATURES_TABLE);
+      shortlist.setUserIdColumn(USERID_COLUMN);
+      shortlist.setTypeColumn(TYPE_COLUMN);
+      shortlist.setGraphTable(GRAPH_TABLE);
+      shortlist.setPairIDColumn(PAIRID_COLUMN);
 
-			//load types and indices
-			shortlist.loadTypesAndIndices();
-		}
+      //load types and indices
+      shortlist.loadTypesAndIndices();
+    }
 
-		this.useFastBitcoinConnectedTest = useFastBitcoinConnectedTest;
+    this.useFastBitcoinConnectedTest = useFastBitcoinConnectedTest;
 
-		prefixToTable.put("t", TRANSACTIONS);
-		tableToPrimaryKey.put(TRANSACTIONS, "SOURCE");
+    prefixToTable.put("t", TRANSACTIONS);
+    tableToPrimaryKey.put(TRANSACTIONS, "SOURCE");
 
-		for (String col : tableToPrimaryKey.values())
-			addTagToColumn(FL_PropertyTag.ID, col);
-		// addTagToColumn(FL_PropertyTag.ID, "TARGET");
-		addTagToColumn(FL_PropertyTag.DATE, "TIME");
-		addTagToColumn(FL_PropertyTag.AMOUNT, "AMOUNT");
-		tableToDisplay.put(TRANSACTIONS, TRANSACTIONS);
-		Collection<String> tablesToQuery = prefixToTable.values();
-		tablesToQuery = new ArrayList<String>(tablesToQuery);
+    for (String col : tableToPrimaryKey.values())
+      addTagToColumn(FL_PropertyTag.ID, col);
+    // addTagToColumn(FL_PropertyTag.ID, "TARGET");
+    addTagToColumn(FL_PropertyTag.DATE, "TIME");
+    addTagToColumn(FL_PropertyTag.AMOUNT, "AMOUNT");
+    tableToDisplay.put(TRANSACTIONS, TRANSACTIONS);
+    Collection<String> tablesToQuery = prefixToTable.values();
+    tablesToQuery = new ArrayList<String>(tablesToQuery);
 
-		populateTableToColumns(connection, tablesToQuery, connection.getType());
-		populateColumnToTables();
+    populateTableToColumns(connection, tablesToQuery, connection.getType());
+    populateColumnToTables();
 
-		// logger.debug("cols " + tableToColumns);
+    // logger.debug("cols " + tableToColumns);
 
-		//setupForOldSubgraphSearch(connection, useFastBitcoinConnectedTest, resourceDir);
-	}
+    //setupForOldSubgraphSearch(connection, useFastBitcoinConnectedTest, resourceDir);
+  }
+/*
+  private void setupForOldSubgraphSearch(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
+    try {
+      //  InputStream userFeatures = this.getClass().getResourceAsStream(File.separator +resourceDir + File.separator +BITCOIN_FEATURES);
+      logger.debug("indexing node features");
+      long then = System.currentTimeMillis();
+      logger.debug(File.separator + resourceDir + File.separator + BITCOIN_FEATURES);
+      //userIndex = new NodeSimilaritySearch("/" +resourceDir + "/" +BITCOIN_FEATURES);
+      userIndex = new NodeSimilaritySearch(resourceDir + "/" + BITCOIN_FEATURES);
+      long now = System.currentTimeMillis();
 
-	private void setupForOldSubgraphSearch(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
-		try {
-			//  InputStream userFeatures = this.getClass().getResourceAsStream(File.separator +resourceDir + File.separator +BITCOIN_FEATURES);
-			logger.debug("indexing node features");
-			long then = System.currentTimeMillis();
-			logger.debug(File.separator + resourceDir + File.separator +BITCOIN_FEATURES);
-			//userIndex = new NodeSimilaritySearch("/" +resourceDir + "/" +BITCOIN_FEATURES);
-			userIndex = new NodeSimilaritySearch(resourceDir + "/" +BITCOIN_FEATURES);
-			long now = System.currentTimeMillis();
+      logger.debug("done indexing node features in " + (now - then) + " millis");
 
-			logger.debug("done indexing node features in " +(now-then) + " millis");
+      if (useFastBitcoinConnectedTest) {
+        populateInMemoryAdjacency();
+      } else {
+        // create prepared statement for determining if two nodes connected
+        makePairConnectedStatement(connection);
+      }
+      makeEdgeMetadataStatement(connection);
+    } catch (Exception e) {
+      logger.error("got " + e, e);
+    }
+  }*/
 
-			if (useFastBitcoinConnectedTest) {
-				populateInMemoryAdjacency();
-			}
-			else {
-				// create prepared statement for determining if two nodes connected
-				makePairConnectedStatement(connection);
-			}
-			makeEdgeMetadataStatement(connection);
-		} catch (Exception e) {
-			logger.error("got " + e, e);
-		}
-	}
+  @Override
+  public int compareEntities(String e1, String e2) {
+    if (Integer.parseInt(e1) < Integer.parseInt(e2)) {
+      return -1;
+    } else if (Integer.parseInt(e1) > Integer.parseInt(e2)) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 
-	@Override
-	public int compareEntities(String e1, String e2) {
-		if (Integer.parseInt(e1) < Integer.parseInt(e2)) {
-			return -1;
-		} else if (Integer.parseInt(e1) > Integer.parseInt(e2)){
-			return 1;
-		} else {
-			return 0;
-		}
-	}
+  @Override
+  public Map<String, String> getEdgeAttributes(String src, String dest, Set<String> columnNames) {
+    Map<String, String> attributes = new HashMap<String, String>();
 
-	@Override
-	public Map<String,String> getEdgeAttributes(String src, String dest, Set<String> columnNames) {
-		Map<String,String> attributes = new HashMap<String,String>();
-
-		String sql = "select ";
-		int count = 0;
-		for (String columnName : columnNames) {
-			if (count == 0) {
-				sql += columnName;
-			} else {
-				sql += ", "+columnName;
-			}
-			count += 1;
-		}
+    String sql = "select ";
+    int count = 0;
+    for (String columnName : columnNames) {
+      if (count == 0) {
+        sql += columnName;
+      } else {
+        sql += ", " + columnName;
+      }
+      count += 1;
+    }
 //    sql += " from "+GRAPH_TABLE+" where "+PAIRID_COLUMN+" = ("+src+","+dest+");";
-    sql += " from "+GRAPH_TABLE+" where "+"SOURCE="+ src+" AND TARGET="+dest;
+    sql += " from " + GRAPH_TABLE + " where " + "SOURCE=" + src + " AND TARGET=" + dest;
 
-		PreparedStatement queryStatement;
+    PreparedStatement queryStatement;
 
-		try {
-			queryStatement = connection.prepareStatement(sql);
-			ResultSet rs = queryStatement.executeQuery(); rs.next();
+    try {
+      queryStatement = connection.prepareStatement(sql);
+      ResultSet rs = queryStatement.executeQuery();
+      rs.next();
 
-			for (String columnName : columnNames) {
-				// retrieve from rs as appropriate type
-				//String attributeType = edgeAttributeName2Type.get(columnName);
+      for (String columnName : columnNames) {
+        // retrieve from rs as appropriate type
+        //String attributeType = edgeAttributeName2Type.get(columnName);
 
-				//			  if (attributeType == "INTEGER") {
-				//				  attributes.put(columnName, rs.getInt(columnName));
-				//			  } else if (attributeType == "BIGINT") {
-				//				  attributes.put(columnName, rs.getLong(columnName));
-				//			  }
-
-
-				//					h2Type2InfluentType.put("INTEGER", FL_PropertyType.LONG);
-				//				h2Type2InfluentType.put("BIGINT", FL_PropertyType.LONG);
-				//				h2Type2InfluentType.put("DOUBLE", FL_PropertyType.DOUBLE);
-				//				h2Type2InfluentType.put("DECIMAL", FL_PropertyType.DOUBLE);
-				//				h2Type2InfluentType.put("VARCHAR", FL_PropertyType.STRING);
-				//				h2Type2InfluentType.put("ARRAY", FL_PropertyType.OTHER);				  
+        //			  if (attributeType == "INTEGER") {
+        //				  attributes.put(columnName, rs.getInt(columnName));
+        //			  } else if (attributeType == "BIGINT") {
+        //				  attributes.put(columnName, rs.getLong(columnName));
+        //			  }
 
 
-				attributes.put(columnName, rs.getString(columnName));
-			}
-
-			rs.close();
-			queryStatement.close();
-
-		} catch (SQLException e) {
-			logger.info("Got e: "+e);
-		}
-
-		return attributes;
-	}
+        //					h2Type2InfluentType.put("INTEGER", FL_PropertyType.LONG);
+        //				h2Type2InfluentType.put("BIGINT", FL_PropertyType.LONG);
+        //				h2Type2InfluentType.put("DOUBLE", FL_PropertyType.DOUBLE);
+        //				h2Type2InfluentType.put("DECIMAL", FL_PropertyType.DOUBLE);
+        //				h2Type2InfluentType.put("VARCHAR", FL_PropertyType.STRING);
+        //				h2Type2InfluentType.put("ARRAY", FL_PropertyType.OTHER);
 
 
-	private void makeEdgeMetadataStatement(DBConnection connection) throws SQLException {
-		StringBuilder  sql = new StringBuilder();
-		sql.append("select * from (");
-		sql.append(" select transid");
-		sql.append(" from transactions");
-		sql.append(" where (source = ? and target = ?)");
-		sql.append(" limit 1");
-		sql.append(" ) as temp");
-		edgeMetadataKeyStatement = connection.getConnection().prepareStatement(sql.toString());
-	}
+        attributes.put(columnName, rs.getString(columnName));
+      }
 
-	private void makePairConnectedStatement(DBConnection connection) throws SQLException {
-		StringBuilder sql = new StringBuilder();
-		sql.append("select count(1) from (");
-		sql.append(" select 1");
-		sql.append(" from transactions");
-		sql.append(" where (source= ? and target = ?)");
-		sql.append(" limit 1");
-		sql.append(" ) as temp");
-		pairConnectedStatement = connection.getConnection().prepareStatement(sql.toString());
-	}
+      rs.close();
+      queryStatement.close();
 
-	/**
-	 * Read from the connected pairs file to create an adjacency matrix.
-	 * @throws Exception
-	 */
-	private void populateInMemoryAdjacency() throws Exception {
-		InputStream pairs = this.getClass().getResourceAsStream("/bitcoin_feats_tsv/pairs.txt");
-		long then = System.currentTimeMillis();
+    } catch (SQLException e) {
+      logger.info("Got e: " + e);
+    }
 
-		BufferedReader br = new BufferedReader(new InputStreamReader(pairs));
-		String line;
-		int count = 0;
-		long t0 = System.currentTimeMillis();
-		int max = Integer.MAX_VALUE;
-		int bad = 0;
+    return attributes;
+  }
 
-		while ((line = br.readLine()) != null) {
-			count++;
-			if (count > max)
-				break;
 
-			long e = Long.parseLong(line);
-			long[] recover = recover(e);
+  private void makeEdgeMetadataStatement(DBConnection connection) throws SQLException {
+    StringBuilder sql = new StringBuilder();
+    sql.append("select * from (");
+    sql.append(" select transid");
+    sql.append(" from transactions");
+    sql.append(" where (source = ? and target = ?)");
+    sql.append(" limit 1");
+    sql.append(" ) as temp");
+    edgeMetadataKeyStatement = connection.getConnection().prepareStatement(sql.toString());
+  }
 
-			int source = (int) recover[0];
-			String sSource = ""+source;
-			int target = (int) recover[1];
+  private void makePairConnectedStatement(DBConnection connection) throws SQLException {
+    StringBuilder sql = new StringBuilder();
+    sql.append("select count(1) from (");
+    sql.append(" select 1");
+    sql.append(" from transactions");
+    sql.append(" where (source= ? and target = ?)");
+    sql.append(" limit 1");
+    sql.append(" ) as temp");
+    pairConnectedStatement = connection.getConnection().prepareStatement(sql.toString());
+  }
 
-			String sTarget = ""+target;
+  /**
+   * Read from the connected pairs file to create an adjacency matrix.
+   *
+   * @throws Exception
+   */
+  private void populateInMemoryAdjacency() throws Exception {
+    InputStream pairs = this.getClass().getResourceAsStream("/bitcoin_feats_tsv/pairs.txt");
+    long then = System.currentTimeMillis();
 
-			Set<String> targetsForSource = stot.get(sSource);
-			if (targetsForSource == null)
-				stot.put(sSource, targetsForSource = new HashSet<String>());
-			if (!targetsForSource.contains(sTarget)) {
-				targetsForSource.add(sTarget);
-				validTargets.add(sTarget);
-			}
+    BufferedReader br = new BufferedReader(new InputStreamReader(pairs));
+    String line;
+    int count = 0;
+    long t0 = System.currentTimeMillis();
+    int max = Integer.MAX_VALUE;
+    int bad = 0;
 
-			if (count % 1000000 == 0) {
-				logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count + " ms/read");
-			}
-		}
-		br.close();
-		logger.debug("populateInMemoryAdjacency : took  " + (System.currentTimeMillis() - then) + " millis to read "
-				+ count + " entries.");
+    while ((line = br.readLine()) != null) {
+      count++;
+      if (count > max)
+        break;
 
-	}
+      long e = Long.parseLong(line);
+      long[] recover = recover(e);
 
-	/**
-	 * @see mitll.xdata.GraphQuBEServer#getRoute(mitll.xdata.SimplePatternSearch)
-	 * @param example
-	 * @return
-	 */
-	@Override
-	public List<Binding.ResultInfo> getEntities(FL_PatternDescriptor example) {
-		List<String> exemplarIDs = Binding.getExemplarIDs(example);
-		List<Binding.ResultInfo> entities = new ArrayList<Binding.ResultInfo>();
-		for (String id : exemplarIDs) {
-			char c = id.charAt(0);
-			if (c != 't') {
-				id = "t" + id;
-			}
-			Binding.ResultInfo entity = getEntityResult(id);
-			entities.add(entity);
-		}
-		return entities;
-	}
+      int source = (int) recover[0];
+      String sSource = "" + source;
+      int target = (int) recover[1];
 
-	/**
-	 * For some reason making a hash set of longs is really slow.
-	 *
-	 * @throws SQLException
-	 * @paramx connection
-	 * @deprecated
-	 */
+      String sTarget = "" + target;
+
+      Set<String> targetsForSource = stot.get(sSource);
+      if (targetsForSource == null)
+        stot.put(sSource, targetsForSource = new HashSet<String>());
+      if (!targetsForSource.contains(sTarget)) {
+        targetsForSource.add(sTarget);
+        validTargets.add(sTarget);
+      }
+
+      if (count % 1000000 == 0) {
+        logger.debug("count = " + count + "; " + (System.currentTimeMillis() - 1.0 * t0) / count + " ms/read");
+      }
+    }
+    br.close();
+    logger.debug("populateInMemoryAdjacency : took  " + (System.currentTimeMillis() - then) + " millis to read "
+        + count + " entries.");
+
+  }
+
+  /**
+   * @param example
+   * @return
+   * @see mitll.xdata.GraphQuBEServer#getRoute(mitll.xdata.SimplePatternSearch)
+   */
+  @Override
+  public List<Binding.ResultInfo> getEntities(FL_PatternDescriptor example) {
+    List<String> exemplarIDs = Binding.getExemplarIDs(example);
+    List<Binding.ResultInfo> entities = new ArrayList<Binding.ResultInfo>();
+    for (String id : exemplarIDs) {
+      char c = id.charAt(0);
+      if (c != 't') {
+        id = "t" + id;
+      }
+      Binding.ResultInfo entity = getEntityResult(id);
+      entities.add(entity);
+    }
+    return entities;
+  }
+
+  /**
+   * For some reason making a hash set of longs is really slow.
+   *
+   * @throws SQLException
+   * @paramx connection
+   * @deprecated
+   */
 	/*    private void getPairs(DBConnection connection) throws SQLException {
         PreparedStatement pairConnectedStatement2 = connection.getConnection().prepareStatement(
                 "select source, target from transactions");
@@ -356,274 +354,276 @@ public class BitcoinBinding extends Binding {
     return combined;
   }*/
 
-	/**
-	 * split a long into two integers - high and low
-	 * @see
-	 * @param combined
-	 * @return
-	 */
-	private long[] recover(long combined) {
-		long low = combined & Integer.MAX_VALUE;
-		long high = (combined >> 32) & Integer.MAX_VALUE;
-		long[] both = new long[2];
+  /**
+   * split a long into two integers - high and low
+   *
+   * @param combined
+   * @return
+   * @see
+   */
+  private long[] recover(long combined) {
+    long low = combined & Integer.MAX_VALUE;
+    long high = (combined >> 32) & Integer.MAX_VALUE;
+    long[] both = new long[2];
 
-		both[0] = low;
-		both[1] = high;
-		return both;
-	}
+    both[0] = low;
+    both[1] = high;
+    return both;
+  }
 
-	/**
-	 * @param id
-	 * @param k
-	 * @param skipSelf
-	 * @return
-	 * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
-	 */
-	@Override
-	protected List<String> getNearestNeighbors(String id, int k, boolean skipSelf) {
-		List<String> neighbors = userIndex.neighbors(id, k);
-		if (skipSelf && neighbors.size() >= 1 && neighbors.get(0).equals(id)) {
-			neighbors.remove(0);
-		}
-		return neighbors;
-	}
+  /**
+   * @param id
+   * @param k
+   * @param skipSelf
+   * @return
+   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
+   */
+  @Override
+  protected List<String> getNearestNeighbors(String id, int k, boolean skipSelf) {
+    List<String> neighbors = userIndex.neighbors(id, k);
+    if (skipSelf && neighbors.size() >= 1 && neighbors.get(0).equals(id)) {
+      neighbors.remove(0);
+    }
+    return neighbors;
+  }
 
-	/**
-	 * @param id1
-	 * @param id2
-	 * @return
-	 * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
-	 */
-	@Override
-	protected double getSimilarity(String id1, String id2) {
-		return userIndex.similarity(id1, id2);
-	}
+  /**
+   * @param id1
+   * @param id2
+   * @return
+   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
+   */
+  @Override
+  protected double getSimilarity(String id1, String id2) {
+    return userIndex.similarity(id1, id2);
+  }
 
-	/**
-	 * @param i
-	 * @param j
-	 * @return
-	 * @throws Exception
-	 * @see mitll.xdata.binding.CartesianShortlist#connectedGroup
-	 */
-	@Override
-	protected boolean isPairConnected(String i, String j) throws Exception {
-		if (useFastBitcoinConnectedTest) {
-			return inMemoryIsPairConnected(i, j);
-		} else {
-			// logger.debug("isPairConnected(" + i + ", " + j + ")");
-			int parameterIndex;
-			ResultSet rs;
-			// i is source
-			parameterIndex = 1;
-			pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(i, 10));
-			pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(j, 10));
-			rs = pairConnectedStatement.executeQuery();
-			if (rs.next()) {
-				if (rs.getInt(1) > 0) {
-					return true;
-				}
-			}
-			// i is target
-			parameterIndex = 1;
-			pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(j, 10));
-			pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(i, 10));
-			rs = pairConnectedStatement.executeQuery();
-			if (rs.next()) {
-				if (rs.getInt(1) > 0) {
-					return true;
-				}
-			}
-			return false;
-		}
-	}
+  /**
+   * @param i
+   * @param j
+   * @return
+   * @throws Exception
+   * @see mitll.xdata.binding.CartesianShortlist#connectedGroup
+   */
+  @Override
+  protected boolean isPairConnected(String i, String j) throws Exception {
+    if (useFastBitcoinConnectedTest) {
+      return inMemoryIsPairConnected(i, j);
+    } else {
+      // logger.debug("isPairConnected(" + i + ", " + j + ")");
+      int parameterIndex;
+      ResultSet rs;
+      // i is source
+      parameterIndex = 1;
+      pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(i, 10));
+      pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(j, 10));
+      rs = pairConnectedStatement.executeQuery();
+      if (rs.next()) {
+        if (rs.getInt(1) > 0) {
+          return true;
+        }
+      }
+      // i is target
+      parameterIndex = 1;
+      pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(j, 10));
+      pairConnectedStatement.setInt(parameterIndex++, Integer.parseInt(i, 10));
+      rs = pairConnectedStatement.executeQuery();
+      if (rs.next()) {
+        if (rs.getInt(1) > 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
 
-	/**
-	 * Check either order -- first node as source or second
-	 * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#isPairConnected(String, String)
-	 * @param f
-	 * @param s
-	 * @return
-	 */
-	private boolean inMemoryIsPairConnected(String f, String s) {
-		Set<String> integers = stot.get(f);
-		if (integers != null && integers.contains(s)) {
-			return true;
-		}
+  /**
+   * Check either order -- first node as source or second
+   *
+   * @param f
+   * @param s
+   * @return
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#isPairConnected(String, String)
+   */
+  private boolean inMemoryIsPairConnected(String f, String s) {
+    Set<String> integers = stot.get(f);
+    if (integers != null && integers.contains(s)) {
+      return true;
+    }
 
-		Set<String> integers2 = stot.get(s);
-		return integers2 != null && integers2.contains(f);
-	}
+    Set<String> integers2 = stot.get(s);
+    return integers2 != null && integers2.contains(f);
+  }
 
-	/**
-	 * @param id1
-	 * @param id2
-	 * @return
-	 * @throws Exception
-	 * @see mitll.xdata.binding.Shortlist#getLinks
-	 */
-	@Override
-	protected String getEdgeMetadataKey(String id1, String id2) throws Exception {
-		int parameterIndex;
-		ResultSet rs;
-		// i as source
-		parameterIndex = 1;
-		edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id1, 10));
-		edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id2, 10));
-		rs = edgeMetadataKeyStatement.executeQuery();
-		if (rs.next()) {
-			return rs.getString(1);
-		}
-		// i as target
-		parameterIndex = 1;
-		edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id2, 10));
-		edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id1, 10));
-		rs = edgeMetadataKeyStatement.executeQuery();
-		if (rs.next()) {
-			return rs.getString(1);
-		}
-		return null;
-	}
+  /**
+   * @param id1
+   * @param id2
+   * @return
+   * @throws Exception
+   * @see mitll.xdata.binding.Shortlist#getLinks
+   */
+  @Override
+  protected String getEdgeMetadataKey(String id1, String id2) throws Exception {
+    int parameterIndex;
+    ResultSet rs;
+    // i as source
+    parameterIndex = 1;
+    edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id1, 10));
+    edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id2, 10));
+    rs = edgeMetadataKeyStatement.executeQuery();
+    if (rs.next()) {
+      return rs.getString(1);
+    }
+    // i as target
+    parameterIndex = 1;
+    edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id2, 10));
+    edgeMetadataKeyStatement.setInt(parameterIndex++, Integer.parseInt(id1, 10));
+    rs = edgeMetadataKeyStatement.executeQuery();
+    if (rs.next()) {
+      return rs.getString(1);
+    }
+    return null;
+  }
 
-	@Override
-	protected FL_Property createEdgeMetadataKeyProperty(String id) {
-		return createProperty(TRANSID, Long.parseLong(id), FL_PropertyType.LONG);
-	}
+  @Override
+  protected FL_Property createEdgeMetadataKeyProperty(String id) {
+    return createProperty(TRANSID, Long.parseLong(id), FL_PropertyType.LONG);
+  }
 
-	@Override
-	public List<Edge> getAllLinks(List<String> ids) {
-		long t0 = System.currentTimeMillis();
+  @Override
+  public List<Edge> getAllLinks(List<String> ids) {
+    long t0 = System.currentTimeMillis();
 
-		List<Edge> edges = new ArrayList<Edge>();
+    List<Edge> edges = new ArrayList<Edge>();
 
-		if (ids.size() == 1) {
-			return edges;
-		}
+    if (ids.size() == 1) {
+      return edges;
+    }
 
-		// TODO : make limit configurable?
+    // TODO : make limit configurable?
 
-		String sql = "";
-		sql += "select transid, source, target, time, amount, usd, devpop, creditdev, debitdev";
-		sql += " from transactions";
-		sql += " where source = ? and target = ?";
-		sql += " limit 250";
+    String sql = "";
+    sql += "select transid, source, target, time, amount, usd, devpop, creditdev, debitdev";
+    sql += " from transactions";
+    sql += " where source = ? and target = ?";
+    sql += " limit 250";
 
-		try {
-			PreparedStatement statement = connection.prepareStatement(sql);
+    try {
+      PreparedStatement statement = connection.prepareStatement(sql);
 
-			for (int i = 0; i < ids.size(); i++) {
-				for (int j = 0; j < ids.size(); j++) {
-					if (i == j) {
-						continue;
-					}
-					// long start = System.currentTimeMillis();
-					int parameterIndex = 1;
-					statement.setInt(parameterIndex++, Integer.parseInt(ids.get(i), 10));
-					statement.setInt(parameterIndex++, Integer.parseInt(ids.get(j), 10));
-					ResultSet rs = statement.executeQuery();
-					// int ijEdges = 0;
-					while (rs.next()) {
-						// ijEdges++;
-						int source = rs.getInt(2);
-						int target = rs.getInt(3);
-						long time = rs.getLong(4);
-						double amount = rs.getDouble(5);
-						double usd = rs.getDouble(6);
-						double devpop = rs.getDouble(7);
-						double creditdev = rs.getDouble(8);
-						double debitdev = rs.getDouble(9);
-						BitcoinEdge edge = new BitcoinEdge(source, target, time, amount, usd, devpop, creditdev,
-								debitdev);
-						edges.add(edge);
-					}
-					// long stop = System.currentTimeMillis();
-					// logger.debug("(" + i + ", " + j + ") took " + (start - stop) + " ms for " + ijEdges + " edges");
-				}
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return new ArrayList<Edge>();
-		}
+      for (int i = 0; i < ids.size(); i++) {
+        for (int j = 0; j < ids.size(); j++) {
+          if (i == j) {
+            continue;
+          }
+          // long start = System.currentTimeMillis();
+          int parameterIndex = 1;
+          statement.setInt(parameterIndex++, Integer.parseInt(ids.get(i), 10));
+          statement.setInt(parameterIndex++, Integer.parseInt(ids.get(j), 10));
+          ResultSet rs = statement.executeQuery();
+          // int ijEdges = 0;
+          while (rs.next()) {
+            // ijEdges++;
+            int source = rs.getInt(2);
+            int target = rs.getInt(3);
+            long time = rs.getLong(4);
+            double amount = rs.getDouble(5);
+            double usd = rs.getDouble(6);
+            double devpop = rs.getDouble(7);
+            double creditdev = rs.getDouble(8);
+            double debitdev = rs.getDouble(9);
+            BitcoinEdge edge = new BitcoinEdge(source, target, time, amount, usd, devpop, creditdev,
+                debitdev);
+            edges.add(edge);
+          }
+          // long stop = System.currentTimeMillis();
+          // logger.debug("(" + i + ", " + j + ") took " + (start - stop) + " ms for " + ijEdges + " edges");
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+      return new ArrayList<Edge>();
+    }
 
-		long t1 = System.currentTimeMillis();
-		if (t1 - t0 > 100)
-			logger.debug("retrieving " + edges.size() + " edge(s) took " + (t1 - t0) + " ms");
+    long t1 = System.currentTimeMillis();
+    if (t1 - t0 > 100)
+      logger.debug("retrieving " + edges.size() + " edge(s) took " + (t1 - t0) + " ms");
 
-		return edges;
-	}
+    return edges;
+  }
 
-	@Override
-	protected List<Edge> getAllLinks(List<String> ids, long startTime, long endTime) {
-		// TODO: make this method obey startTime and endTime
-		long t0 = System.currentTimeMillis();
+  @Override
+  protected List<Edge> getAllLinks(List<String> ids, long startTime, long endTime) {
+    // TODO: make this method obey startTime and endTime
+    long t0 = System.currentTimeMillis();
 
-		List<Edge> edges = new ArrayList<Edge>();
+    List<Edge> edges = new ArrayList<Edge>();
 
-		if (ids.size() == 1) {
-			return edges;
-		}
+    if (ids.size() == 1) {
+      return edges;
+    }
 
-		// TODO : make limit configurable?
+    // TODO : make limit configurable?
 
-		String sql = "";
-		sql += "select transid, source, target, time, amount, usd, devpop, creditdev, debitdev";
-		sql += " from transactions";
-		sql += " where source = ? and target = ? and time >= ? and time <= ?";
-		sql += " limit 250";
+    String sql = "";
+    sql += "select transid, source, target, time, amount, usd, devpop, creditdev, debitdev";
+    sql += " from transactions";
+    sql += " where source = ? and target = ? and time >= ? and time <= ?";
+    sql += " limit 250";
 
-		try {
-			PreparedStatement statement = connection.prepareStatement(sql);
+    try {
+      PreparedStatement statement = connection.prepareStatement(sql);
 
-			for (int i = 0; i < ids.size(); i++) {
-				for (int j = 0; j < ids.size(); j++) {
-					if (i == j) {
-						continue;
-					}
-					// long start = System.currentTimeMillis();
-					int parameterIndex = 1;
-					statement.setInt(parameterIndex++, Integer.parseInt(ids.get(i), 10));
-					statement.setInt(parameterIndex++, Integer.parseInt(ids.get(j), 10));
-					statement.setLong(parameterIndex++, startTime);
-					statement.setLong(parameterIndex++, endTime);
-					ResultSet rs = statement.executeQuery();
-					// int ijEdges = 0;
-					while (rs.next()) {
-						// ijEdges++;
-						int source = rs.getInt(2);
-						int target = rs.getInt(3);
-						long time = rs.getLong(4);
-						double amount = rs.getDouble(5);
-						double usd = rs.getDouble(6);
-						double devpop = rs.getDouble(7);
-						double creditdev = rs.getDouble(8);
-						double debitdev = rs.getDouble(9);
-						BitcoinEdge edge = new BitcoinEdge(source, target, time, amount, usd, devpop, creditdev,
-								debitdev);
-						edges.add(edge);
-					}
-					// long stop = System.currentTimeMillis();
-					// logger.debug("(" + i + ", " + j + ") took " + (start - stop) + " ms for " + ijEdges + " edges");
-				}
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return new ArrayList<Edge>();
-		}
+      for (int i = 0; i < ids.size(); i++) {
+        for (int j = 0; j < ids.size(); j++) {
+          if (i == j) {
+            continue;
+          }
+          // long start = System.currentTimeMillis();
+          int parameterIndex = 1;
+          statement.setInt(parameterIndex++, Integer.parseInt(ids.get(i), 10));
+          statement.setInt(parameterIndex++, Integer.parseInt(ids.get(j), 10));
+          statement.setLong(parameterIndex++, startTime);
+          statement.setLong(parameterIndex++, endTime);
+          ResultSet rs = statement.executeQuery();
+          // int ijEdges = 0;
+          while (rs.next()) {
+            // ijEdges++;
+            int source = rs.getInt(2);
+            int target = rs.getInt(3);
+            long time = rs.getLong(4);
+            double amount = rs.getDouble(5);
+            double usd = rs.getDouble(6);
+            double devpop = rs.getDouble(7);
+            double creditdev = rs.getDouble(8);
+            double debitdev = rs.getDouble(9);
+            BitcoinEdge edge = new BitcoinEdge(source, target, time, amount, usd, devpop, creditdev,
+                debitdev);
+            edges.add(edge);
+          }
+          // long stop = System.currentTimeMillis();
+          // logger.debug("(" + i + ", " + j + ") took " + (start - stop) + " ms for " + ijEdges + " edges");
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+      return new ArrayList<Edge>();
+    }
 
-		long t1 = System.currentTimeMillis();
-		if (t1 - t0 > 100)
-			logger.debug("retrieving " + edges.size() + " edge(s) took " + (t1 - t0) + " ms");
+    long t1 = System.currentTimeMillis();
+    if (t1 - t0 > 100)
+      logger.debug("retrieving " + edges.size() + " edge(s) took " + (t1 - t0) + " ms");
 
-		return edges;
-	}
+    return edges;
+  }
 
-	/**
-	 * @param edges
-	 * @return
-	 * @see #rescoreWithHMM
-	 * @deprecated  not used currently
-	 */
-	private List<Transaction> createFeatureVectors(List<Edge> edges, List<String> exemplarIDs) {
+  /**
+   * @param edges
+   * @return
+   * @see #rescoreWithHMM
+   * @deprecated not used currently
+   */
+/*	private List<Transaction> createFeatureVectors(List<Edge> edges, List<String> exemplarIDs) {
 		// sort edges
 		Collections.sort(edges, new Comparator<Edge>() {
 			@Override
@@ -672,135 +672,135 @@ public class BitcoinBinding extends Binding {
 		}
 
 		return transactions;
-	}
+	}*/
 
-	/**
-	 * @see #getResultObservations(java.util.List, java.util.List, java.util.List)
-	 * @see #rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
-	 * @param edges
-	 * @param ids
-	 * @return
-	 */
-	@Override
-	protected List<VectorObservation> createObservationVectors(List<Edge> edges, List<String> ids) {
+  /**
+   * @param edges
+   * @param ids
+   * @return
+   * @see #getResultObservations(java.util.List, java.util.List, java.util.List)
+   * @see #rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
+   */
+  @Override
+  protected List<VectorObservation> createObservationVectors(List<Edge> edges, List<String> ids) {
 
 //		logger.info("=========debugging createObservationVectors()========================="); 
 
-		// 
-		// sort edges
-		//
-		Collections.sort(edges, new Comparator<Edge>() {
-			@Override
-			public int compare(Edge e1, Edge e2) {
-				long t1 = e1.getTime();
-				long t2 = e2.getTime();
-				if (t1 < t2) {
-					return -1;
-				} else if (t1 > t2) {
-					return 1;
-				} else {
-					return 0;
-				}
-			}
-		});
+    //
+    // sort edges
+    //
+    Collections.sort(edges, new Comparator<Edge>() {
+      @Override
+      public int compare(Edge e1, Edge e2) {
+        long t1 = e1.getTime();
+        long t2 = e2.getTime();
+        if (t1 < t2) {
+          return -1;
+        } else if (t1 > t2) {
+          return 1;
+        } else {
+          return 0;
+        }
+      }
+    });
 //		logger.info("sorted edges ("+edges.size()+")...");
 //		logger.info(edges);
 
 
-		//
-		// make one observation per temporal bucket
-		//
-		List<VectorObservation> observations = new ArrayList<VectorObservation>();
+    //
+    // make one observation per temporal bucket
+    //
+    List<VectorObservation> observations = new ArrayList<VectorObservation>();
 
 		/*
 		* map all pairs of query nodes to indices (that occur after initial fixed part of feature vector)
 		*/
-		Map<String, Integer> indexMap = new HashMap<String, Integer>();
-		int numNodes = ids.size();
-		int numFixedFeatures = 2; // i.e., that don't depend on number of nodes in query
-		int index = numFixedFeatures;
-		for (int i = 0; i < numNodes; i++) {
-			for (int j = i + 1; j < numNodes; j++) {
-				String key = ids.get(i) + ":" + ids.get(j);
-				indexMap.put(key, index);
-				index++;
-			}
-		}
+    Map<String, Integer> indexMap = new HashMap<String, Integer>();
+    int numNodes = ids.size();
+    int numFixedFeatures = 2; // i.e., that don't depend on number of nodes in query
+    int index = numFixedFeatures;
+    for (int i = 0; i < numNodes; i++) {
+      for (int j = i + 1; j < numNodes; j++) {
+        String key = ids.get(i) + ":" + ids.get(j);
+        indexMap.put(key, index);
+        index++;
+      }
+    }
 //		logger.info("here comes indexMap:");
 //		logger.debug("indexMap = " + indexMap);
 //		logger.info("num of nodes: "+numNodes);
 
-		
-		BitcoinEdge firstEdge = (BitcoinEdge) edges.get(0);
-		int edgeCount = 0;
-		long lastTime = firstEdge.getTime();
-		long lastBucketFirstTime = firstEdge.getTime();
-		boolean newBucket = true;
-		long thisBucketFirstTime = -1;
 
-		double[] features = new double[2 + (numNodes * (numNodes - 1)) / 2];  
+    BitcoinEdge firstEdge = (BitcoinEdge) edges.get(0);
+    int edgeCount = 0;
+    long lastTime = firstEdge.getTime();
+    long lastBucketFirstTime = firstEdge.getTime();
+    boolean newBucket = true;
+    long thisBucketFirstTime = -1;
+
+    double[] features = new double[2 + (numNodes * (numNodes - 1)) / 2];
 //		logger.info("length of feature vector:"+features.length);
 		
 		/*
 		 * fill in features for temporal "bucket" (what defines bucket though?)
 		 */
-		List<Edge> bucketEdges = new ArrayList<Edge>();
-		for (Edge edge1 : edges) {
-			edgeCount++;
-			BitcoinEdge edge = (BitcoinEdge) edge1;
-			bucketEdges.add(edge);
+    List<Edge> bucketEdges = new ArrayList<Edge>();
+    for (Edge edge1 : edges) {
+      edgeCount++;
+      BitcoinEdge edge = (BitcoinEdge) edge1;
+      bucketEdges.add(edge);
 
 			/*
 			 * EDGE-INDEPENDENT FEATURE ACCUMULATION
 			 */
-			
-			//Accumulate mean time between transactions
-			long thisTime = edge.getTime();
 
-			if (!newBucket) {
-				features[0] += (thisTime - lastTime);
+      //Accumulate mean time between transactions
+      long thisTime = edge.getTime();
+
+      if (!newBucket) {
+        features[0] += (thisTime - lastTime);
 //				logger.info("here's the first feature: "+features[0]);
-			}
+      }
 
-			// Time since last bucket (will be zero for very first bucket)
-			if (newBucket) {
-				features[1] = (thisTime - lastBucketFirstTime);
-				thisBucketFirstTime = thisTime;
-			}
-			newBucket = false;
-			lastTime = thisTime;
+      // Time since last bucket (will be zero for very first bucket)
+      if (newBucket) {
+        features[1] = (thisTime - lastBucketFirstTime);
+        thisBucketFirstTime = thisTime;
+      }
+      newBucket = false;
+      lastTime = thisTime;
 
 			
 			/*
 			 * EDGE-DEPENDENT FEATURES
-			 */	
-			
-			// Net Flow between Pairs of Nodes
-			// TODO: normalize (later) by total flow within bucket???
-			String key = edge.getSource() + ":" + edge.getTarget();
-			if (indexMap.containsKey(key)) {
-				// this index is for net flow from source to target (so add amount)
-				features[indexMap.get(key)] += edge.getUsd();
-			} else {
-				// this index is for net flow from target to source (so subtract amount)
-				key = edge.getTarget() + ":" + edge.getSource();
-				features[indexMap.get(key)] -= edge.getUsd();
-			}
+			 */
+
+      // Net Flow between Pairs of Nodes
+      // TODO: normalize (later) by total flow within bucket???
+      String key = edge.getSource() + ":" + edge.getTarget();
+      if (indexMap.containsKey(key)) {
+        // this index is for net flow from source to target (so add amount)
+        features[indexMap.get(key)] += edge.getUsd();
+      } else {
+        // this index is for net flow from target to source (so subtract amount)
+        key = edge.getTarget() + ":" + edge.getSource();
+        features[indexMap.get(key)] -= edge.getUsd();
+      }
 
 			
 			/*
 			 * BUCKET_SIZE is the number of edges to accumulate before getting a feature vector out
 			 * The minimum value this can take is 2....
 			 */
-			if (edgeCount == BUCKET_SIZE) {
-		
-				
-				double denom = (lastTime - thisBucketFirstTime);
-				if (denom > 0) {
-					// normalize mean time between transactions by bucket length
-					features[0] /= denom;	
-					features[1] /= denom;
-				} 
+      if (edgeCount == BUCKET_SIZE) {
+
+
+        double denom = (lastTime - thisBucketFirstTime);
+        if (denom > 0) {
+          // normalize mean time between transactions by bucket length
+          features[0] /= denom;
+          features[1] /= denom;
+        }
 				
 				/*
 				// mean time between transactions in bucket...
@@ -811,406 +811,405 @@ public class BitcoinBinding extends Binding {
 				// Note: features[1] is already zero for very first bucket, so this doesn't do anything
 				features[1] /= (lastTime - lastBucketFirstTime);
 				*/
-				
-				// add observation
-				VectorObservation observation = new VectorObservation(features);
-				observation.setEdges(bucketEdges);
-				observations.add(observation);
 
-				String featString = "";
-				for (int i=0; i<features.length; i++) {
-					featString += "\t"+features[i];
-				}
+        // add observation
+        VectorObservation observation = new VectorObservation(features);
+        observation.setEdges(bucketEdges);
+        observations.add(observation);
+
+        String featString = "";
+        for (int i = 0; i < features.length; i++) {
+          featString += "\t" + features[i];
+        }
 //				logger.info(featString);	
-				
-				// reset things
-				newBucket = true;
-				edgeCount = 0;
-				bucketEdges = new ArrayList<Edge>();
-				lastBucketFirstTime = thisBucketFirstTime;
-				features = new double[2 + (numNodes * (numNodes - 1)) / 2];
-			}	
-		}
 
-		// finish last bucket if necessary
-		if (edgeCount > 0) {
-			// logger.debug("last bucket: edgeCount = " + edgeCount);
-			// logger.debug("last bucket: lastTime = " + lastTime);
-			// logger.debug("last bucket: thisBucketFirstTime = " + thisBucketFirstTime);
+        // reset things
+        newBucket = true;
+        edgeCount = 0;
+        bucketEdges = new ArrayList<Edge>();
+        lastBucketFirstTime = thisBucketFirstTime;
+        features = new double[2 + (numNodes * (numNodes - 1)) / 2];
+      }
+    }
 
-			// normalize mean time between transactions by bucket length
-			double denom = (lastTime - thisBucketFirstTime);
-			if (denom > 0) {
-				features[0] /= (lastTime - thisBucketFirstTime);
-				
-				// normalize time since last bucket by total length spanned by both buckets
-				// Note: features[1] is already zero for very first bucket, so this doesn't do anything
-				features[1] /= (lastTime - lastBucketFirstTime);
-			}
+    // finish last bucket if necessary
+    if (edgeCount > 0) {
+      // logger.debug("last bucket: edgeCount = " + edgeCount);
+      // logger.debug("last bucket: lastTime = " + lastTime);
+      // logger.debug("last bucket: thisBucketFirstTime = " + thisBucketFirstTime);
+
+      // normalize mean time between transactions by bucket length
+      double denom = (lastTime - thisBucketFirstTime);
+      if (denom > 0) {
+        features[0] /= (lastTime - thisBucketFirstTime);
+
+        // normalize time since last bucket by total length spanned by both buckets
+        // Note: features[1] is already zero for very first bucket, so this doesn't do anything
+        features[1] /= (lastTime - lastBucketFirstTime);
+      }
 
 
-			// add observation
-			VectorObservation observation = new VectorObservation(features);
-			observation.setEdges(bucketEdges);
-			observations.add(observation);
-			
-			String featString = "";
-			for (int i=0; i<features.length; i++) {
-				featString += "\t"+features[i];
-			}
+      // add observation
+      VectorObservation observation = new VectorObservation(features);
+      observation.setEdges(bucketEdges);
+      observations.add(observation);
+
+      String featString = "";
+      for (int i = 0; i < features.length; i++) {
+        featString += "\t" + features[i];
+      }
 //			logger.info(featString);	
-		}
+    }
 
 
-		
-//		logger.info("=========debugging createObservationVectors()========================="); 
+//		logger.info("=========debugging createObservationVectors()=========================");
 
-		return observations;
-	}
+    return observations;
+  }
 
-	/**
-	 * @param example
-	 * @param result
-	 * @param edges
-	 * @see #searchByExample
-	 */
-	@Override
-	protected List<FL_LinkMatchResult> createAggregateLinks(FL_PatternDescriptor example, FL_PatternSearchResult result, List<Edge> edges) {
-		List<FL_LinkMatchResult> linkMatchResults = new ArrayList<FL_LinkMatchResult>();
+  /**
+   * @param example
+   * @param result
+   * @param edges
+   * @see #searchByExample
+   */
+  @Override
+  protected List<FL_LinkMatchResult> createAggregateLinks(FL_PatternDescriptor example, FL_PatternSearchResult result, List<Edge> edges) {
+    List<FL_LinkMatchResult> linkMatchResults = new ArrayList<FL_LinkMatchResult>();
 
-		// map query uids to number associated with their place in query entity list
-		// e.g., holds "QA --> 0", "QB --> 1"
-		Map<String, Integer> queryIdToPosition = new HashMap<String, Integer>();
-		for (int i = 0; i < example.getEntities().size(); i++) {
-			FL_EntityMatchDescriptor entityMatchDescriptor = example.getEntities().get(i);
-			queryIdToPosition.put(entityMatchDescriptor.getUid(), i);
-			// logger.debug("exemplar uid = " + entityMatchDescriptor.getUid() + ", i = " + i);
-		}
+    // map query uids to number associated with their place in query entity list
+    // e.g., holds "QA --> 0", "QB --> 1"
+    Map<String, Integer> queryIdToPosition = new HashMap<String, Integer>();
+    for (int i = 0; i < example.getEntities().size(); i++) {
+      FL_EntityMatchDescriptor entityMatchDescriptor = example.getEntities().get(i);
+      queryIdToPosition.put(entityMatchDescriptor.getUid(), i);
+      // logger.debug("exemplar uid = " + entityMatchDescriptor.getUid() + ", i = " + i);
+    }
 
-		// map result ids to the number associated with the query id
-		// e.g., holds "RA' --> 0", "RB' --> 1"
-		Map<String, Integer> resultIdToQueryIdPosition = new HashMap<String, Integer>();
-		Map<Integer, String> positionToResultId = new HashMap<Integer, String>();
-		for (FL_EntityMatchResult entityMatchResult : result.getEntities()) {
-			String resultID = entityMatchResult.getEntity().getUid();
-			String queryID = entityMatchResult.getUid();
-			Integer queryPosition = queryIdToPosition.get(queryID);
-			resultIdToQueryIdPosition.put(resultID, queryPosition);
-			positionToResultId.put(queryPosition, resultID);
-			// logger.debug("resultID = " + resultID + ", queryID = " + queryID + ", queryPosition = " + queryPosition);
-		}
+    // map result ids to the number associated with the query id
+    // e.g., holds "RA' --> 0", "RB' --> 1"
+    Map<String, Integer> resultIdToQueryIdPosition = new HashMap<String, Integer>();
+    Map<Integer, String> positionToResultId = new HashMap<Integer, String>();
+    for (FL_EntityMatchResult entityMatchResult : result.getEntities()) {
+      String resultID = entityMatchResult.getEntity().getUid();
+      String queryID = entityMatchResult.getUid();
+      Integer queryPosition = queryIdToPosition.get(queryID);
+      resultIdToQueryIdPosition.put(resultID, queryPosition);
+      positionToResultId.put(queryPosition, resultID);
+      // logger.debug("resultID = " + resultID + ", queryID = " + queryID + ", queryPosition = " + queryPosition);
+    }
 
-		// key is id1:id2 where id1 < id2 are query ID position
-		// value is { #edges, out flow, in flow, net flow}
-		Map<String, Object[]> pairStatistics = new HashMap<String, Object[]>();
+    // key is id1:id2 where id1 < id2 are query ID position
+    // value is { #edges, out flow, in flow, net flow}
+    Map<String, Object[]> pairStatistics = new HashMap<String, Object[]>();
 
-		for (Edge temp : edges) {
-			BitcoinEdge edge = (BitcoinEdge) temp;
-			String source = "" + edge.getSource();
-			String target = "" + edge.getTarget();
-			double usd = edge.getUsd();
-			int sourcePosition = resultIdToQueryIdPosition.get(source);
-			int targetPosition = resultIdToQueryIdPosition.get(target);
-			String key;
-			double out;
-			double in;
-			if (sourcePosition < targetPosition) {
-				// edge 2 --> 1, key 1:2, so flow is "out" (from source of key)
-				key = sourcePosition + ":" + targetPosition;
-				out = usd;
-				in = 0.0;
-			} else {
-				// edge 2 --> 1, key 1:2, so flow is "in" (to source of key)
-				key = targetPosition + ":" + sourcePosition;
-				out = 0.0;
-				in = usd;
-			}
-			Object[] object = pairStatistics.get(key);
-			if (object == null) {
-				object = new Object[4];
-				object[0] = 0;
-				object[1] = 0.0;
-				object[2] = 0.0;
-				object[3] = 0.0;
-				pairStatistics.put(key, object);
-			}
-			object[0] = (Integer) object[0] + 1;
-			object[1] = (Double) object[1] + out;
-			object[2] = (Double) object[2] + in;
-			object[3] = (Double) object[3] + (out - in);
-		}
+    for (Edge temp : edges) {
+      BitcoinEdge edge = (BitcoinEdge) temp;
+      String source = "" + edge.getSource();
+      String target = "" + edge.getTarget();
+      double usd = edge.getUsd();
+      int sourcePosition = resultIdToQueryIdPosition.get(source);
+      int targetPosition = resultIdToQueryIdPosition.get(target);
+      String key;
+      double out;
+      double in;
+      if (sourcePosition < targetPosition) {
+        // edge 2 --> 1, key 1:2, so flow is "out" (from source of key)
+        key = sourcePosition + ":" + targetPosition;
+        out = usd;
+        in = 0.0;
+      } else {
+        // edge 2 --> 1, key 1:2, so flow is "in" (to source of key)
+        key = targetPosition + ":" + sourcePosition;
+        out = 0.0;
+        in = usd;
+      }
+      Object[] object = pairStatistics.get(key);
+      if (object == null) {
+        object = new Object[4];
+        object[0] = 0;
+        object[1] = 0.0;
+        object[2] = 0.0;
+        object[3] = 0.0;
+        pairStatistics.put(key, object);
+      }
+      object[0] = (Integer) object[0] + 1;
+      object[1] = (Double) object[1] + out;
+      object[2] = (Double) object[2] + in;
+      object[3] = (Double) object[3] + (out - in);
+    }
 
-		for (Entry<String, Object[]> entry : pairStatistics.entrySet()) {
-			String key = entry.getKey();
-			List<String> fields = Binding.split(key, ":");
-			String source = positionToResultId.get(Integer.parseInt(fields.get(0), 10));
-			String target = positionToResultId.get(Integer.parseInt(fields.get(1), 10));
+    for (Entry<String, Object[]> entry : pairStatistics.entrySet()) {
+      String key = entry.getKey();
+      List<String> fields = Binding.split(key, ":");
+      String source = positionToResultId.get(Integer.parseInt(fields.get(0), 10));
+      String target = positionToResultId.get(Integer.parseInt(fields.get(1), 10));
 
-			Object[] value = entry.getValue();
-			int numEdges = (Integer) value[0];
-			double out = (Double) value[1];
-			double in = (Double) value[2];
-			double net = (Double) value[3];
+      Object[] value = entry.getValue();
+      int numEdges = (Integer) value[0];
+      double out = (Double) value[1];
+      double in = (Double) value[2];
+      double net = (Double) value[3];
 
-			FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
-			FL_Link link = new FL_Link();
-			link.setSource(source);
-			link.setTarget(target);
-			//link.setTags(new ArrayList<FL_LinkTag>()); // Deprecated in Influent IDL 2.0
-			List<FL_Property> properties = new ArrayList<FL_Property>();
-			properties.add(createProperty("numEdges", numEdges, FL_PropertyType.LONG));
-			properties.add(createProperty("outFlow", out, FL_PropertyType.DOUBLE));
-			properties.add(createProperty("inFlow", in, FL_PropertyType.DOUBLE));
-			properties.add(createProperty("netFlow", net, FL_PropertyType.DOUBLE));
-			link.setProperties(properties);
-			linkMatchResult.setLink(link);
-			linkMatchResult.setScore(1.0);
-			linkMatchResult.setUid("");
-			linkMatchResults.add(linkMatchResult);
-		}
+      FL_LinkMatchResult linkMatchResult = new FL_LinkMatchResult();
+      FL_Link link = new FL_Link();
+      link.setSource(source);
+      link.setTarget(target);
+      //link.setTags(new ArrayList<FL_LinkTag>()); // Deprecated in Influent IDL 2.0
+      List<FL_Property> properties = new ArrayList<FL_Property>();
+      properties.add(createProperty("numEdges", numEdges, FL_PropertyType.LONG));
+      properties.add(createProperty("outFlow", out, FL_PropertyType.DOUBLE));
+      properties.add(createProperty("inFlow", in, FL_PropertyType.DOUBLE));
+      properties.add(createProperty("netFlow", net, FL_PropertyType.DOUBLE));
+      link.setProperties(properties);
+      linkMatchResult.setLink(link);
+      linkMatchResult.setScore(1.0);
+      linkMatchResult.setUid("");
+      linkMatchResults.add(linkMatchResult);
+    }
 
-		// result.setLinks(linkMatchResults);
+    // result.setLinks(linkMatchResults);
 
-		return linkMatchResults;
-	}
+    return linkMatchResults;
+  }
 
-	public static class BitcoinEdge implements Edge<Integer> {
-		private final int source;
-		private final int target;
-		private final long time;
-		private final double amount;
-		private final double usd;
+  public static class BitcoinEdge implements Edge<Integer> {
+    private final int source;
+    private final int target;
+    private final long time;
+    private final double amount;
+    private final double usd;
 
-		/**
-		 * deviation from population mean usd
-		 */
-		private final double deviationFromPopulation;
+    /**
+     * deviation from population mean usd
+     */
+    private final double deviationFromPopulation;
 
-		/**
-		 * deviation from target's mean usd
-		 */
-		private final double deviationFromOwnCredits;
+    /**
+     * deviation from target's mean usd
+     */
+    private final double deviationFromOwnCredits;
 
-		/**
-		 * deviation from source's mean usd
-		 */
-		private final double deviationFromOwnDebits;
+    /**
+     * deviation from source's mean usd
+     */
+    private final double deviationFromOwnDebits;
 
-		public BitcoinEdge(int source, int target, long time, double amount, double usd,
-				double deviationFromPopulation, double deviationFromOwnCredits, double deviationFromOwnDebits) {
-			this.source = source;
-			this.target = target;
-			this.time = time;
-			this.amount = amount;
-			this.usd = usd;
-			this.deviationFromPopulation = deviationFromPopulation;
-			this.deviationFromOwnCredits = deviationFromOwnCredits;
-			this.deviationFromOwnDebits = deviationFromOwnDebits;
-		}
+    public BitcoinEdge(int source, int target, long time, double amount, double usd,
+                       double deviationFromPopulation, double deviationFromOwnCredits, double deviationFromOwnDebits) {
+      this.source = source;
+      this.target = target;
+      this.time = time;
+      this.amount = amount;
+      this.usd = usd;
+      this.deviationFromPopulation = deviationFromPopulation;
+      this.deviationFromOwnCredits = deviationFromOwnCredits;
+      this.deviationFromOwnDebits = deviationFromOwnDebits;
+    }
 
-		@Override
-		public Integer getSource() {
-			return source;
-		}
+    @Override
+    public Integer getSource() {
+      return source;
+    }
 
-		@Override
-		public Integer getTarget() {
-			return target;
-		}
+    @Override
+    public Integer getTarget() {
+      return target;
+    }
 
-		@Override
-		public long getTime() {
-			return time;
-		}
+    @Override
+    public long getTime() {
+      return time;
+    }
 
-		public double getAmount() {
-			return amount;
-		}
+    public double getAmount() {
+      return amount;
+    }
 
-		public double getUsd() {
-			return usd;
-		}
+    public double getUsd() {
+      return usd;
+    }
 
-		public double getDeviationFromPopulation() {
-			return deviationFromPopulation;
-		}
+    public double getDeviationFromPopulation() {
+      return deviationFromPopulation;
+    }
 
-		public double getDeviationFromOwnCredits() {
-			return deviationFromOwnCredits;
-		}
+    public double getDeviationFromOwnCredits() {
+      return deviationFromOwnCredits;
+    }
 
-		public double getDeviationFromOwnDebits() {
-			return deviationFromOwnDebits;
-		}
+    public double getDeviationFromOwnDebits() {
+      return deviationFromOwnDebits;
+    }
 
-		public String toString() {
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-			String s = "";
-			s += source;
-			s += "\t" + target;
-			s += "\t" + time;
-			s += "\t" + sdf.format(new Date(time));
-			s += "\t" + amount;
-			s += "\t" + usd;
-			s += "\t" + deviationFromPopulation;
-			s += "\t" + deviationFromOwnCredits;
-			s += "\t" + deviationFromOwnDebits;
-			return s;
-		}
+    public String toString() {
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+      String s = "";
+      s += source;
+      s += "\t" + target;
+      s += "\t" + time;
+      s += "\t" + sdf.format(new Date(time));
+      s += "\t" + amount;
+      s += "\t" + usd;
+      s += "\t" + deviationFromPopulation;
+      s += "\t" + deviationFromOwnCredits;
+      s += "\t" + deviationFromOwnDebits;
+      return s;
+    }
 
-		@Override
-		public int compareTo(Edge o) {
-			long t1 = this.time;
-			long t2 = o.getTime();
-			if (t1 < t2) {
-				return -1;
-			} else if (t1 > t2) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-	}
+    @Override
+    public int compareTo(Edge o) {
+      long t1 = this.time;
+      long t2 = o.getTime();
+      if (t1 < t2) {
+        return -1;
+      } else if (t1 > t2) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+  }
 
-	public static void main(String[] arg) throws Exception {
-		System.getProperties().put("logging.properties", "log4j.properties");
+  public static void main(String[] arg) throws Exception {
+    System.getProperties().put("logging.properties", "log4j.properties");
 
-		// testCombine();
-		BitcoinBinding binding = null;
-		try {
-			binding = new BitcoinBinding(new H2Connection("bitcoin"), "");
-			//  binding = new BitcoinBinding(new H2Connection("c:/temp/bitcoin", "bitcoin"), true);
-			// binding = new BitcoinBinding(new H2Connection( "bitcoin"), false);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return;
-		}
-		logger.debug("got " + binding);
+    // testCombine();
+    BitcoinBinding binding = null;
+    try {
+      binding = new BitcoinBinding(new H2Connection("bitcoin"), "");
+      //  binding = new BitcoinBinding(new H2Connection("c:/temp/bitcoin", "bitcoin"), true);
+      // binding = new BitcoinBinding(new H2Connection( "bitcoin"), false);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return;
+    }
+    logger.debug("got " + binding);
 
-		// List<String> ids = Arrays.asList(new String[] { "505134", "137750", "146073", "28946", "11" });
-		// List<Edge> edges = binding.getAllLinks(ids);
+    // List<String> ids = Arrays.asList(new String[] { "505134", "137750", "146073", "28946", "11" });
+    // List<Edge> edges = binding.getAllLinks(ids);
 
-		// List<FL_PatternSearchResult> results = binding.Aptima(0);
-		// logger.debug("results.size() = " + results.size());
-		// logger.debug(results.get(0));
+    // List<FL_PatternSearchResult> results = binding.Aptima(0);
+    // logger.debug("results.size() = " + results.size());
+    // logger.debug(results.get(0));
 
-		FL_PatternDescriptor descriptor = null;
-		Object result;
+    FL_PatternDescriptor descriptor = null;
+    Object result;
 
-		// use first aptima result as exemplar
+    // use first aptima result as exemplar
 
-		// query_0
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "505134", "137750", "146073",
-		// "28946", "11" }));
+    // query_0
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "505134", "137750", "146073",
+    // "28946", "11" }));
 
-		// query_1
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "97409", "11" }));
+    // query_1
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "97409", "11" }));
 
-		// query_2
-		descriptor = AvroUtils.createExemplarQuery(Arrays.asList("11", "1598539", "988143"));
+    // query_2
+    descriptor = AvroUtils.createExemplarQuery(Arrays.asList("11", "1598539", "988143"));
 
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "505134", "137750", "146073",
-		// "28946",
-		// "11" }));
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "505134", "137750", "146073",
+    // "28946",
+    // "11" }));
 
-		boolean hmmScoring = true;
-		// use aptima precomputed results
-		logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE);
-		// use LL shortlisting
-		// result = binding.searchByExample(descriptor, null, 0, 10, -1, hmmScoring);
-		logger.debug("result " + result);
-		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
+    boolean hmmScoring = true;
+    // use aptima precomputed results
+    logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
+    result = binding.searchByExample(descriptor, 0, 100, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE);
+    // use LL shortlisting
+    // result = binding.searchByExample(descriptor, null, 0, 10, -1, hmmScoring);
+    logger.debug("result " + result);
+    AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 
-		// lulzsec
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "5104" }));
+    // lulzsec
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "5104" }));
 
-		// victim
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "727888" }));
+    // victim
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "727888" }));
 
-		// lulzsec and thief
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "5104", "453733" }));
+    // lulzsec and thief
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "5104", "453733" }));
 
-		// wikileaks
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "4547" }));
+    // wikileaks
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "4547" }));
 
-		// wikileaks, lulzsec
-		descriptor = AvroUtils.createExemplarQuery(Arrays.asList("4547", "5104"));
+    // wikileaks, lulzsec
+    descriptor = AvroUtils.createExemplarQuery(Arrays.asList("4547", "5104"));
 
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "1", "12" }));
-		// descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "12", "616759" }));
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "1", "12" }));
+    // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "12", "616759" }));
 
-		logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-		result = binding.searchByExample(descriptor, null, 0, 10, true);
-		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
-		System.out.println("result = " + AvroUtils.encodeJSON((FL_PatternSearchResults) result));
+    logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
+    result = binding.searchByExample(descriptor, null, 0, 10, true);
+    AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
+    System.out.println("result = " + AvroUtils.encodeJSON((FL_PatternSearchResults) result));
 
-		// query 0
-		descriptor = AvroUtils.createExemplarQuery(Arrays.asList("505134", "137750", "146073", "28946", "11"));
-		logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
+    // query 0
+    descriptor = AvroUtils.createExemplarQuery(Arrays.asList("505134", "137750", "146073", "28946", "11"));
+    logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
 
-		if (true) {
-			return;
-		}
+    if (true) {
+      return;
+    }
 
-		// FL_PatternDescriptor query = new FL_PatternDescriptor();
-		// query.setUid("PD1");
-		// query.setName("Pattern Descriptor 1");
-		// query.setLinks(new ArrayList<FL_LinkMatchDescriptor>());
-		//
-		// List<String> exemplars;
-		// List<FL_EntityMatchDescriptor> entityMatchDescriptors = new ArrayList<FL_EntityMatchDescriptor>();
-		// exemplars = Arrays.asList("t1");
-		//
-		// FL_PropertyMatchDescriptor pmd1 = FL_PropertyMatchDescriptor.newBuilder()
-		// .setKey(FL_PropertyTag.LABEL.toString()).setConstraint(FL_Constraint.EQUALS).setValue("skylar").build();
-		//
-		// FL_EntityMatchDescriptor t1 = FL_EntityMatchDescriptor.newBuilder().setUid("123").setRole("").setSameAs("")
-		// .setEntities(Arrays.asList("t1")).build();
-		//
-		// FL_EntityMatchDescriptor p1 = new FL_EntityMatchDescriptor("P1", "Risky Partner", null, Arrays.asList("t1"),
-		// null, null, exemplars, 1.0);
-		// logger.debug("get entities " + p1.getEntities().size() + " : " + p1.getEntities().get(0));
-		// entityMatchDescriptors.add(p1);
-		// query.setEntities(entityMatchDescriptors);
-		//
-		// System.out.println("lender and partner query:");
-		// System.out.println(AvroUtils.encodeJSON(query));
-		// ResultInfo entities = binding.getEntitiesByID(p1);
-		// logger.debug("Got " + entities);
-		//
-		// FL_PropertyMatchDescriptor p2 =
-		// FL_PropertyMatchDescriptor.newBuilder().setKey(FL_PropertyTag.DATE.toString())
-		// .setConstraint(FL_Constraint.GREATER_THAN).setValue("2013-01-01 01:01:01").build();
-		//
-		// FL_PropertyMatchDescriptor p4 =
-		// FL_PropertyMatchDescriptor.newBuilder().setKey(FL_PropertyTag.DATE.toString())
-		// .setConstraint(FL_Constraint.LESS_THAN).setValue("2013-04-05 01:01:01").build();
-		//
-		// FL_PropertyMatchDescriptor p3 = FL_PropertyMatchDescriptor.newBuilder().setKey(FL_PropertyTag.ID.toString())
-		// .setConstraint(FL_Constraint.EQUALS).setValue("1").build();
-		//
-		// // this finds self loops IF both source and target are marked with id...
-		//
-		// Collection<ResultInfo> entities2 = binding.getEntitiesMatchingProperties(Arrays.asList(p3, p2), 10);
-		// logger.debug("got " + entities2.size() + " : ");
-		// for (ResultInfo r : entities2) {
-		// logger.debug("\t" + r);
-		// for (Map<String, String> row : r.rows) {
-		// logger.debug("\t\t" + row);
-		// }
-		// }
-		//
-		// Collection<ResultInfo> entities3 = binding.getEntitiesMatchingProperties(Arrays.asList(p3, p2, p4), 100);
-		// logger.debug("got " + entities3.size() + " : ");
-		// for (ResultInfo r : entities3) {
-		// logger.debug("\t" + r);
-		// for (Map<String, String> row : r.rows) {
-		// logger.debug("\t\t" + row);
-		// }
-		// }
+    // FL_PatternDescriptor query = new FL_PatternDescriptor();
+    // query.setUid("PD1");
+    // query.setName("Pattern Descriptor 1");
+    // query.setLinks(new ArrayList<FL_LinkMatchDescriptor>());
+    //
+    // List<String> exemplars;
+    // List<FL_EntityMatchDescriptor> entityMatchDescriptors = new ArrayList<FL_EntityMatchDescriptor>();
+    // exemplars = Arrays.asList("t1");
+    //
+    // FL_PropertyMatchDescriptor pmd1 = FL_PropertyMatchDescriptor.newBuilder()
+    // .setKey(FL_PropertyTag.LABEL.toString()).setConstraint(FL_Constraint.EQUALS).setValue("skylar").build();
+    //
+    // FL_EntityMatchDescriptor t1 = FL_EntityMatchDescriptor.newBuilder().setUid("123").setRole("").setSameAs("")
+    // .setEntities(Arrays.asList("t1")).build();
+    //
+    // FL_EntityMatchDescriptor p1 = new FL_EntityMatchDescriptor("P1", "Risky Partner", null, Arrays.asList("t1"),
+    // null, null, exemplars, 1.0);
+    // logger.debug("get entities " + p1.getEntities().size() + " : " + p1.getEntities().get(0));
+    // entityMatchDescriptors.add(p1);
+    // query.setEntities(entityMatchDescriptors);
+    //
+    // System.out.println("lender and partner query:");
+    // System.out.println(AvroUtils.encodeJSON(query));
+    // ResultInfo entities = binding.getEntitiesByID(p1);
+    // logger.debug("Got " + entities);
+    //
+    // FL_PropertyMatchDescriptor p2 =
+    // FL_PropertyMatchDescriptor.newBuilder().setKey(FL_PropertyTag.DATE.toString())
+    // .setConstraint(FL_Constraint.GREATER_THAN).setValue("2013-01-01 01:01:01").build();
+    //
+    // FL_PropertyMatchDescriptor p4 =
+    // FL_PropertyMatchDescriptor.newBuilder().setKey(FL_PropertyTag.DATE.toString())
+    // .setConstraint(FL_Constraint.LESS_THAN).setValue("2013-04-05 01:01:01").build();
+    //
+    // FL_PropertyMatchDescriptor p3 = FL_PropertyMatchDescriptor.newBuilder().setKey(FL_PropertyTag.ID.toString())
+    // .setConstraint(FL_Constraint.EQUALS).setValue("1").build();
+    //
+    // // this finds self loops IF both source and target are marked with id...
+    //
+    // Collection<ResultInfo> entities2 = binding.getEntitiesMatchingProperties(Arrays.asList(p3, p2), 10);
+    // logger.debug("got " + entities2.size() + " : ");
+    // for (ResultInfo r : entities2) {
+    // logger.debug("\t" + r);
+    // for (Map<String, String> row : r.rows) {
+    // logger.debug("\t\t" + row);
+    // }
+    // }
+    //
+    // Collection<ResultInfo> entities3 = binding.getEntitiesMatchingProperties(Arrays.asList(p3, p2, p4), 100);
+    // logger.debug("got " + entities3.size() + " : ");
+    // for (ResultInfo r : entities3) {
+    // logger.debug("\t" + r);
+    // for (Map<String, String> row : r.rows) {
+    // logger.debug("\t\t" + row);
+    // }
+    // }
 
-	}
+  }
 
 	/*    private static void testCombine() {
         long f = 10000;

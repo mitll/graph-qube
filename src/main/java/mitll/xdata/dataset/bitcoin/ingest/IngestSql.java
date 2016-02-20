@@ -175,9 +175,7 @@ public class IngestSql {
         "(" +
         SOURCE + ", " +
         TARGET + ")");
-    logger.debug("fourth (" +SOURCE + ", " +
-            TARGET+
-        ")" +
+    logger.debug("fourth (" +SOURCE + ", " + TARGET+")" +
         " index complete in " + reportTime(then) + " on " + tableName);
     logger.debug("overall took " + reportTime(start) + " to do indices");
   }

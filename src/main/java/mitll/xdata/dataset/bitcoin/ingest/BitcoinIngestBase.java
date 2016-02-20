@@ -32,7 +32,7 @@ public class BitcoinIngestBase {
   /**
    * @param dbName
    * @throws Throwable
-   * @see BitcoinIngestUncharted#doIngest(String, String, String, String, boolean, long)
+   * @see BitcoinIngestUncharted#doIngest
    */
   Set<Integer> doSubgraphs(String dbName, Collection<Integer> entityIds) throws Throwable {
     long then;

@@ -884,7 +884,7 @@ public class QueryExecutor {
         FibonacciHeapNode<List<String>> fhn = heap.min();
         if (maxUpperBound < fhn.getKey()) {
           //printHeap();
-          logger.info("Top-K Quit");
+          logger.info("executeQuery Top-K Quit");
           prunedGlobal = 1;
           logger.info("Pruning Stats: " + prunedCandidateFiltering + "\t" + prunedEdgeListsPartialCandidate + "\t" + prunedGlobal + "\t" + prunedMPWPartialCandidate + "\t" + prunedEdgeListsSize1 + "\t" + prunedMPWSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsSize1 + "\t" + pruningByMPWBetterThanThatByEdgeListsPartial);
           return;

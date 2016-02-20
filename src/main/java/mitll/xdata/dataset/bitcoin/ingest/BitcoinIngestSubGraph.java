@@ -315,6 +315,16 @@ public class BitcoinIngestSubGraph {
       }
 
       statement.close();
+
+      // later on, in BitcoinBinding.getEdgeAttributes, we need an index!
+      doSQLUpdate(connection, "create index " +
+          //"idx_transactions_source_target" +
+          " on " +
+          MARGINAL_GRAPH +
+          "(" +
+          SOURCE + ", " +
+          TARGET + ")");
+
       return unique;
     } catch (Exception e) {
       logger.error("got " + e, e);
@@ -532,7 +542,7 @@ public class BitcoinIngestSubGraph {
    * @param connection
    * @return
    * @throws Exception
-   * @see #extractUndirectedGraph(String, String)
+   * @see #main
    */
   private static void extractUndirectedGraph(DBConnection connection) throws Exception {
 

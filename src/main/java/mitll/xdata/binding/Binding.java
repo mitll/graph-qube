@@ -17,6 +17,7 @@ package mitll.xdata.binding;
 
 import influent.idl.*;
 import mitll.xdata.AvroUtils;
+import mitll.xdata.SimplePatternSearch;
 import mitll.xdata.dataset.kiva.binding.KivaBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.hmm.*;
@@ -40,6 +41,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   private static final Logger logger = Logger.getLogger(Binding.class);
   public static final long YEAR = 60000l * 60l * 24l * 365l;
   public static final long THIRTY_YEARS = (YEAR * 30l);
+  private static final String NET_FLOW = "netFlow";
 
   protected String datasetId = "";
   protected String datasetResourceDir = "";
@@ -93,7 +95,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     //h2Type2InfluentType.put("ARRAY", FL_PropertyType.OTHER); //deprecated property type
   }
 
-  public Binding(DBConnection connection) {
+  /**
+   *
+   * @param connection
+   */
+  protected Binding(DBConnection connection) {
     this();
     try {
       this.connection = connection.getConnection();
@@ -101,7 +107,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       logger.error("got " + e, e);
     }
   }
-
 
   /**
    * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(mitll.xdata.db.DBConnection, boolean)
@@ -801,9 +806,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param limit
    * @return
    */
+/*
   private ResultInfo getEntities(String table, String key, String value, long limit) {
     return getEntities(table, Arrays.asList(new Triple(key, value, "=")), limit);
   }
+*/
 
   /**
    * Get entities matching all constraints
@@ -825,10 +832,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param limit
    * @return
    */
+/*
   private ResultInfo getOrEntities(String table, Collection<Triple> triples, long limit) {
     List<Triple> objects = Collections.emptyList();
     return getEntities(table, triples, objects, limit);
   }
+*/
 
   /**
    * Get a collection of entities (e.g. a set of ids) under the constaints of the andTriples
@@ -916,14 +925,11 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @return
    * @see mitll.xdata.SimplePatternSearch#searchByExample
    */
-  public Object searchByExample(FL_PatternDescriptor example, String ignoredService, long start, long max, boolean rescoreWithHMM) {
+  public Object searchByExample(FL_PatternDescriptor example,
+                                String ignoredService, long start, long max, boolean rescoreWithHMM) {
     // original service
     long endTime = THIRTY_YEARS+ System.currentTimeMillis();
-
     logger.debug("searchByExample : end is  " + endTime + " or " + new Date(endTime));
-    if (true) {
-      new Exception().printStackTrace();
-    }
     return searchByExample(example, start, max, rescoreWithHMM, 0, endTime);
   }
 
@@ -931,7 +937,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
   /**
    * Return json with nodes and links, suitable for a sankey display
-   *
+   * @see mitll.xdata.GraphQuBEServer#getSankeyRoute(SimplePatternSearch)
    * @param ids
    * @param start
    * @param max
@@ -942,12 +948,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    */
   public String searchByExampleJson(List<String> ids, long start, long max, long startTime, long endTime, boolean rescoreWithHMM) {
     FL_PatternSearchResults fl_patternSearchResults = searchByExample(ids, start, FULL_SEARCH_LIST_SIZE, startTime, endTime, rescoreWithHMM);
-    logger.debug("searchByExampleJson : got " + fl_patternSearchResults.getResults().size() + " results");
+    List<FL_PatternSearchResult> results1 = fl_patternSearchResults.getResults();
+    logger.debug("searchByExampleJson : max " + max + "  got " + results1.size() + " results");
     Set<String> querySet = new HashSet<String>(ids);
 
     FL_PatternSearchResult queryResult = null;
-    for (FL_PatternSearchResult result : fl_patternSearchResults.getResults()) {
-
+    for (FL_PatternSearchResult result : results1) {
       Set<String> resultSet = new HashSet<String>();
 
       for (FL_EntityMatchResult entity : result.getEntities()) {
@@ -967,7 +973,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         }
       }
       if (resultSet.size() == querySet.size() && resultSet.equals(querySet)) {
-        logger.debug("\n\n\n\n found query set ");
+        logger.debug("searchByExampleJson found query set " + querySet);
         queryResult = result;
       } else {
         //logger.debug("looking for " + querySet + " but not this one "+ resultSet);
@@ -975,13 +981,15 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     }
 
     if (queryResult == null) {
-      logger.error("\n\n\ncouldn't find the query result!\n\n\n");
+      logger.error("\n\n\nsearchByExampleJson couldn't find the query result!\n\n\n");
     }
 
     String json = "{\"query\" :\n" + getJsonForResult(queryResult);
     json += ",\n\"results\":[\n";
     int count = 0;
-    for (FL_PatternSearchResult result : fl_patternSearchResults.getResults()) {
+    logger.info("got back " + results1.size() + " results");
+
+    for (FL_PatternSearchResult result : results1) {
       if (result != queryResult) {
         json += getJsonForResult(result) + ",\n";
         count++;
@@ -991,6 +999,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     json = json.substring(0, json.length() - 2);
 
     json += "]}";
+
+
+    logger.info("Returning json:\n" +json);
+
     return json;
   }
 
@@ -1079,11 +1091,15 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     builder.replace(builder.length() - 2, builder.length(), "\n");
   }
 
-  private Map<String, Integer> dumpLinks(StringBuilder builder, List<String> names, List<FL_LinkMatchResult> links,
+  private Map<String, Integer> dumpLinks(StringBuilder builder,
+                                         List<String> names,
+                                         List<FL_LinkMatchResult> links,
                                          Map<String, Integer> inPairToID) {
     int id = 0;
     Map<String, Integer> pairToID = new HashMap<String, Integer>();
     inPairToID = new HashMap<String, Integer>(inPairToID);
+
+    logger.info("found " + links.size() + " links");
     builder.append(" [\n");  // TODO !!!! just for testing -- need one set of links for each phase
     for (FL_LinkMatchResult link : links) {
       FL_Link link1 = link.getLink();
@@ -1094,8 +1110,18 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
       String value = "";
       for (FL_Property property : link1.getProperties()) {
-        if (property.getKey().equals("netFlow")) value = property.getFriendlyText();
+        String key = property.getKey();
+        if (key.equals(NET_FLOW) || key.equals("NUM_TRANS")) {
+          value = property.getFriendlyText();
+          break;
+        }
       }
+
+      if (value.isEmpty()) {
+        for (FL_Property property : link1.getProperties()) {
+          logger.debug("\tkeys " + property.getKey());
+        }
+      };
 
       boolean b = value.startsWith("-");// && REVERSE_DIRECTION;
       String key = source + "-" + target;
@@ -1111,19 +1137,28 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       }
       writeOneLink(builder, sindex, tindex, value, b, idToUse);
     }
+
     for (Map.Entry<String, Integer> zeroLinks : inPairToID.entrySet()) {
       String[] split = zeroLinks.getKey().split("-");
 
       int sindex = names.indexOf(split[0]);
       int tindex = names.indexOf(split[1]);
       writeOneLink(builder, sindex, tindex, "0", false, zeroLinks.getValue());
-
     }
     trimLast(builder);
     builder.append("\n],");  // TODO !!!! just for testing -- need one set of links for each phase
     return pairToID;
   }
 
+  /**
+   * @see #dumpLinks(StringBuilder, List, List, Map)
+   * @param builder
+   * @param sindex
+   * @param tindex
+   * @param value
+   * @param b
+   * @param idToUse
+   */
   private void writeOneLink(StringBuilder builder, int sindex, int tindex, String value, boolean b, int idToUse) {
     builder.append("  {\"id\":" +
         idToUse +
