@@ -280,16 +280,19 @@ public class TopKTest {
         shortlist1 = shortlist1.subList(0, max);
       }
 
+      long hashtotal = 0;
       for (FL_PatternSearchResult result : shortlist1) {
         // logger.info("got " + result);
         Collection<String> matches = new ArrayList<>();
         for (FL_EntityMatchResult entity : result.getEntities()) {
           FL_Entity entity1 = entity.getEntity();
           matches.add(entity1.getUid());
+          hashtotal += entity1.getUid().hashCode();
           //logger.info("got " + entity1.getUid()+ " " + entity.getScore());
         }
-        logger.info("got match " + matches);
+        logger.info("got  match " + matches);
       }
+      logger.info("got " + hashtotal + " match " + shortlist1.size());
 
     } catch (Exception e) {
       logger.error("got " + e, e);

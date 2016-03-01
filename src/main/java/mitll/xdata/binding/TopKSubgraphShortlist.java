@@ -194,7 +194,7 @@ public class TopKSubgraphShortlist extends Shortlist {
       then = System.currentTimeMillis();
       executor.executeQuery(isClique);
       now = System.currentTimeMillis();
-      logger.info("took " +(now-then ) + " millis to execute query");
+      logger.info("getShortlist took " +(now-then ) + " millis to execute query");
     }
 
     logger.info("getShortlist : original entity ordering from Influent query: " + exemplarIDs);
@@ -363,6 +363,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     Map<SortedSet<String>, Integer> queryEdgeList2InfluentEntityInd =
         computeQueryEdgeList2InfluentEntityIndMap(/*exemplarIDs,*/ queryNode2InfluentEntityInd, uiucQueryEdgetoIndex);
 
+    logger.info("getPatternSearchResults queryEdgeList2InfluentEntityInd " + queryEdgeList2InfluentEntityInd.size());
 		/*
      * Convert query to FL_PatternSearchResult and add to results...
 		 */
@@ -522,7 +523,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
     orDefault.put(dest,linkProperties);
 
-    if (num++ % 100 == 0) logger.info("did " + num);
+    if (++num % 100 == 0) logger.info("makeLinkProperties did " + num);
     return linkProperties;
   }
 

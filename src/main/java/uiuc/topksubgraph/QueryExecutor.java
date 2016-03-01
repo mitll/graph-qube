@@ -282,6 +282,10 @@ public class QueryExecutor {
     return queryEdges;
   }
 
+  /**
+   * @see TopKSubgraphShortlist#getShortlist(List, List, long)
+   * @param isClique
+   */
   public void executeQuery(boolean isClique) {
     /**
      * Get query signatures
@@ -1025,6 +1029,8 @@ public class QueryExecutor {
   public int generateCandidates() {
     int prunedCandidateFiltering = 0;
 
+    logger.info("generateCandidates " + query.getRawIDs().size());
+
     //  for (int i = 0; i < query.getNumNodes(); i++) {
     for (Integer nodeID : query.getRawIDs()) {
       //   Integer nodeType = queryNodeID2Type.get(i);
@@ -1195,6 +1201,7 @@ public class QueryExecutor {
 //      queryNodeID2Type.put(query.getInternalID(node), type);
       queryNode2Type.put(node, type);
     }
+    logger.info("loadQueryTypes " + queryNode2Type.size());
   }
 
 
@@ -1276,6 +1283,7 @@ public class QueryExecutor {
   }*/
 
   /**
+   * @see #prepareInternals()
    * @throws Throwable
    */
   public void loadSPDIndex() throws Throwable {
@@ -1523,8 +1531,15 @@ public class QueryExecutor {
         }
       }
     }
+    logger.info("getQuerySignature " + querySign.size());
   }
 
+  /**
+   * @see #executeQuery(Map, boolean, int)
+   * @param consideredEdgeIndices
+   * @param pc
+   * @return
+   */
   private double getUpperbound(Set<Integer> consideredEdgeIndices, List<String> pc) {
     double score = 0;
     Set<Edge> coveredEdges = new HashSet<>();
