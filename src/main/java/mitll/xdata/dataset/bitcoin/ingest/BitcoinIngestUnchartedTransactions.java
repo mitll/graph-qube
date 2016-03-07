@@ -15,6 +15,7 @@
 
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.ServerProperties;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.dataset.bitcoin.features.Transaction;
@@ -29,7 +30,7 @@ import java.util.*;
 
 /**
  * Bitcoin Ingest Class: Raw Data
- * <p>
+ * <p/>
  * Ingests raw data from CSV/TSV, populates database with users/transactions
  * and performs feature extraction
  *
@@ -39,7 +40,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   private static final Logger logger = Logger.getLogger(BitcoinIngestUnchartedTransactions.class);
 
 //  private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;//
- // private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
+  // private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
   private static final String ENTITYID = "entityid";
   private static final String FINENTITY = "FinEntity";
@@ -50,6 +51,8 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   private static final int INSERT_MOD = 500000;
   private static final int OFFSET_STEP = 5000000;
 //  private static final int FETCH_SIZE1 = 100000;
+
+  ServerProperties props = new ServerProperties();
 
   /**
    * Adds equivalent dollar value column
@@ -115,7 +118,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
       long now2 = System.currentTimeMillis();
 
-      logger.debug("loadTransactionTable took " + ((now2 - start) / 1000) + " seconds to " +count+ " " +
+      logger.debug("loadTransactionTable took " + ((now2 - start) / 1000) + " seconds to " + count + " " +
           //" Got past result set, skipped " + skipped +
           //" transactions with pruned users, inserted " + inserted + " : " +
           BitcoinFeaturesBase.getMemoryStatus());
@@ -158,7 +161,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     ResultSet resultSet = statement.executeQuery();
     long now = System.currentTimeMillis();
 
-    logger.debug("doOneResultSet executeQuery end  --- " + ((now-then)/1000) + " seconds ");
+    logger.debug("doOneResultSet executeQuery end  --- " + ((now - then) / 1000) + " seconds ");
 
     int count = 0;
     double totalUSD = 0;
@@ -171,8 +174,8 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       if (count % 1000000 == 0) {
         long now2 = System.currentTimeMillis();
         logger.debug("loadTransactionTable transaction count = " + count + "; " +
-       //     (now2 - t0) / count + " ms/read, and" +
-            " took " +((now2-last)/1000) + " seconds : " +BitcoinFeaturesBase.getMemoryStatus());
+            //     (now2 - t0) / count + " ms/read, and" +
+            " took " + ((now2 - last) / 1000) + " seconds : " + BitcoinFeaturesBase.getMemoryStatus());
         last = now2;
         //logMemory();
       }
@@ -218,9 +221,9 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     return preparedStatement;
   }
 
- // private long roundToDay(long time1) {
- //   return (time1 / DAY_IN_MILLIS) * DAY_IN_MILLIS;
- // }
+  // private long roundToDay(long time1) {
+  //   return (time1 / DAY_IN_MILLIS) * DAY_IN_MILLIS;
+  // }
 
   private void addTransaction(Map<Integer, UserFeatures> idToStats, int source, int target, long time, double amount) {
     UserFeatures sourceStats = idToStats.get(source);
@@ -251,14 +254,33 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 	  /*
      * Execute updates to figure out
 	   */
+    String entityid = props.getEntityID();
+    String numtransactions = props.getNumTransactions();
     String filterUsers = "select " +
-        ENTITYID +
+        entityid +
         " from " +
         FINENTITY +
-        " where numtransactions > " + MIN_TRANSACTIONS;
+        " where " + numtransactions + " > " + MIN_TRANSACTIONS;
 
     PreparedStatement statement = uncharted.prepareStatement(filterUsers);
-    ResultSet rs = statement.executeQuery();
+    ResultSet rs = null;
+    boolean isInt = true;
+    try {
+      rs = statement.executeQuery();
+    } catch (SQLException e) {
+      logger.warn("sql " + filterUsers + " excep " + e.getMessage());
+      String backoff = "select " +
+          entityid +
+          " from " +
+          FINENTITY;
+      statement.close();
+      logger.info("doing backoff " + backoff);
+      statement = uncharted.prepareStatement(backoff);
+      rs = statement.executeQuery();
+      int colType = rs.getMetaData().getColumnType(1);
+      isInt = colType == Types.INTEGER;
+
+    }
 
     Set<Integer> ids = new HashSet<>();
     int c = 0;
@@ -266,7 +288,13 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     while (rs.next()) {
       c++;
       if (c % 1000000 == 0) logger.debug("read  " + c);
-      ids.add(rs.getInt(1));
+      try {
+        ids.add(isInt ? rs.getInt(1) : Integer.parseInt(rs.getString(1)));
+      } catch (SQLException e) {
+        logger.error("got "+e);
+      } catch (NumberFormatException e) {
+        logger.error("got "+e);
+      }
     }
     long now = System.currentTimeMillis();
     logger.debug("getUsers took " + (now - then) + " millis to read " + ids.size() +
@@ -328,7 +356,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       String sql = getTransationSQL(info, step, offset);
       offset += step;
 
-      PreparedStatement rstatement = getPreparedStatement(uncharted,sql);
+      PreparedStatement rstatement = getPreparedStatement(uncharted, sql);
 
       long then = System.currentTimeMillis();
       logger.info("insertRowsInTable start query " + sql);
@@ -421,7 +449,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
                                  InsertStats insertStats,
                                  PreparedStatement statement) throws SQLException {
     int col = 1;
-    int transid  = resultSet.getInt(col++);
+    int transid = resultSet.getInt(col++);
     int sourceid = resultSet.getInt(col++);
     int targetID = resultSet.getInt(col++);
 

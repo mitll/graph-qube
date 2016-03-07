@@ -15,6 +15,7 @@
 
 package mitll.xdata.dataset.bitcoin.ingest;
 
+import mitll.xdata.ServerProperties;
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesUncharted;
@@ -118,7 +119,9 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
 
     BitcoinFeaturesBase.logMemory();
 
-    new BitcoinIngestUncharted().doIngest(dataFilename, USERTRANSACTIONS_2013_LARGERTHANDOLLAR, dbName, writeDir,
+    ServerProperties props = new ServerProperties();
+    String transactionsTable = props.getTransactionsTable();
+    new BitcoinIngestUncharted().doIngest(dataFilename, transactionsTable, dbName, writeDir,
         //skipLoadTransactions,
         limit);
 

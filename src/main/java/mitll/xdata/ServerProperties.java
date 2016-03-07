@@ -28,13 +28,28 @@ import java.util.Properties;
 public class ServerProperties {
   private static final Logger logger = Logger.getLogger(ServerProperties.class);
 
+  private static final String ENTITYID = "entityid";
+  private static final String FINENTITY = "FinEntity";
+
   private Properties props = new Properties();
 
-  public boolean useMysql() { return getDefaultFalse("useMysql"); }
-  public boolean useKiva () { return getDefaultFalse("useKiva"); }
+  public boolean useMysql() {
+    return getDefaultFalse("useMysql");
+  }
 
+  public boolean useKiva() {
+    return getDefaultFalse("useKiva");
+  }
+
+  /**
+   *
+   */
   public ServerProperties() {
     readProps();
+  }
+
+  public ServerProperties(String props) {
+    readProps(props);
   }
 
   /**
@@ -44,13 +59,17 @@ public class ServerProperties {
    */
   private void readProps() {
     String configFileFullPath = "server.properties";
+    readProps(configFileFullPath);
+  }
+
+  private void readProps(String configFileFullPath) {
     if (!new File(configFileFullPath).exists()) {
       logger.error("couldn't find config file " + new File(configFileFullPath).getAbsolutePath());
     } else {
       try {
         props = new Properties();
         props.load(new FileInputStream(configFileFullPath));
-    //    readProperties(dateFromManifest);
+        //    readProperties(dateFromManifest);
       } catch (IOException e) {
         logger.error("got " + e, e);
       }
@@ -87,6 +106,17 @@ public class ServerProperties {
     return props.getProperty("h2BitcoinJDBC", "");
   }
 
+  public String getEntityID() {
+    return props.getProperty("entityID", ENTITYID);
+  }
+
+  public String getNumTransactions() {
+    return props.getProperty("numtransactions", "numtransactions");
+  }
+
+  public String getTransactionsTable() {
+    return props.getProperty("transactionsTable", "usertransactions2013largerthandollar");
+  }
 //  private String getDateFromManifest(ServletContext servletContext) {
 //    try {
 //      InputStream inputStream = servletContext.getResourceAsStream("/META-INF/MANIFEST.MF");
