@@ -17,6 +17,7 @@ package uiuc.topksubgraph;
 
 import mitll.xdata.binding.Binding;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
+import mitll.xdata.dataset.bitcoin.features.MyEdge;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
 
@@ -32,11 +33,11 @@ import java.util.*;
 public class MutableGraph extends Graph {
   private static final Logger logger = Logger.getLogger(MutableGraph.class);
 
-  public MutableGraph() {
+   MutableGraph() {
   }
 
 
-  public MutableGraph(Map<Long, Integer> edgeToWeight) {
+  public MutableGraph(Map<MyEdge, Integer> edgeToWeight) {
     this(edgeToWeight, false);
 //    this.populateInLinks2 = populateInLinks2;
     //   simpleIds2(edgeToWeight);
@@ -49,17 +50,17 @@ public class MutableGraph extends Graph {
    * @throws SQLException
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndicesFromMemory(String, DBConnection, Map)
    */
-  public MutableGraph(Map<Long, Integer> edgeToWeight, boolean populateInLinks2) {
+  public MutableGraph(Map<MyEdge, Integer> edgeToWeight, boolean populateInLinks2) {
     logger.info("loadGraphFromMemory map " + 0 + " vs " + edgeToWeight.size());
 
     this.populateInLinks2 = populateInLinks2;
 
     int c = 0;
-    for (Map.Entry<Long, Integer> edgeAndCount : edgeToWeight.entrySet()) {
-      Long key = edgeAndCount.getKey();
+    for (Map.Entry<MyEdge, Integer> edgeAndCount : edgeToWeight.entrySet()) {
+      MyEdge key = edgeAndCount.getKey();
 
-      int from = BitcoinFeaturesBase.getLow(key);
-      int to = BitcoinFeaturesBase.getHigh(key);
+      long from = BitcoinFeaturesBase.getLow(key);
+      long to = BitcoinFeaturesBase.getHigh(key);
       int weight = edgeAndCount.getValue();
 
       if (c++ % 1000000 == 0) {
@@ -78,7 +79,7 @@ public class MutableGraph extends Graph {
    * @param b
    * @param weight
    */
-  protected void addEdge(int a, int b, double weight) {
+  protected void addEdge(long a, long b, double weight) {
     Edge e = new Edge(a, b, weight);
     if (!edges.contains(e)) {
       edges.add(e);
@@ -93,7 +94,7 @@ public class MutableGraph extends Graph {
       al.add(e);
 
       if (populateInLinks2) {
-        Map<Integer, Edge> integerEdgeMap = inLinks2.get(b);
+        Map<Long, Edge> integerEdgeMap = inLinks2.get(b);
         if (integerEdgeMap == null) {
           integerEdgeMap = new HashMap<>();
           inLinks2.put(b, integerEdgeMap);
@@ -267,7 +268,7 @@ public class MutableGraph extends Graph {
 //    setNumEdges(c);
   }
 
-  private void addNodeAndEdge(int from, int to, double weight) {
+  private void addNodeAndEdge(long from, long to, double weight) {
     nodeIds.add(from);
     nodeIds.add(to);
     this.addEdge(from, to, weight);
@@ -293,8 +294,8 @@ public class MutableGraph extends Graph {
       if (c % 100000 == 0) logger.debug("read  " + c);
 
       //get edge information
-      int from = edg.getSrc();
-      int to = edg.getDst();
+      long from = edg.getSrc();
+      long to = edg.getDst();
       double weight = edg.getWeight();
 
       //logger.info("First node is: "+from+" Second node is: "+to+" Number of trans: "+weight);
@@ -331,7 +332,7 @@ public class MutableGraph extends Graph {
    * @param f
    * @throws Throwable
    */
-  public MutableGraph(File f) throws Throwable {
+   MutableGraph(File f) throws Throwable {
     BufferedReader in = new BufferedReader(new FileReader(f));
     String str = "";
 //    int nodeCount = node2NodeIdMap.size();

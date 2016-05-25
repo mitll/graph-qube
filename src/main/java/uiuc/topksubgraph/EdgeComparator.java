@@ -32,10 +32,10 @@ class EdgeComparator implements Comparator<Edge> {
       comp = 1;
 
     if (comp == 0) {
-      comp = Integer.valueOf(e1.getSrc()).compareTo(e1.getSrc());
+      comp = Long.valueOf(e1.getSrc()).compareTo(e1.getSrc());
     }
     if (comp == 0) {
-      comp = Integer.valueOf(e1.getDst()).compareTo(e1.getDst());
+      comp = Long.valueOf(e1.getDst()).compareTo(e1.getDst());
     }
     return comp;
   }

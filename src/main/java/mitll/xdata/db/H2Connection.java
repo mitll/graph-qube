@@ -32,29 +32,46 @@ import java.sql.Statement;
  * To change this template use File | Settings | File Templates.
  */
 public class H2Connection implements DBConnection {
-  public static final int CACHE_SIZE = 65536;
-  private static Logger logger = Logger.getLogger(H2Connection.class);
+  private static final int CACHE_SIZE = 65536;
+  private static final Logger logger = Logger.getLogger(H2Connection.class);
 
   private Connection conn;
   // private int cacheSizeKB;
-  private int queryCacheSize;
+  private final int queryCacheSize;
   private int maxMemoryRows = 50000;
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#main(String[])
+   * @param dbName
+   */
   public H2Connection(String dbName) {
     this(".", dbName, 50000, 8, 50000, false);
   }
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesUncharted
+   * @param dbName
+   * @param maxMemoryRows
+   */
   public H2Connection(String dbName, int maxMemoryRows) {
     this(".", dbName, 50000, 8, maxMemoryRows, false);
   }
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.ingest.IngestSql
+   * @param dbName
+   * @param maxMemoryRows
+   * @param createDB
+   */
   public H2Connection(String dbName, int maxMemoryRows, boolean createDB) {
     this(".", dbName, 50000, 8, maxMemoryRows, createDB);
   }
 
+/*
   public H2Connection(String dbName, boolean createDB) {
     this(".", dbName, 50000, 8, 50000, createDB);
   }
+*/
 
   public H2Connection(String configDir, String dbName) {
     this(configDir, dbName, 50000, 8, 5000000, false);
@@ -64,7 +81,7 @@ public class H2Connection implements DBConnection {
    * @param configDir
    * @param dbName
    */
-  public H2Connection(String configDir, String dbName, int cacheSizeKB, int queryCacheSize, int maxMemoryRows, boolean createDB) {
+  private H2Connection(String configDir, String dbName, int cacheSizeKB, int queryCacheSize, int maxMemoryRows, boolean createDB) {
     //  this.cacheSizeKB = cacheSizeKB;
     this.queryCacheSize = queryCacheSize;
     this.maxMemoryRows = maxMemoryRows;
@@ -92,7 +109,7 @@ public class H2Connection implements DBConnection {
         "DATABASE_TO_UPPER=false" + ";" +
         "MAX_MEMORY_ROWS=" + maxMemoryRows;
 
-    logger.debug("connecting to " + url);
+    logger.debug("connect : connecting to " + url);
     org.h2.Driver.load();
     try {
       conn = DriverManager.getConnection(url, "", "");

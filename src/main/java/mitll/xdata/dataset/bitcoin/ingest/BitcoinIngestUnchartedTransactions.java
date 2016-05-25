@@ -24,8 +24,19 @@ import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -42,17 +53,22 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 //  private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;//
   // private static final long DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
-  private static final String ENTITYID = "entityid";
-  private static final String FINENTITY = "FinEntity";
+  //private static final String ENTITYID = "entityid";
+  final String FINENTITY;
   private static final int MIN_TRANSACTIONS = 10;
   private static final int FETCH_SIZE = 1000000;
   private static final int UPDATE_MOD = 1000;
   private static final int INSERT_ROW_MOD = 1000000;
   private static final int INSERT_MOD = 500000;
   private static final int OFFSET_STEP = 5000000;
-//  private static final int FETCH_SIZE1 = 100000;
+  //  private static final int FETCH_SIZE1 = 100000;
+  ServerProperties props;
+  //ServerProperties props = new ServerProperties();
 
-  ServerProperties props = new ServerProperties();
+  public BitcoinIngestUnchartedTransactions(ServerProperties props) {
+    this.props = props;
+    this.FINENTITY = props.getFinEntity();
+  }
 
   /**
    * Adds equivalent dollar value column
@@ -66,14 +82,14 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @throws Exception
    * @see BitcoinIngestUncharted#doIngest
    */
-  protected Set<Integer> loadTransactionTable(
+  Set<Long> loadTransactionTable(
       MysqlInfo info,
       String dbType, String h2DatabaseName,
       String tableName,
       boolean useTimestamp,
       long limit,
-      Collection<Integer> users,
-      Map<Integer, UserFeatures> idToStats) throws Exception {
+      Collection<Long> users,
+      Map<Long, UserFeatures> idToStats) throws Exception {
     DBConnection h2Connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
     Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
     uncharted.setAutoCommit(false);
@@ -98,7 +114,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     long t0 = System.currentTimeMillis();
 
     double totalUSD = 0;
-    Map<Integer, UserStats> userToStats = new HashMap<>();
+    Map<Long, UserStats> userToStats = new HashMap<>();
 
     logMemory();
     //  int skipped = 0;
@@ -131,7 +147,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
     double avgUSD = totalUSD / (double) count;
 
-    Set<Integer> usersInTransactions = new HashSet<>();
+    Set<Long> usersInTransactions = new HashSet<>();
     count = insertRowsInTable(tableName, info, useTimestamp, h2Connection, uncharted, userToStats, avgUSD, limit,
         usersInTransactions);
 
@@ -148,13 +164,23 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     return usersInTransactions;
   }
 
+  /**
+   * @param uncharted
+   * @param sql
+   * @param users
+   * @param idToStats
+   * @param userToStats
+   * @param stats
+   * @return
+   * @throws SQLException
+   * @see #loadTransactionTable(MysqlInfo, String, String, String, boolean, long, Collection, Map)
+   */
   private double doOneResultSet(Connection uncharted, String sql,
-
-                                Collection<Integer> users,
-                                Map<Integer, UserFeatures> idToStats,
-                                Map<Integer, UserStats> userToStats,
+                                Collection<Long> users,
+                                Map<Long, UserFeatures> idToStats,
+                                Map<Long, UserStats> userToStats,
                                 Map<String, Integer> stats) throws SQLException {
-    logger.debug("doOneResultSet executeQuery start --- " + sql);
+    logger.debug("doOneResultSet executeQuery start ---\n" + sql);
 
     long then = System.currentTimeMillis();
     PreparedStatement statement = getPreparedStatement(uncharted, sql);
@@ -189,12 +215,19 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   }
 
   private double useOneBitcoinRow(ResultSet resultSet,
-                                  Collection<Integer> users,
-                                  Map<Integer, UserFeatures> idToStats,
-                                  Map<Integer, UserStats> userToStats) throws SQLException {
+                                  Collection<Long> users,
+                                  Map<Long, UserFeatures> idToStats,
+                                  Map<Long, UserStats> userToStats) throws SQLException {
     int col = 1;
-    int sourceid = resultSet.getInt(col++);
-    int targetID = resultSet.getInt(col++);
+    long sourceid = 0;
+    try {
+      sourceid = resultSet.getInt(col++);
+    } catch (SQLException e) {
+      logger.warn("Col #1 " +
+          " Got " + e);
+      return 0;
+    }
+    long targetID = resultSet.getInt(col++);
 
     if (users.contains(sourceid) && users.contains(targetID)) {
       //long day = roundToDay(resultSet.getTimestamp(col++).getTime());
@@ -225,7 +258,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
   //   return (time1 / DAY_IN_MILLIS) * DAY_IN_MILLIS;
   // }
 
-  private void addTransaction(Map<Integer, UserFeatures> idToStats, int source, int target, long time, double amount) {
+  private void addTransaction(Map<Long, UserFeatures> idToStats, long source, long target, long time, double amount) {
     UserFeatures sourceStats = idToStats.get(source);
     if (sourceStats == null) idToStats.put(source, sourceStats = new UserFeatures(source));
     UserFeatures targetStats = idToStats.get(target);
@@ -246,7 +279,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @throws Exception
    * @see BitcoinIngestUncharted#doIngest
    */
-  Collection<Integer> getUsers(MysqlInfo info) throws Exception {
+  Collection<Long> getUsers(MysqlInfo info) throws Exception {
     Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
 
     long then = System.currentTimeMillis();
@@ -279,21 +312,18 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       rs = statement.executeQuery();
       int colType = rs.getMetaData().getColumnType(1);
       isInt = colType == Types.INTEGER;
-
     }
 
-    Set<Integer> ids = new HashSet<>();
+    Set<Long> ids = new HashSet<>();
     int c = 0;
 
     while (rs.next()) {
       c++;
       if (c % 1000000 == 0) logger.debug("read  " + c);
       try {
-        ids.add(isInt ? rs.getInt(1) : Integer.parseInt(rs.getString(1)));
-      } catch (SQLException e) {
-        logger.error("got "+e);
-      } catch (NumberFormatException e) {
-        logger.error("got "+e);
+        ids.add(isInt ? rs.getLong(1) : Integer.parseInt(rs.getString(1)));
+      } catch (Exception e) {
+        logger.error("got " + e);
       }
     }
     long now = System.currentTimeMillis();
@@ -305,8 +335,6 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     uncharted.close();
     return ids;
   }
-
-  //private static final int MB = (1024 * 1024);
 
   private void logMemory() {
     BitcoinFeaturesBase.logMemory();
@@ -333,34 +361,50 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       boolean useTimestamp,
       DBConnection h2Connection,
       Connection uncharted,
-      Map<Integer, UserStats> userToStats,
+      Map<Long, UserStats> userToStats,
       double avgUSD,
       long limit,
-      Set<Integer> usersInTransactions) throws Exception {
+      Set<Long> usersInTransactions) throws Exception {
     long count = 0;
     long t0 = System.currentTimeMillis();
 
     logger.debug("insertRowsInTable  " + userToStats.size() + " known users into " + tableName + " limit " + limit +
         " : " + BitcoinFeaturesBase.getMemoryStatus());
 
-    Set<Integer> knownUsers = userToStats.keySet();
+    Set<Long> knownUsers = userToStats.keySet();
     InsertStats insertStats = new InsertStats();
 
     long then2 = System.currentTimeMillis();
 
     Connection h2ConnectionConnection = h2Connection.getConnection();
 
+    Map<String, String> slotToCol = info.getSlotToCol();
+
+    Map<String, Integer> colToSQLType = new HashMap<>();
+
+    for (String col : slotToCol.values()) {
+      colToSQLType.put(col, getJavaType(uncharted, info.getTable(), col));
+    }
+    Map<Integer, Integer> colToType = new HashMap<>();
+    int i = 0;
+    for (String col : Arrays.asList(slotToCol.get(MysqlInfo.TRANSACTION_ID),
+        slotToCol.get(MysqlInfo.SENDER_ID),
+        slotToCol.get(MysqlInfo.RECEIVER_ID),
+        slotToCol.get(MysqlInfo.TX_TIME),
+        slotToCol.get(MysqlInfo.BTC),
+        slotToCol.get(MysqlInfo.USD))) {
+      colToType.put(++i, colToSQLType.get(col));
+    }
     int step = OFFSET_STEP;
     int offset = 0;
     while (count < limit) {
       String sql = getTransationSQL(info, step, offset);
       offset += step;
 
-      PreparedStatement rstatement = getPreparedStatement(uncharted, sql);
-
       long then = System.currentTimeMillis();
       logger.info("insertRowsInTable start query " + sql);
 
+      PreparedStatement rstatement = getPreparedStatement(uncharted, sql);
       ResultSet resultSet = rstatement.executeQuery();
       long now = System.currentTimeMillis();
 
@@ -378,6 +422,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
         count++;
         didAny = true;
         insertTransaction(useTimestamp, userToStats, avgUSD, usersInTransactions, count, t0, resultSet,
+            colToType,
             knownUsers, insertStats, writeStatement);
       }
       logger.info("insertRowsInTable took " + ((System.currentTimeMillis() - then2) / 1000) +
@@ -404,9 +449,32 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     return count;
   }
 
+  public int getJavaType(Connection connection, String tableName, String column)
+      throws Exception {
+    // String fullName = schema + '.' + object + '.' + column;
+    DatabaseMetaData metaData = connection.getMetaData();
+    ResultSet columnMeta = metaData.getColumns(null, null, tableName, column);
+
+    if (columnMeta.first()) {
+      int dataType = columnMeta.getInt("DATA_TYPE");
+      return dataType;
+    } else {
+      // throw new Exception( "Unknown database column " + tableName + '.' );
+      return -1;
+    }
+
+    //return -1;
+  }
+
+  /**
+   * @param info
+   * @param limit
+   * @param offset
+   * @return
+   * @see #insertRowsInTable(String, MysqlInfo, boolean, DBConnection, Connection, Map, double, long, Set)
+   */
   private String getTransationSQL(MysqlInfo info, long limit, int offset) {
     Map<String, String> slotToCol = info.getSlotToCol();
-    String table = info.getTable();
     String unvarying = "select " +
         slotToCol.get(MysqlInfo.TRANSACTION_ID) + ", " +
         slotToCol.get(MysqlInfo.SENDER_ID) + ", " +
@@ -414,7 +482,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
         slotToCol.get(MysqlInfo.TX_TIME) + ", " +
         slotToCol.get(MysqlInfo.BTC) + ", " +
         slotToCol.get(MysqlInfo.USD) +
-        " from " + table;
+        " from " + info.getTable();
     return getOffsetSQL(unvarying, limit, offset);
   }
 
@@ -439,35 +507,29 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @see #insertRowsInTable(String, MysqlInfo, boolean, DBConnection, Connection, Map, double, long, Set)
    */
   private void insertTransaction(boolean useTimestamp,
-                                 Map<Integer, UserStats> userToStats,
+                                 Map<Long, UserStats> userToStats,
                                  double avgUSD,
-                                 Set<Integer> usersInTransactions,
+                                 Set<Long> usersInTransactions,
                                  long count,
                                  long t0,
                                  ResultSet resultSet,
-                                 Set<Integer> knownUsers,
+                                 Map<Integer, Integer> colToSQLType,
+                                 Set<Long> knownUsers,
                                  InsertStats insertStats,
                                  PreparedStatement statement) throws SQLException {
     int col = 1;
-    int transid = resultSet.getInt(col++);
-    int sourceid = resultSet.getInt(col++);
-    int targetID = resultSet.getInt(col++);
+
+    long transid  = getIntFromCol(resultSet, colToSQLType, col); col++;
+    long sourceid = getIntFromCol(resultSet, colToSQLType, col);col++;
+    long targetID = getIntFromCol(resultSet, colToSQLType, col);col++;
 
     if (sourceid == targetID) {
       insertStats.incrSelf();
     } else if (!knownUsers.contains(sourceid) || !knownUsers.contains(targetID)) {
       insertStats.incrSkipped();
-//        if (sourceid == 253977 || targetID == 253977) {
-//          logger.warn("1 ---> insertRowsInTable skipped " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
-//        }
     } else {
-//        if (sourceid == 253977 || targetID == 253977) {
-//          logger.warn("2 ---> insertRowsInTable inserted " + sourceid + " " + targetID + " " + knownUsers.contains(sourceid) + " " +knownUsers.contains(targetID));
-//        }
-
       usersInTransactions.add(sourceid);
       usersInTransactions.add(targetID);
-
       Timestamp x = resultSet.getTimestamp(col++);
       double btc = resultSet.getDouble(col++);
       double usd = resultSet.getDouble(col++);
@@ -491,6 +553,24 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
         BitcoinFeaturesBase.logMemory();
       }
     }
+  }
+
+  private long getIntFromCol(ResultSet resultSet, Map<Integer, Integer> colToSQLType, int col) throws SQLException {
+    long transid = 0;
+    if (colToSQLType.get(col) == Types.NUMERIC) {
+      transid = resultSet.getInt(col);
+    } else {
+      try {
+        String string = resultSet.getString(col);
+        logger.warn("got '" +string + "' for " +col);
+        transid = Long.parseLong(string);
+
+      } catch (Exception e) {
+        logger.error("Got " + e + " on col " +(col));
+        System.exit(1);
+      }
+    }
+    return transid;
   }
 
   private static class InsertStats {
@@ -534,13 +614,14 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
                             long t0, long count,
                             PreparedStatement statement,
                             double[] additionalFeatures,
-                            int transid,
-                            int sourceid, int targetID,
+                            long transid,
+                            long sourceid,
+                            long targetID,
                             Timestamp x, double btc, double usd) throws SQLException {
     int i = 1;
-    statement.setInt(i++, transid);
-    statement.setInt(i++, sourceid);
-    statement.setInt(i++, targetID);
+    statement.setLong(i++, transid);
+    statement.setLong(i++, sourceid);
+    statement.setLong(i++, targetID);
 
     if (useTimestamp) {
       statement.setTimestamp(i++, x);

@@ -28,8 +28,8 @@ import java.util.Properties;
 public class ServerProperties {
   private static final Logger logger = Logger.getLogger(ServerProperties.class);
 
-  private static final String ENTITYID = "entityid";
-  private static final String FINENTITY = "FinEntity";
+//  private static final String ENTITYID = "entityid";
+  //private static final String FINENTITY = "FinEntity";
 
   private Properties props = new Properties();
 
@@ -37,12 +37,13 @@ public class ServerProperties {
     return getDefaultFalse("useMysql");
   }
 
-  public boolean useKiva() {
+  boolean useKiva() {
     return getDefaultFalse("useKiva");
   }
 
   /**
-   *
+   * @see GraphQuBEServer#main(String[])
+   * @deprecated
    */
   public ServerProperties() {
     readProps();
@@ -50,6 +51,14 @@ public class ServerProperties {
 
   public ServerProperties(String props) {
     readProps(props);
+  }
+
+  public String getSourceDatabase() {
+    return props.getProperty("database");
+  }
+
+  public String getFeatureDatabase() {
+    return props.getProperty("featuresDatabase");
   }
 
   /**
@@ -76,11 +85,11 @@ public class ServerProperties {
     }
   }
 
-  private void readProperties(String dateFromManifest) {
+/*  private void readProperties(String dateFromManifest) {
     if (dateFromManifest != null && dateFromManifest.length() > 0) {
       props.setProperty("releaseDate", dateFromManifest);
     }
-  }
+  }*/
 
   private boolean getDefaultFalse(String param) {
     return props.getProperty(param, "false").equals("true");
@@ -107,7 +116,7 @@ public class ServerProperties {
   }
 
   public String getEntityID() {
-    return props.getProperty("entityID", ENTITYID);
+    return props.getProperty("entityID");
   }
 
   public String getNumTransactions() {
@@ -117,6 +126,35 @@ public class ServerProperties {
   public String getTransactionsTable() {
     return props.getProperty("transactionsTable", "usertransactions2013largerthandollar");
   }
+
+  public String getFinEntity() {
+    return props.getProperty("finEntity");
+  }
+
+  public String getTransactionsID() {
+    return props.getProperty("transactionsID");
+  }
+
+  public String getSenderID() {
+    return props.getProperty("transactionsSender");
+  }
+
+  public String getReceiverID() {
+    return props.getProperty("transactionsReceiver");
+  }
+
+  public String getTransactionTime() {
+    return props.getProperty("transactionsTxTime");
+  }
+
+  public String getBitcoinAmount() {
+    return props.getProperty("transactionsBTC");
+  }
+
+  public String getUSDAmount() {
+    return props.getProperty("transactionsUSD");
+  }
+
 //  private String getDateFromManifest(ServletContext servletContext) {
 //    try {
 //      InputStream inputStream = servletContext.getResourceAsStream("/META-INF/MANIFEST.MF");
@@ -127,5 +165,4 @@ public class ServerProperties {
 //    }
 //    return "";
 //  }
-
 }

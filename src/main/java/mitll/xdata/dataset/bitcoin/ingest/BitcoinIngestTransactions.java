@@ -39,10 +39,9 @@ public class BitcoinIngestTransactions {
    * @param usd
    * @return
    */
-  protected double[] addAvgDollarFeatures(Map<Integer, UserStats> userToStats,
+  double[] addAvgDollarFeatures(Map<Long, UserStats> userToStats,
                                           double avgUSD,
-                                      //    int count,
-                                          int sourceid, int targetID, double usd) {
+                                          long sourceid, long targetID, double usd) {
     double devFraction = (usd - avgUSD) / avgUSD;
     //    statement.setDouble(i++, devFraction);
     double[] addFeats = new double[3];
@@ -70,7 +69,7 @@ public class BitcoinIngestTransactions {
     return addFeats;
   }
 
-  protected double addUserStats(Map<Integer, UserStats> userToStats, int sourceid, int targetID, double usd) {
+  double addUserStats(Map<Long, UserStats> userToStats, long sourceid, long targetID, double usd) {
     UserStats userStats = getUserStats(userToStats, sourceid);
     userStats.addDebit(usd);
 
@@ -79,7 +78,7 @@ public class BitcoinIngestTransactions {
     return usd;
   }
 
-  private static UserStats getUserStats(Map<Integer, UserStats> userToStats, int sourceid) {
+  private static UserStats getUserStats(Map<Long, UserStats> userToStats, long sourceid) {
     UserStats userStats = userToStats.get(sourceid);
     if (userStats == null) userToStats.put(sourceid, userStats = new UserStats());
     return userStats;

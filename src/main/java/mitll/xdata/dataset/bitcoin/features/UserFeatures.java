@@ -34,7 +34,6 @@ import java.util.*;
  */
 public class UserFeatures {
   //private static final Logger logger = Logger.getLogger(UserFeatures.class);
-
   private static final int MIN_DEBITS = 5;
   private static final int MIN_CREDITS = 5;
   private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
@@ -46,11 +45,11 @@ public class UserFeatures {
 
   private final PERIOD period = PERIOD.DAY; // bin by day for now
 
-  private final int id;
+  private final long id;
   private final List<Transaction> debits = new ArrayList<>();
   private final List<Transaction> credits = new ArrayList<>();
-  private final Map<Integer, Integer> targetToCount = new HashMap<>();
-  private final Map<Integer, Integer> sourceToCount = new HashMap<>();
+  private final Map<Long, Integer> targetToCount = new HashMap<>();
+  private final Map<Long, Integer> sourceToCount = new HashMap<>();
 
   private final boolean useSpectral = false;
   private float[] expandedDebits;
@@ -60,7 +59,7 @@ public class UserFeatures {
   private float[] cspectrum;
   private float[] mspectrum;
 
-  public UserFeatures(int id) {
+  public UserFeatures(long id) {
     this.id = id;
   }
 
@@ -81,7 +80,7 @@ public class UserFeatures {
     sourceToCount.put(t.getSource(), incoming == null ? 1 : incoming + 1);
   }
 
-  public void calc() {
+  void calc() {
     Collections.sort(debits);
     Collections.sort(credits);
 
@@ -162,15 +161,15 @@ public class UserFeatures {
     return expDebits;
   }
 
-  public double getInPerplexity() {
+  double getInPerplexity() {
     return getPerplexity(sourceToCount);
   }
 
-  public double getOutPerplexity() {
+  double getOutPerplexity() {
     return getPerplexity(targetToCount);
   }
 
-  private double getPerplexity(Map<Integer, Integer> sourceToCount) {
+  private double getPerplexity(Map<Long, Integer> sourceToCount) {
     float total = 0f;
     for (int count : sourceToCount.values()) {
       total += (float) count;
@@ -187,7 +186,7 @@ public class UserFeatures {
     return Math.pow(2, -sum);
   }
 
-  public List<Double> getCreditInterarrMeanAndStd() {
+  List<Double> getCreditInterarrMeanAndStd() {
     Collection<Long> creditInterarrivalTimes = getCreditInterarrivalTimes();
     if (creditInterarrivalTimes.isEmpty()) return EMPTY_DOUBLES;
 

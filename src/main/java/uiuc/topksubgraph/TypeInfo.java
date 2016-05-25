@@ -25,13 +25,7 @@ class TypeInfo {
   private int count = 1;
   private float totalWeight = 0f;
   private float prevMax = 0f;
-  private Set<Integer> nodes = new HashSet<>();
-
-/*
-  public TypeInfo(TypeInfo other) {
-    this(other.count, other.totalWeight, other.prevMax);
-  }
-*/
+  private Set<Long> nodes = new HashSet<>();
 
   /**
    * @param count
@@ -45,13 +39,13 @@ class TypeInfo {
     this.prevMax = prevMax;
   }
 
-  public TypeInfo(float weight, int nodeID) {
+  public TypeInfo(float weight, long nodeID) {
     this.totalWeight = weight;
     count = 1;
     nodes.add(nodeID);
   }
 
-  public void max(float weight, int nodeID) {
+  public void max(float weight, long nodeID) {
     boolean newFound = newMax(weight);
     //if (newFound) nodes.add(nodeID);
     nodes.add(nodeID);
@@ -78,15 +72,15 @@ class TypeInfo {
     return count;
   }
 
-  public float getMaxWeight() {
+   float getMaxWeight() {
     return totalWeight;
   }
 
-  public float getPrevMax() {
+   float getPrevMax() {
     return prevMax;
   }
 
-  public void incrMax(int otherCount, float otherWeight) {
+  void incrMax(int otherCount, float otherWeight) {
     //count += otherCount;
     count = otherCount;
     newMax(otherWeight);
@@ -96,7 +90,7 @@ class TypeInfo {
     return "Count " + getCount() + " : " + getMaxWeight() + " prev " + getPrevMax() + " neighbors " + nodes;
   }
 
-  public Set<Integer> getNodes() {
+  public Set<Long> getNodes() {
     return nodes;
   }
 }

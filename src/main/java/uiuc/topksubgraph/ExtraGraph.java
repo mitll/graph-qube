@@ -92,7 +92,7 @@ public class ExtraGraph extends MutableGraph {
    * @paramx g
    * @throws Throwable
    */
-  public void generateCohenLists(String baseDir, /*String graphFile,*/ String cohenEstimatesFile) throws Throwable {
+  /*public void generateCohenLists(String baseDir, *//*String graphFile,*//* String cohenEstimatesFile) throws Throwable {
     double matrix[][];
     int maxNeeded = 10;
     int maxDist = 100;
@@ -125,7 +125,7 @@ public class ExtraGraph extends MutableGraph {
       //not required as we have an undirected graph
       double dist[] = new double[getNumNodes()];
       double infinity = 10000000.00;
-      /* Initialization: set every distance to INFINITY until we discover a path */
+      *//* Initialization: set every distance to INFINITY until we discover a path *//*
       for (int j = 0; j < getNumNodes(); j++) {
         dist[j] = infinity;
       }
@@ -156,7 +156,7 @@ public class ExtraGraph extends MutableGraph {
         while (!heap.isEmpty()) {
           FibonacciHeapNode<Integer> fhns = heap.removeMin();
           heapedNodeToFHN.remove(fhns.getData());
-          int vk = fhns.getData();//minLableNodeId
+          long vk = fhns.getData();//minLableNodeId
           double D = fhns.getKey();//minLabel
           if (D > maxNeeded)
             break;
@@ -166,7 +166,7 @@ public class ExtraGraph extends MutableGraph {
           dist[vk] = D;
           if (getInLinks().get(vk) != null) {
             for (Edge edge : getInLinks().get(vk)) { //reversed graph
-              int vj = edge.getSrc();
+              long vj = edge.getSrc();
               double weight = edge.getWeight();
               if (heapedNodeToFHN.containsKey(vj)) {
                 FibonacciHeapNode<Integer> tempFHN = (FibonacciHeapNode<Integer>) heapedNodeToFHN.get(vj);
@@ -212,7 +212,7 @@ public class ExtraGraph extends MutableGraph {
       j++;
     }
     out.close();
-  }
+  }*/
 
   /**
    * Computes shortest path distances on the graph considering `node' as the source node
@@ -222,18 +222,18 @@ public class ExtraGraph extends MutableGraph {
    * @paramx graph
    * @return
    */
-  private double[] computeMinDistances(int node) {
+ /* private double[] computeMinDistances(int node) {
     double dist[] = new double[getNumNodes()];
     int prev[] = new int[getNumNodes()];
     FibonacciHeap<Integer> fh = new FibonacciHeap<>();
-    /* Initialization: set every distance to INFINITY until we discover a path */
+    *//* Initialization: set every distance to INFINITY until we discover a path *//*
     for (int i = 0; i < getNumNodes(); i++) {
       dist[i] = Double.MAX_VALUE;
       prev[i] = -1;
     }
 
     HashMap<Integer, FibonacciHeapNode<Integer>> map = new HashMap<>();
-    /* The distance from the source to the source is defined to be zero */
+    *//* The distance from the source to the source is defined to be zero *//*
     dist[node] = 0;
     for (int i = 0; i < getNumNodes(); i++) {
       FibonacciHeapNode<Integer> fhn = new FibonacciHeapNode<>(i, dist[i]);
@@ -248,7 +248,7 @@ public class ExtraGraph extends MutableGraph {
       List<Edge> list = getInLinks().get(u.getData());
       if (list != null) {
         for (Edge edge : list) {
-          int neighbor = edge.getSrc();
+          long neighbor = edge.getSrc();
           double alt = dist[u.getData()] + edge.getWeight();
           if (alt < dist[neighbor]) {
             dist[neighbor] = alt;
@@ -260,7 +260,7 @@ public class ExtraGraph extends MutableGraph {
     }
     return dist;
   }
-
+*/
   /**
    * Computes shortest path distances from every node to every other node in Graph g.
    * Infinity and 0 distances are not printed.
@@ -281,7 +281,7 @@ public class ExtraGraph extends MutableGraph {
   /**
    * Computes graph diameter for a directed graph
    */
-  public ArrayList<Object> computeGraphDiameter() {
+/*  public ArrayList<Object> computeGraphDiameter() {
     double max = 0;
     int node1 = -1;
     int node2 = -1;
@@ -302,7 +302,7 @@ public class ExtraGraph extends MutableGraph {
     list.add(node2);
     list.add(max);
     return list;
-  }
+  }*/
 
   /**
    * Removes edge from graph considering direction from a to b
@@ -311,7 +311,7 @@ public class ExtraGraph extends MutableGraph {
    * @param b
    * @param weight
    */
-  private void removeEdge(int a, int b) {
+ /* private void removeEdge(int a, int b) {
     Edge e = null;
     List<Edge> al = new ArrayList<>();
     if (getInLinks().get(b) != null) {
@@ -328,13 +328,13 @@ public class ExtraGraph extends MutableGraph {
 
     getEdges().remove(e);
   }
-
+*/
   /**
    * This method would remove existing edges from the current graph snapshot denoting the evolution of the graph by removal of edges.
    *
    * @param unitWeighted
    */
-  public void removeEdges(boolean unitWeighted, int numEdgesToRemove) {
+/*  public void removeEdges(boolean unitWeighted, int numEdgesToRemove) {
     for (int i = 0; i < numEdgesToRemove; i++) {
       int a = (int) (Math.random() * getNumNodes()) + 1;
       int b = (int) (Math.random() * getNumNodes()) + 1;
@@ -358,7 +358,7 @@ public class ExtraGraph extends MutableGraph {
         i--;
       }
     }
-  }
+  }*/
 
   /**
    * Creates a random graph with integer weights from 1 to 11.

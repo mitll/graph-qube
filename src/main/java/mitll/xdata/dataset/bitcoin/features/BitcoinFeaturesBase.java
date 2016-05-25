@@ -122,9 +122,9 @@ public class BitcoinFeaturesBase {
    * @param transForUsers
    * @throws Exception
    */
-  protected Set<Integer> writeFeatures(DBConnection connection, String writeDirectory, long then,
-                                       Collection<Integer> users,
-                                       Map<Integer, UserFeatures> transForUsers) throws Exception {
+  Set<Long> writeFeatures(DBConnection connection, String writeDirectory, long then,
+                                       Collection<Long> users,
+                                       Map<Long, UserFeatures> transForUsers) throws Exception {
     long now = System.currentTimeMillis();
     logger.debug("writeFeatures took " + (now - then) + " to read " + transForUsers.size() + " user features");
 
@@ -141,10 +141,10 @@ public class BitcoinFeaturesBase {
     writeHeader(standardFeatureWriter);
 
     List<Features> features = new ArrayList<Features>();
-    Map<Integer, Features> userToFeatures = new TreeMap<Integer, Features>();
+    Map<Long, Features> userToFeatures = new TreeMap<>();
 
     // TODO - change size if we add spectral features
-    Map<Integer, Integer> userToIndex = new HashMap<Integer, Integer>();
+    Map<Long, Integer> userToIndex = new HashMap<>();
 
     populateUserToFeatures(users, transForUsers, features, userToFeatures, userToIndex);
 
@@ -179,15 +179,15 @@ public class BitcoinFeaturesBase {
    * @param userToIndex
    * @see #writeFeatures(DBConnection, String, long, Collection, Map)
    */
-  private void populateUserToFeatures(Collection<Integer> users,
-                                      Map<Integer, UserFeatures> transForUsers,
+  private void populateUserToFeatures(Collection<Long> users,
+                                      Map<Long, UserFeatures> transForUsers,
                                       List<Features> features,
-                                      Map<Integer, Features> userToFeatures,
-                                      Map<Integer, Integer> userToIndex) {
+                                      Map<Long, Features> userToFeatures,
+                                      Map<Long, Integer> userToIndex) {
     int skipped = 0;
     int count   = 0;
     logger.info("populateUserToFeatures checking " + transForUsers.size() + " against " + users.size() + " users");
-    for (Integer user : users) {
+    for (Long user : users) {
       // logger.debug("user " + user);
       Features featuresForUser = getFeaturesForUser(transForUsers, user);
       if (featuresForUser != null) {
@@ -241,16 +241,17 @@ public class BitcoinFeaturesBase {
   }
 
   private void writeFeaturesToFiles(BufferedWriter rawWriter, BufferedWriter standardFeatureWriter,
-                                    Map<Integer, Features> userToFeatures, Map<Integer, Integer> userToIndex,
+                                    Map<Long, Features> userToFeatures,
+                                    Map<Long, Integer> userToIndex,
                                     double[][] standardizedFeatures) throws IOException {
     Features next = userToFeatures.values().iterator().next();
     int numFeatures = next.other.length;
 
     int j = 0;
-    for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
+    for (Map.Entry<Long, Features> userFeatPair : userToFeatures.entrySet()) {
       Features value = userFeatPair.getValue();
       double[] featureVector = value.other;
-      int id = userFeatPair.getKey();
+      long id = userFeatPair.getKey();
       // writer.write(id + "\t");
       rawWriter.write(id + "\t");
       //idsWriter.write(id + "\n");
@@ -294,8 +295,8 @@ public class BitcoinFeaturesBase {
    * @throws Exception
    */
   private void writeFeaturesToDatabase(DBConnection dbConnection,
-                                       Map<Integer, Features> userToFeatures,
-                                       Map<Integer, Integer> userToIndex,
+                                       Map<Long, Features> userToFeatures,
+                                       Map<Long, Integer> userToIndex,
                                        double[][] standardizedFeatures) throws Exception {
     logger.info("writeFeaturesToDatabase " + userToFeatures.size() + " users.");
 
@@ -312,8 +313,8 @@ public class BitcoinFeaturesBase {
 
     int numFeatures = columnLabels.length - 1;
 
-    for (Map.Entry<Integer, Features> userFeatPair : userToFeatures.entrySet()) {
-      int id = userFeatPair.getKey();
+    for (Map.Entry<Long, Features> userFeatPair : userToFeatures.entrySet()) {
+      long id = userFeatPair.getKey();
       Integer userIndex = userToIndex.get(id);
       double[] standardizedFeature = standardizedFeatures[userIndex];
 
@@ -346,12 +347,13 @@ public class BitcoinFeaturesBase {
     connection.close();
   }
 
-  public void pruneUsers(DBConnection dbConnection,Set<Integer> toRemove) {
+  public void pruneUsers(DBConnection dbConnection,Set<Long> toRemove) {
     Connection connection = dbConnection.getConnection();
     try {
-      PreparedStatement  statement = connection.prepareStatement("delete from " + FeaturesSql.USERS + " where USER=?");
-      for (Integer id : toRemove) {
-        statement.setInt(1, id);
+      PreparedStatement  statement =
+          connection.prepareStatement("delete from " + FeaturesSql.USERS + " where USER=?");
+      for (Long id : toRemove) {
+        statement.setLong(1, id);
         int i = statement.executeUpdate();
         if (i != 1) logger.warn("huh? didn't delete " + id + " from users.");
       }
@@ -442,7 +444,7 @@ public class BitcoinFeaturesBase {
    * @param user
    * @see #populateUserToFeatures(Collection, Map, List, Map, Map)
    */
-  private Features getFeaturesForUser(Map<Integer, UserFeatures> transForUsers, Integer user) {
+  private Features getFeaturesForUser(Map<Long, UserFeatures> transForUsers, Long user) {
     UserFeatures stats = transForUsers.get(user);
 
     if (stats == null) {
@@ -593,31 +595,39 @@ public class BitcoinFeaturesBase {
    * @param low  this is converted from an integer
    * @param high
    * @return
-   * @see
    */
-  public static long storeTwo(long low, long high) {
+  public static MyEdge storeTwo(long low, long high) {
 //    long combined = low;
 //    combined += high << 32;
 //    return combined;
 
-    long l = (high << 32) | (low & 0xffffffffL);
-    return l;
-  }
+   // long l = (high << 32) | (low & 0xffffffffL);
 
-  public static int getLow(long combined) {
-    return (int) combined;
-  }
-
-  public static int getHigh(long combined) {
-    return (int)(combined >> 32);
+    return new MyEdge(low,high);
   }
 
   /**
-   * @param dataFilename
-   * @param users        transactions must be between the subset of non-trivial users (who have more than 10 transactions)
+    * @param combined
+   * @return
+   */
+  public static long getLow(MyEdge combined) {
+    return combined.source;
+  }
+
+  /**
+   * @param combined
+   * @return
+   */
+  public static long getHigh(MyEdge combined) {
+    return combined.target;
+  }
+
+  /**
+   * @paramx dataFilename
+   * @paramx users        transactions must be between the subset of non-trivial users (who have more than 10 transactions)
    * @return
    * @throws Exception
-   * @see #BitcoinFeatures(DBConnection, String, String, boolean)
+   * @seex #BitcoinFeatures(DBConnection, String, String, boolean)
    */
 /*  protected Map<Integer, UserFeatures> getTransForUsers(String dataFilename, Collection<Integer> users) throws Exception {
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
@@ -656,7 +666,7 @@ public class BitcoinFeaturesBase {
     return idToStats;
   }*/
 
-  void addTransaction(Map<Integer, UserFeatures> idToStats, int source, int target, long time, double amount) {
+  void addTransaction(Map<Long, UserFeatures> idToStats, long source, long target, long time, double amount) {
     UserFeatures sourceStats = idToStats.get(source);
     if (sourceStats == null) idToStats.put(source, sourceStats = new UserFeatures(source));
     UserFeatures targetStats = idToStats.get(target);
@@ -781,7 +791,7 @@ public class BitcoinFeaturesBase {
    * @return
    * @throws Exception
    */
-  Collection<Integer> getUsers(DBConnection connection) throws Exception {
+  Collection<Long> getUsers(DBConnection connection) throws Exception {
     long then = System.currentTimeMillis();
 
 	  /*
@@ -834,13 +844,13 @@ public class BitcoinFeaturesBase {
     statement = connection.getConnection().prepareStatement(sqlQuery);
     ResultSet rs = statement.executeQuery();
 
-    Set<Integer> ids = new HashSet<Integer>();
+    Set<Long> ids = new HashSet<>();
     int c = 0;
 
     while (rs.next()) {
       c++;
       if (c % 100000 == 0) logger.debug("read  " + c);
-      ids.add(rs.getInt(1));
+      ids.add(rs.getLong(1));
     }
     long now = System.currentTimeMillis();
     logger.debug("took " + (now - then) + " millis to read " + ids.size() + " users");

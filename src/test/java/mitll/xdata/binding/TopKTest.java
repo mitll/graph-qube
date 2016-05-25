@@ -23,6 +23,7 @@ import mitll.xdata.ServerProperties;
 import mitll.xdata.SimplePatternSearch;
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
+import mitll.xdata.dataset.bitcoin.features.MyEdge;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
@@ -49,12 +50,12 @@ public class TopKTest {
   public void testSimpleSearchFast() {
     int n = 10;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 5);
     String outdir = "data/bitcoin/fast/";
 
     Graph graph = ingestFast(edgeToWeight, outdir);
 
-    Map<Integer, Integer> idToType = getUniformTypes(graph);
+    Map<Long, Integer> idToType = getUniformTypes(graph);
 
     logger.info("id to type " + idToType);
 
@@ -68,12 +69,12 @@ public class TopKTest {
   @Test
   public void testSimpleSearchFast2() {
     int n = 10;
-    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 5);
     String outdir = "data/bitcoin/fast/";
 
     Graph graph = ingestFastMod(edgeToWeight, outdir, 2);
 
-    Map<Integer, Integer> idToType = getModTypes(graph, 2);
+    Map<Long, Integer> idToType = getModTypes(graph, 2);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -85,13 +86,13 @@ public class TopKTest {
   @Test
   public void testSimpleSearchFast4() {
     int n = 20;
-    Map<Long, Integer> edgeToWeight = getGraph(n, 3);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 3);
     String outdir = "data/bitcoin/fast/";
 
     int mod = 4;
     Graph graph = ingestFastMod(edgeToWeight, outdir, mod);
 
-    Map<Integer, Integer> idToType = getModTypes(graph, mod);
+    Map<Long, Integer> idToType = getModTypes(graph, mod);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -104,11 +105,11 @@ public class TopKTest {
   public void testSimpleSearch() {
     int n = 10;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 2);
     String outdir = "data/bitcoin/indices/";
     Graph graph = ingest(n, edgeToWeight, outdir);
 
-    Map<Integer, Integer> idToType = getUniformTypes(graph);
+    Map<Long, Integer> idToType = getUniformTypes(graph);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -129,7 +130,7 @@ public class TopKTest {
    * @param executor
    */
 
-  private void doTests(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor) {
+  private void doTests(Graph graph, Map<Long, Integer> idToType, QueryExecutor executor) {
     //  List<String> exemplarIDs = Arrays.asList("1", "2", "3");
 
     List<String> exemplarIDs = Arrays.asList("10", "20", "40");
@@ -149,7 +150,7 @@ public class TopKTest {
 
   }
 
-  private void testQuery(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor, List<String> exemplarIDs) {
+  private void testQuery(Graph graph, Map<Long, Integer> idToType, QueryExecutor executor, List<String> exemplarIDs) {
     try {
       boolean valid = executor.testQuery(exemplarIDs, graph, idToType);
       if (!valid) logger.info(exemplarIDs + " are not connected");
@@ -163,9 +164,9 @@ public class TopKTest {
    * @return
    * @see #testSimpleSearchFast()
    */
-  private Map<Integer, Integer> getUniformTypes(Graph graph) {
-    Map<Integer, Integer> idToType = new HashMap<>();
-    for (Integer rawID : graph.getRawIDs()) {
+  private Map<Long, Integer> getUniformTypes(Graph graph) {
+    Map<Long, Integer> idToType = new HashMap<>();
+    for (Long rawID : graph.getRawIDs()) {
       int type = 1;
       idToType.put(rawID, type);
 //      idToType.put(graph.getInternalID(rawID), type);
@@ -177,13 +178,13 @@ public class TopKTest {
   public void testSimpleSearchFastOddEven2() {
     int n = 10;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 5);
 
     String outdir = "data/bitcoin/fast/";
 
     Graph graph = ingestFastMod(edgeToWeight, outdir, 2);
 
-    Map<Integer, Integer> idToType = getModTypes(graph, 2);
+    Map<Long, Integer> idToType = getModTypes(graph, 2);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -203,13 +204,13 @@ public class TopKTest {
   public void testSimpleSearch2() {
     int n = 10;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 5);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 5);
 
     String outdir = "data/bitcoin/indices/";
 
     Graph graph = ingestMod(n, edgeToWeight, outdir, 2);
 
-    Map<Integer, Integer> idToType = getModTypes(graph, 2);
+    Map<Long, Integer> idToType = getModTypes(graph, 2);
 
     QueryExecutor executor = new QueryExecutor(graph,
         "bitcoin_small",
@@ -219,7 +220,7 @@ public class TopKTest {
     doOddEvenTests(graph, idToType, executor);
   }
 
-  private void doOddEvenTests(Graph graph, Map<Integer, Integer> idToType, QueryExecutor executor) {
+  private void doOddEvenTests(Graph graph, Map<Long, Integer> idToType, QueryExecutor executor) {
     List<String> exemplarIDs = Arrays.asList("30", "50", "70");
     List<String> exemplarIDs2 = Arrays.asList("2", "4", "6");
     List<String> exemplarIDs3 = Arrays.asList("2", "4", "6", "8");
@@ -242,10 +243,10 @@ public class TopKTest {
    * @param mod
    * @return
    */
-  private Map<Integer, Integer> getModTypes(Graph graph, int mod) {
-    Map<Integer, Integer> idToType = new HashMap<>();
-    for (Integer rawID : graph.getRawIDs()) {
-      int type = (rawID % mod) + 1;
+  private Map<Long, Integer> getModTypes(Graph graph, int mod) {
+    Map<Long, Integer> idToType = new HashMap<>();
+    for (Long rawID : graph.getRawIDs()) {
+      int type = (int)(rawID % mod) + 1;
       idToType.put(rawID, type);
 //      idToType.put(graph.getInternalID(rawID), type);
     }
@@ -319,7 +320,7 @@ public class TopKTest {
         BitcoinFeaturesBase.rlogMemory();
         logger.info(n + " and " + i + " -------------------- ");
 
-        Map<Long, Integer> edgeToWeight = getGraph(n, i);
+        Map<MyEdge, Integer> edgeToWeight = getGraph(n, i);
 
         Graph graph = new MutableGraph(edgeToWeight, false);
 
@@ -352,7 +353,7 @@ public class TopKTest {
     int n = 5;
     //int neighbors = 100;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 1);
     String outdir = "data/bitcoin/indices/";
 
     ingest(n, edgeToWeight, outdir);
@@ -369,7 +370,7 @@ public class TopKTest {
     //int neighbors = 100;
     String outdir = "data/bitcoin/indices/";
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 2);
     ingestMod(n, edgeToWeight, outdir, 2);
 
     String outdirFast = "data/bitcoin/fast/";
@@ -387,7 +388,7 @@ public class TopKTest {
     int n = 5;
     //int neighbors = 100;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 1);
     String outdir = "data/bitcoin/fast/";
     ingestFast(edgeToWeight, outdir);
 
@@ -401,7 +402,7 @@ public class TopKTest {
     logger.debug("ENTER testIngestTwo()");
     int n = 5;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 2);
     String outdir = "data/bitcoin/indices/";
 
     ingest(n, edgeToWeight, outdir);
@@ -415,7 +416,7 @@ public class TopKTest {
     logger.debug("ENTER testIngestTwo()");
     int n = 5;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 1);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 1);
     String outdir = "data/bitcoin/indices/";
 
     ingest(n, edgeToWeight, outdir);
@@ -430,7 +431,7 @@ public class TopKTest {
     int n = 5;
     //int neighbors = 100;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 2);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 2);
     String outdir = "data/bitcoin/indices/";
     ingest(n, edgeToWeight, outdir);
 
@@ -448,7 +449,7 @@ public class TopKTest {
     int n = 400000;
     //int neighbors = 100;
 
-    Map<Long, Integer> edgeToWeight = getGraph(n, 8);
+    Map<MyEdge, Integer> edgeToWeight = getGraph(n, 8);
 
     long then = System.currentTimeMillis();
 
@@ -480,7 +481,7 @@ public class TopKTest {
 
     String outdir = "data/bitcoin/indices/";
     for (int i = 10; i < 50; i += 10) {
-      Map<Long, Integer> edgeToWeight = getGraph(n, i);
+      Map<MyEdge, Integer> edgeToWeight = getGraph(n, i);
       ingest(n, edgeToWeight, outdir);
     }
 
@@ -491,7 +492,7 @@ public class TopKTest {
 
   boolean populateInLinks2 = false; //for now
 
-  private Graph ingestMod(int n, Map<Long, Integer> edgeToWeight, String outdir, int mod) {
+  private Graph ingestMod(int n, Map<MyEdge, Integer> edgeToWeight, String outdir, int mod) {
     try {
       long time1 = System.currentTimeMillis();
 
@@ -506,7 +507,7 @@ public class TopKTest {
     return null;
   }
 
-  private Graph ingest(int n, Map<Long, Integer> edgeToWeight, String outdir) {
+  private Graph ingest(int n, Map<MyEdge, Integer> edgeToWeight, String outdir) {
     try {
       long time1 = System.currentTimeMillis();
 
@@ -532,7 +533,7 @@ public class TopKTest {
     logger.info("Time to do computeIndices :" + (time2 - then));
   }
 
-  private Graph ingestFast(Map<Long, Integer> edgeToWeight, String outdir) {
+  private Graph ingestFast(Map<MyEdge, Integer> edgeToWeight, String outdir) {
     try {
       long time1 = System.currentTimeMillis();
 
@@ -553,7 +554,7 @@ public class TopKTest {
    * @return
    * @see #testIngest2()
    */
-  private Graph ingestFastMod(Map<Long, Integer> edgeToWeight, String outdir, int mod) {
+  private Graph ingestFastMod(Map<MyEdge, Integer> edgeToWeight, String outdir, int mod) {
     try {
       long time1 = System.currentTimeMillis();
 
@@ -588,21 +589,21 @@ public class TopKTest {
    * @see #ingestFastMod(Map, String, int)
    * @see #ingestMod(int, Map, String, int)
    */
-  private Graph beforeComputeIndicesMod(Map<Long, Integer> edgeToWeight, String outDir, int mod, boolean populateInLinks2) throws IOException {
-    Map<Integer, Integer> node2Type = loadTypesMod(edgeToWeight.keySet(), mod);
+  private Graph beforeComputeIndicesMod(Map<MyEdge, Integer> edgeToWeight, String outDir, int mod, boolean populateInLinks2) throws IOException {
+    Map<Long, Integer> node2Type = loadTypesMod(edgeToWeight.keySet(), mod);
     Collection<Integer> types = MultipleIndexConstructor.loadTypes(node2Type);
     return getGraphBeforeComputeIndices(edgeToWeight, types, outDir, populateInLinks2);
   }
 
-  private Graph beforeComputeIndices(Map<Long, Integer> edgeToWeight, String outDir, boolean populateInLinks2) throws IOException {
+  private Graph beforeComputeIndices(Map<MyEdge, Integer> edgeToWeight, String outDir, boolean populateInLinks2) throws IOException {
     return beforeComputeIndicesMod(edgeToWeight, outDir, 1, populateInLinks2);
   }
 
-  private Map<Integer, Integer> loadTypesMod(Collection<Long> ids, int mod) {
-    Map<Integer, Integer> node2Type = new HashMap<>();
-    for (Long id : ids) {
-      int low = BitcoinFeaturesBase.getLow(id);
-      int high = BitcoinFeaturesBase.getHigh(id);
+  private Map<Long, Integer> loadTypesMod(Collection<MyEdge> ids, int mod) {
+    Map<Long, Integer> node2Type = new HashMap<>();
+    for (MyEdge id : ids) {
+      long low = BitcoinFeaturesBase.getLow(id);
+      long high = BitcoinFeaturesBase.getHigh(id);
 
       node2Type.put(low, (int) ((low % mod) + 1));
       node2Type.put(high, (int) ((high % mod) + 1));
@@ -610,7 +611,7 @@ public class TopKTest {
     return node2Type;
   }
 
-  private Graph getGraphBeforeComputeIndices(Map<Long, Integer> edgeToWeight,
+  private Graph getGraphBeforeComputeIndices(Map<MyEdge, Integer> edgeToWeight,
                                              Collection<Integer> types,
                                              String outDir, boolean populateInLinks2) throws IOException {
     BitcoinFeaturesBase.logMemory();
@@ -654,8 +655,8 @@ public class TopKTest {
     return graph;
   }
 
-  private Map<Long, Integer> getGraph(int n, int neighbors) {
-    Map<Long, Integer> edgeToWeight = new HashMap<>();
+  private Map<MyEdge, Integer> getGraph(int n, int neighbors) {
+    Map<MyEdge, Integer> edgeToWeight = new HashMap<>();
 
     Random random = new Random(123456789l);
 
@@ -671,7 +672,7 @@ public class TopKTest {
         long rawFrom = getRawID(from);
         long rawTo = getRawID(to);
 
-        long l = BitcoinFeaturesBase.storeTwo(rawFrom, rawTo);
+        MyEdge l = BitcoinFeaturesBase.storeTwo(rawFrom, rawTo);
         current.add(to);
     /*    int low = BitcoinFeaturesBase.getLow(l);
         int high = BitcoinFeaturesBase.getHigh(l);

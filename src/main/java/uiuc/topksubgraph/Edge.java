@@ -11,8 +11,8 @@ import java.util.HashSet;
  *         University of Illinois at Urbana Champaign
  */
 public class Edge {
-  private final int src;
-  private final int dst;
+  private final long src;
+  private final long dst;
   private float weight;
 
   /**
@@ -21,11 +21,11 @@ public class Edge {
    * @param src
    * @param dst
    * @param weight
-   * @see Graph#addEdge(int, int, double)
+   * @see Graph#addEdge(long, long, double)
    * @see MultipleIndexConstructor#populateSortedEdgeLists(Graph)
    * @see QueryExecutor#getUpperbound(HashSet, ArrayList)
    */
-  public Edge(int src, int dst, double weight) {
+  public Edge(long src, long dst, double weight) {
     this.src = src;
     this.dst = dst;
     this.weight = (float) weight;
@@ -50,14 +50,14 @@ public class Edge {
    */
   @Override
   public int hashCode() {
-    return (getSrc() * 31) ^ getDst() ^ ((int) (getWeight() * 1000000));
+    return ((int)getSrc() * 31) ^ (int)getDst() ^ ((int) (getWeight() * 1000000));
   }
 
-  public int getSrc() {
+  public long getSrc() {
     return src;
   }
 
-  public int getDst() {
+  public long getDst() {
     return dst;
   }
 
@@ -65,7 +65,7 @@ public class Edge {
     return weight;
   }
 
-  public float getFWeight() {
+  float getFWeight() {
     return weight;
   }
 

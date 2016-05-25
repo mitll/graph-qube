@@ -41,8 +41,8 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
   private static final Logger logger = Logger.getLogger(BitcoinIngestUncharted.class);
 
   private static final boolean USE_TIMESTAMP = false;
-  private static final String BITCOIN = "bitcoin";
-  private static final String USERTRANSACTIONS_2013_LARGERTHANDOLLAR = "usertransactions2013largerthandollar";
+//  private static final String BITCOIN = "bitcoin";
+  //private static final String USERTRANSACTIONS_2013_LARGERTHANDOLLAR = "usertransactions2013largerthandollar";
   private static final String SKIP_TRUE = "skip=true";
 
   /**
@@ -56,46 +56,13 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
    * @throws Exception
    */
   public static void main(String[] args) throws Throwable {
-    //  logger.debug("Starting Ingest...");
-
     //
     // Parse Arguments...
     //
-    String dataFilename = new MysqlConnection().getSimpleURL(BITCOIN);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
     boolean skipLoadTransactions = false;
-
-/*    if (args.length > 0) {
-      String first = args[0];
-      if (first.startsWith("skip=")) {
-        skipLoadTransactions = first.equals(SKIP_TRUE);
-      } else {
-        dataFilename = first;
-        logger.debug("got data file " + dataFilename);
-      }
-    }*/
-
-    String dbName = "bitcoin";
-/*    if (args.length > 1) {
-      String second = args[1];
-      if (!second.contains("=")) {
-        dbName = second;
-        logger.debug("got db name '" + dbName + "'");
-      }
-    }*/
-
+    String dbName = null;//"bitcoin";
     String writeDir = "outUncharted";
-/*
-    if (args.length > 2) {
-      writeDir = args[2];
-      logger.debug("got output dir " + writeDir);
-    }
-*/
-
-    if (args.length > 3) {
-      skipLoadTransactions = args[3].equals("skip");
-      logger.debug("got skip load transactions " + skipLoadTransactions);
-    }
-
+    String propsFile = null;
 //    long limit = 20000000000l;
     long limit = 20000l;
     for (String arg : args) {
@@ -103,27 +70,44 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
 
       String prefix = "db=";
       if (arg.startsWith(prefix)) {
-        dbName = arg.split(prefix)[1];
+        dbName = getValue(arg, prefix);
       }
 
       prefix = "out=";
       if (arg.startsWith(prefix)) {
-        writeDir = arg.split(prefix)[1];
+        writeDir = getValue(arg, prefix);
       }
 
       prefix = "skip=";
       if (arg.startsWith(prefix)) {
         skipLoadTransactions = arg.equals(SKIP_TRUE);
       }
+
+      prefix = "props=";
+      logger.info("got " + arg);
+
+      if (arg.startsWith(prefix)) {
+        propsFile = getValue(arg,prefix);
+      }
     }
 
+    if (propsFile == null) {
+      logger.error("please set a props file with props=<file>");
+      return;
+    }
     BitcoinFeaturesBase.logMemory();
 
-    ServerProperties props = new ServerProperties();
+    ServerProperties props = new ServerProperties(propsFile);
     String transactionsTable = props.getTransactionsTable();
-    new BitcoinIngestUncharted().doIngest(dataFilename, transactionsTable, dbName, writeDir,
+    if (dbName == null) dbName = props.getSourceDatabase();
+    if (dbName == null) {
+      logger.error("please specify a source database via database=...");
+      return;
+    }
+    String jdbcURL = new MysqlConnection().getSimpleURL(dbName);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
+    new BitcoinIngestUncharted().doIngest(jdbcURL, transactionsTable, props.getFeatureDatabase(), writeDir,
         //skipLoadTransactions,
-        limit);
+        limit, props);
 
     BitcoinFeaturesBase.logMemory();
 
@@ -135,11 +119,15 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     //  Thread.sleep(10000000);
   }
 
+  private static String getValue(String arg, String prefix) {
+    return arg.split(prefix)[1];
+  }
+
   private static long getLimit(long limit, String arg) {
     String prefix = "limit=";
     if (arg.startsWith(prefix)) {
       try {
-        limit = Long.parseLong(arg.split(prefix)[1]);
+        limit = Long.parseLong(getValue(arg, prefix));
       } catch (NumberFormatException e) {
         e.printStackTrace();
       }
@@ -147,16 +135,19 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     return limit;
   }
 
-  private void doIngest(String dataSourceJDBC, String transactionsTable, String destinationDbName, String writeDir,
-                        //boolean skipLoadTransactions,
-                        long limit) throws Throwable {
+  private void doIngest(String dataSourceJDBC, String transactionsTable,
+                        String destinationDbName, String writeDir,
+                        long limit,
+                        ServerProperties props) throws Throwable {
     long start = System.currentTimeMillis();
     BitcoinFeaturesUncharted bitcoinFeaturesUncharted = new BitcoinFeaturesUncharted();
 
-    Set<Integer> userIds = loadTransactionsAndWriteFeatures(dataSourceJDBC, transactionsTable, destinationDbName, writeDir, limit, bitcoinFeaturesUncharted);
+    Set<Long> userIds =
+        loadTransactionsAndWriteFeatures(dataSourceJDBC, transactionsTable, destinationDbName,
+            writeDir, limit, bitcoinFeaturesUncharted, props);
 
     long then2 = System.currentTimeMillis();
-    Set<Integer> validUsers = doSubgraphs(destinationDbName, userIds);
+    Set<Long> validUsers = doSubgraphs(destinationDbName, userIds);
     logger.info("doIngest took " + (System.currentTimeMillis() - then2) / 1000 + " secs to do subgraphs");
     logger.info("doIngest took " + (System.currentTimeMillis() - start) / 1000 + " secs overall");
 
@@ -166,25 +157,39 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName), userIds);
   }
 
-  private Set<Integer> loadTransactionsAndWriteFeatures(String dataSourceJDBC,
+  /**
+   * @see #doIngest(String, String, String, String, long, ServerProperties)
+   * @param dataSourceJDBC
+   * @param transactionsTable
+   * @param destinationDbName
+   * @param writeDir
+   * @param limit
+   * @param bitcoinFeaturesUncharted
+   * @param props
+   * @return
+   * @throws Exception
+   */
+  private Set<Long> loadTransactionsAndWriteFeatures(String dataSourceJDBC,
                                                         String transactionsTable,
                                                         String destinationDbName,
                                                         String writeDir,
                                                         long limit,
-                                                        BitcoinFeaturesUncharted bitcoinFeaturesUncharted) throws Exception {
+                                                        BitcoinFeaturesUncharted bitcoinFeaturesUncharted,
+                                                        ServerProperties props) throws Exception {
     long then = System.currentTimeMillis();
     // populate the transactions table
-    MysqlInfo info = new MysqlInfo();
+    MysqlInfo info = new MysqlInfo(props);
     info.setJdbc(dataSourceJDBC);
     info.setTable(transactionsTable);
 
-    Collection<Integer> users = new BitcoinIngestUnchartedTransactions().getUsers(info);
-    Map<Integer, UserFeatures> idToStats = new HashMap<>();
+    BitcoinIngestUnchartedTransactions bitcoinIngestUnchartedTransactions = new BitcoinIngestUnchartedTransactions(props);
+    Collection<Long> users = bitcoinIngestUnchartedTransactions.getUsers(info);
+    Map<Long, UserFeatures> idToStats = new HashMap<>();
 
 //    if (!skipLoadTransactions) {
     logger.info("doIngest userIds size " + users.size() + " and " +idToStats.size());
 
-    users = new BitcoinIngestUnchartedTransactions().loadTransactionTable(info,
+    users = bitcoinIngestUnchartedTransactions.loadTransactionTable(info,
         "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit, users, idToStats);
 
     logger.info("doIngest after userIds size " + users.size()
@@ -195,7 +200,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-    Set<Integer> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir,  users, idToStats);
+    Set<Long> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir,  users, idToStats);
 
     logger.info("doIngest userIds size " + userIds.size());
 

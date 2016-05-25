@@ -43,7 +43,7 @@ public class IngestAndQuery {
     computeIndices();
 
     logger.info("Executing Query...");
-    executeQuery();
+    //executeQuery();
 
 
   }
@@ -54,7 +54,7 @@ public class IngestAndQuery {
    * @throws Throwable
    * @throws NumberFormatException
    */
-  public static void executeQuery() throws FileNotFoundException,
+  /*public static void executeQuery() throws FileNotFoundException,
       IOException, Throwable, NumberFormatException {
 
     QueryExecutor executor = new QueryExecutor();
@@ -79,11 +79,11 @@ public class IngestAndQuery {
     QueryExecutor.k0 = 2;
     QueryExecutor.topK = 1000;
 
-    /**
+    *//**
      * Load-in types, and count how many there are
-     */
+     *//*
     // Load-in types
-    HashMap<Integer, Integer> node2Type;
+    Map<Long, Integer> node2Type;
     node2Type = loadTypesFile(QueryExecutor.baseDir, QueryExecutor.typesFile);
     executor.setNode2Type(node2Type);
 
@@ -107,16 +107,16 @@ public class IngestAndQuery {
     //set system out to out-file...
     System.setOut(new PrintStream(new File(QueryExecutor.baseDir + QueryExecutor.resultDir + "/QBSQueryExecutorV2.topK=" + QueryExecutor.topK + "_K0=" + QueryExecutor.k0 + "_" + QueryExecutor.graphFileBasename.split("\\.")[0] + "_" + QueryExecutor.queryFile.split("/")[1])));
 
-    /**
+    *//**
      * Read-in and setup query
-     */
+     *//*
     boolean isClique = executor.loadQuery();
 
     executor.getQuerySignatures(); //fills in querySign
 
-    /**
+    *//**
      * NS Containment Check and Candidate Generation
-     */
+     *//*
     long time1 = new Date().getTime();
 
     int prunedCandidateFiltering = executor.generateCandidates();
@@ -128,9 +128,9 @@ public class IngestAndQuery {
     System.out.println("Candidate Generation Time: " + (timeA - time1));
 
 
-    /**
+    *//**
      * Populate all required HashMaps relating edges to edge-types
-     */
+     *//*
     // compute edge types for all edges in query
     Set<String> queryEdgeTypes = executor.computeQueryEdgeTypes();
 
@@ -144,9 +144,9 @@ public class IngestAndQuery {
     //Maintain pointers and topk heap
     executor.computePointers(queryEdgeTypes, queryEdgeType2Edges);
 
-    /**
+    *//**
      * The secret sauce... Execute the query...
-     */
+     *//*
     executor.executeQuery(queryEdgeType2Edges, isClique, prunedCandidateFiltering);
 
     long time2 = new Date().getTime();
@@ -156,7 +156,7 @@ public class IngestAndQuery {
     //FibonacciHeap<ArrayList<String>> queryResults = executor.getHeap();
     executor.printHeap();
 
-  }
+  }*/
 
   /**
    * If we're on Windows, convert file-separators to "/"
@@ -200,8 +200,8 @@ public class IngestAndQuery {
     // Load-in types
     //MultipleIndexConstructionTest indexTester = new MultipleIndexConstructionTest();
     HashMap<Integer, Integer> node2Type;
-    node2Type = loadTypesFile(MultipleIndexConstructor.baseDir, MultipleIndexConstructor.typesFile);
-    MultipleIndexConstructor.setNode2Type(node2Type);
+  //  node2Type = loadTypesFile(MultipleIndexConstructor.baseDir, MultipleIndexConstructor.typesFile);
+  //  MultipleIndexConstructor.setNode2Type(node2Type);
     logger.info("Loaded types file...");
 
     //compute totalTypes
@@ -252,7 +252,7 @@ public class IngestAndQuery {
    * @throws FileNotFoundException
    * @throws IOException
    */
-  public static HashMap<Integer, Integer> loadTypesFile(String baseDir, String typesFile)
+  private static HashMap<Integer, Integer> loadTypesFile(String baseDir, String typesFile)
       throws FileNotFoundException, IOException {
 
     HashMap<Integer, Integer> node2Type = new HashMap<Integer, Integer>();

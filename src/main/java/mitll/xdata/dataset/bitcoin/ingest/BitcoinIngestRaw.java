@@ -72,7 +72,7 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
     int bad = 0;
     //  int black = 0;
     double totalUSD = 0;
-    Map<Integer, UserStats> userToStats = new HashMap<Integer, UserStats>();
+    Map<Long, UserStats> userToStats = new HashMap<>();
 
     // Set<Integer> userBlacklist = new HashSet<Integer>(Arrays.asList(25)); // skip supernode 25
 
@@ -190,7 +190,8 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
   }
 
   private List<double[]> addFeatures(
-      String dataFilename, Map<Integer, UserStats> userToStats,
+      String dataFilename,
+      Map<Long, UserStats> userToStats,
       double avgUSD,
       RateConverter rc
   ) throws Exception {
@@ -241,7 +242,8 @@ public class BitcoinIngestRaw extends BitcoinIngestTransactions {
   }
 
   private double addUserStats(RateConverter rc,
-                              Map<Integer, UserStats> userToStats, int sourceid, int targetID, String day, Timestamp x, double btc) throws Exception {
+                              Map<Long, UserStats> userToStats, long sourceid, long targetID,
+                              String day, Timestamp x, double btc) throws Exception {
     // do dollars
     double usd = toDollars(rc, day, x, btc);
     return addUserStats(userToStats, sourceid, targetID, usd);

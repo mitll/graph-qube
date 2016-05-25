@@ -14,11 +14,11 @@ public class Graph {
   private static final Logger logger = Logger.getLogger(Graph.class);
 
   protected Set<Edge> edges = new HashSet<>();
-  protected Map<Integer, List<Edge>> inLinks = new HashMap<>();
-  protected final Map<Integer, Map<Integer, Edge>> inLinks2 = new HashMap<>();
+  protected Map<Long, List<Edge>> inLinks = new HashMap<>();
+  protected final Map<Long, Map<Long, Edge>> inLinks2 = new HashMap<>();
   boolean populateInLinks2 = false;
 
-  private final Map<Integer, Integer> node2Type = new HashMap<>();
+  private final Map<Long, Integer> node2Type = new HashMap<>();
 
   /**
    * Maps the node to an internal node id.
@@ -31,7 +31,7 @@ public class Graph {
    * TODO: this is dumb - this is just an integer array!!!
    */
 //  private final Map<Integer, Integer> nodeId2NodeMap = new HashMap<>();
-  protected final Set<Integer> nodeIds = new HashSet<>();
+   final Set<Long> nodeIds = new HashSet<>();
 
   /**
    * Constructor
@@ -72,7 +72,7 @@ public class Graph {
     Integer integer = nodeId2NodeMap.get(internalID);
     return integer;
   }*/
-  public Collection<Edge> getNeighbors(int n) {
+   Collection<Edge> getNeighbors(long n) {
     return inLinks.get(n);
   }
 
@@ -84,7 +84,7 @@ public class Graph {
    * @return
    * @see QueryExecutor#getQueryEdges(List, Graph)
    */
-  protected Edge getEdge(int node1, int node2) {
+   Edge getEdge(long node1, long node2) {
     if (inLinks.containsKey(node2)) {
       List<Edge> a = inLinks.get(node2);
       for (Edge edge : a) {
@@ -110,9 +110,9 @@ public class Graph {
    * @return
    * @see MultipleIndexConstructor#processPathsq
    */
-  public Edge getEdgeFast(int node1, int node2) {
+   Edge getEdgeFast(long node1, long node2) {
     if (inLinks2.containsKey(node2)) {
-      Map<Integer, Edge> integerEdgeMap = inLinks2.get(node2);
+      Map<Long, Edge> integerEdgeMap = inLinks2.get(node2);
       return integerEdgeMap.get(node1);
     } else {
       return null;
@@ -195,15 +195,15 @@ public class Graph {
     this.edges = edges;
   }
 
-  protected Map<Integer, List<Edge>> getInLinks() {
+  protected Map<Long, List<Edge>> getInLinks() {
     return inLinks;
   }
 
-  public Set<Integer> getInLinksNodes() {
+  Set<Long> getInLinksNodes() {
     return inLinks.keySet();
   }
 
-  private void setInLinks(Map<Integer, List<Edge>> inLinks) {
+  private void setInLinks(Map<Long, List<Edge>> inLinks) {
     this.inLinks = inLinks;
   }
 
@@ -213,11 +213,11 @@ public class Graph {
   }
 */
 
-  public Collection<Integer> getRawIDs() {
+  public Collection<Long> getRawIDs() {
     return nodeIds;// node2NodeIdMap.keySet();
   }
 
-  public Integer getNodeType(int src) {
+  public Integer getNodeType(long src) {
     return node2Type.get(src);
   }
 

@@ -48,7 +48,7 @@ public class MultipleIndexConstructor {
   public static String typesFile = "";
   public static int D = 2;
 
-  private static Map<Integer, Integer> node2Type = new HashMap<>();
+  private static Map<Long, Integer> node2Type = new HashMap<>();
   private static final Map<String, List<Edge>> sortedEdgeLists = new HashMap<>();
   private static final Map<Integer, List<String>> ordering = new HashMap<>();
   private static final DecimalFormat twoDForm = new DecimalFormat("#.####");
@@ -151,7 +151,7 @@ public class MultipleIndexConstructor {
     long totalPaths = 0;
     long pathsCopied = 0;
 
-    Map<Integer, NodeInfo> nodeInfos = new HashMap<>();
+    Map<Long, NodeInfo> nodeInfos = new HashMap<>();
 
     makeNodeInfos(graph, nodeInfos);
 
@@ -185,17 +185,17 @@ public class MultipleIndexConstructor {
    * @param nodeInfos
    * @see #computeIndicesFast(Graph)
    */
-  private static void makeNodeInfos(Graph graph, Map<Integer, NodeInfo> nodeInfos) {
+  private static void makeNodeInfos(Graph graph, Map<Long, NodeInfo> nodeInfos) {
     long then = System.currentTimeMillis();
-    for (Integer rawID : graph.getRawIDs()) {
+    for (Long rawID : graph.getRawIDs()) {
       nodeInfos.put(rawID, getNodeInfo(graph, rawID));
     }
     long now = System.currentTimeMillis();
     logger.debug("makeNodeInfos took " + (now - then) + " millis");
   }
 
-  private static void makeNodeInfosParallel(Graph graph, Map<Integer, NodeInfo> nodeInfos) {
-    Collection<Integer> rawIDs = graph.getRawIDs();
+  private static void makeNodeInfosParallel(Graph graph, Map<Long, NodeInfo> nodeInfos) {
+    Collection<Long> rawIDs = graph.getRawIDs();
 
     List<NodeInfo> nodeInfoList =
         rawIDs.stream()
@@ -208,12 +208,12 @@ public class MultipleIndexConstructor {
     }
   }
 
-  private static NodeInfo getNodeInfo(Graph graph, Integer rawID) {
+  private static NodeInfo getNodeInfo(Graph graph, Long rawID) {
     NodeInfo nodeInfo = new NodeInfo(rawID);
     Collection<Edge> values = getUniqueEdges(graph, rawID);
 
     for (Edge edge : values) {
-      int src = edge.getSrc();
+      long src = edge.getSrc();
       float weight = edge.getFWeight();
 
 //        logger.info("edge " + edge + " src " + src);
@@ -229,14 +229,14 @@ public class MultipleIndexConstructor {
   }
 
 
-  private static Collection<Edge> getUniqueEdges(Graph graph, int i) {
+  private static Collection<Edge> getUniqueEdges(Graph graph, long i) {
     Collection<Edge> nbrs = graph.getNeighbors(i);
 
-    Map<Integer, Edge> srcToEdge = new HashMap<>();
-    Map<Integer, Float> srcToWeight = new HashMap<>();
+    Map<Long, Edge> srcToEdge = new HashMap<>();
+    Map<Long, Float> srcToWeight = new HashMap<>();
 
     for (Edge edge : nbrs) {
-      int src = edge.getSrc();
+      long src = edge.getSrc();
       Float edgeWeight = srcToWeight.get(src);
       float fWeight = edge.getFWeight();
       if (edgeWeight == null || edgeWeight < fWeight) {
@@ -258,12 +258,12 @@ public class MultipleIndexConstructor {
    * @see #computeIndicesFast(Graph)
    */
   private static long doD2(Graph graph, BufferedWriter outTopology, BufferedWriter outSPD,
-                           Map<Integer, NodeInfo> nodeInfos
+                           Map<Long, NodeInfo> nodeInfos
   ) throws IOException {
     long then2 = System.currentTimeMillis();
 
     int count = 0;
-    for (Integer rawID : graph.getRawIDs()) {
+    for (Long rawID : graph.getRawIDs()) {
       logD2(graph, then2, count);
       count++;
 
@@ -288,14 +288,14 @@ public class MultipleIndexConstructor {
     return now;
   }
 
-  private static NodeInfo getD2NodeInfo(Graph graph, Map<Integer, NodeInfo> nodeInfos, Integer rawID) {
+  private static NodeInfo getD2NodeInfo(Graph graph, Map<Long, NodeInfo> nodeInfos, Long rawID) {
     NodeInfo d2 = new NodeInfo(rawID);
 
     String theNodeType = oneHop[node2Type.get(rawID) - 1];
-    Map<String, Set<Integer>> typeToNeighbors = new HashMap<>();
+    Map<String, Set<Long>> typeToNeighbors = new HashMap<>();
 
     for (Edge edge : getUniqueEdges(graph, rawID)) {
-      int src = edge.getSrc();
+      long src = edge.getSrc();
       String neighborType = oneHop[node2Type.get(src) - 1];
 
       NodeInfo nodeInfo = nodeInfos.get(src);
@@ -307,18 +307,18 @@ public class MultipleIndexConstructor {
       for (Map.Entry<String, TypeInfo> pair : nodeInfo.getTypeToInfo().entrySet()) {
         String nType = pair.getKey();
         TypeInfo typeInfo = pair.getValue();
-        Set<Integer> neighborNeighbors = typeInfo.getNodes();
+        Set<Long> neighborNeighbors = typeInfo.getNodes();
 //          if (DEBUG) logger.info("\tfor " + count + "/" + src + " type " + nType +
 //              " neighborNeighbors " + neighborNeighbors);
 
         String d2Type = neighborType + nType;
-        Set<Integer> seenForType = typeToNeighbors.get(d2Type);
+        Set<Long> seenForType = typeToNeighbors.get(d2Type);
 
         if (seenForType == null) {
           typeToNeighbors.put(d2Type, seenForType = new HashSet<>());
         }
 
-        for (Integer candidate : neighborNeighbors) {
+        for (Long candidate : neighborNeighbors) {
           if (!candidate.equals(rawID)) {
             seenForType.add(candidate); // TODO : hotspot
           }
@@ -364,7 +364,7 @@ public class MultipleIndexConstructor {
    * @param src internal id?
    * @return
    */
-  private static Integer getNodeType(int src) {
+  private static Integer getNodeType(long src) {
     return node2Type.get(src);
   }
 
@@ -417,7 +417,7 @@ public class MultipleIndexConstructor {
     //for(int i=1;i<=graph.numNodes;i++)
     //for (int i = 0; i < graph.getNumNodes(); i++) {
     int count = 0;
-    for (Integer rawID : graph.getRawIDs()) {
+    for (Long rawID : graph.getRawIDs()) {
       if (count % NOTICE_MOD == 0) {
         //System.err.println("Nodes processed: "+i+" out of "+graph.numNodes);
         logger.debug("computeIndices Nodes processed: " + count + " out of " + graph.getNumNodes());
@@ -430,29 +430,29 @@ public class MultipleIndexConstructor {
       outTopology.write(rawID + "\t");
       outSPD.write(rawID + "\t");
       //int n=graph.node2NodeIdMap.get(i);//this is a big-bug fixed...
-      Set<Integer> queue = new HashSet<>();
-      Map<Integer, Double> sumWeight = new HashMap<>();
+      Set<Long> queue = new HashSet<>();
+      Map<Long, Double> sumWeight = new HashMap<>();
       queue.add(rawID);
       sumWeight.put(rawID, 0.);
-      Set<Integer> considered = new HashSet<>();
+      Set<Long> considered = new HashSet<>();
       considered.add(rawID);
-      Map<Integer, Set<List<Integer>>> paths = new HashMap<>();
-      List<Integer> ll = new ArrayList<>();
+      Map<Long, Set<List<Long>>> paths = new HashMap<>();
+      List<Long> ll = new ArrayList<>();
       ll.add(rawID);
-      Set<List<Integer>> hs = new HashSet<>();
+      Set<List<Long>> hs = new HashSet<>();
       hs.add(ll);
       paths.put(rawID, hs);
 
       for (int d = 0; d < D; d++) {
         //perform BFS from each node.
-        Map<Integer, Set<List<Integer>>> newPaths = new HashMap<>();
-        Set<Integer> newQueue = new HashSet<>();
-        Map<Integer, Double> newSumWeight = new HashMap<>();
+        Map<Long, Set<List<Long>>> newPaths = new HashMap<>();
+        Set<Long> newQueue = new HashSet<>();
+        Map<Long, Double> newSumWeight = new HashMap<>();
 
         totalQueued += queue.size();
 
         if (DEBUG) logger.info("queue " + queue);
-        for (int q : queue) {
+        for (long q : queue) {
           Collection<Edge> nbrs = graph.getNeighbors(q);
           totalNeighbors += nbrs.size();
 
@@ -462,7 +462,7 @@ public class MultipleIndexConstructor {
             Integer integer = edgeToVisit.get(e);
             edgeToVisit.put(e, integer == null ? 1 : integer + 1);
             traversed++;
-            int qDash = e.getSrc();
+            long qDash = e.getSrc();
             double newWt = sumWeight.get(q) + e.getWeight();
 
             Double currentWeight = newSumWeight.get(qDash);
@@ -531,17 +531,19 @@ public class MultipleIndexConstructor {
   }
 
   private static long getPathsCopied(long pathsCopied,
-                                     Map<Integer, Set<List<Integer>>> newPaths, int q, int qDash,
-                                     Map<Integer, Set<List<Integer>>> paths) {
-    Set<List<Integer>> hsai = newPaths.get(qDash);
+                                     Map<Long, Set<List<Long>>> newPaths,
+                                     long q,
+                                     long qDash,
+                                     Map<Long, Set<List<Long>>> paths) {
+    Set<List<Long>> hsai = newPaths.get(qDash);
 
     if (hsai == null) {
       hsai = new HashSet<>();
       newPaths.put(qDash, hsai);
     }
 
-    for (List<Integer> ai : paths.get(q)) {
-      List<Integer> nali = new ArrayList<>(ai);
+    for (List<Long> ai : paths.get(q)) {
+      List<Long> nali = new ArrayList<>(ai);
       pathsCopied++;
       nali.add(qDash);
       hsai.add(nali);
@@ -587,8 +589,8 @@ public class MultipleIndexConstructor {
 */
 
   private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d,
-                                    Map<Integer, Set<List<Integer>>> paths) throws IOException {
-    Map<String, Collection<Integer>> topo = new HashMap<>();
+                                    Map<Long, Set<List<Long>>> paths) throws IOException {
+    Map<String, Collection<Long>> topo = new HashMap<>();
     //  Map<Integer, List<Integer>> topo2 = new HashMap<>();
 
     Map<String, Double> spd = new HashMap<>();
@@ -597,8 +599,8 @@ public class MultipleIndexConstructor {
 
     int[] typeSequence = new int[D];
 
-    for (int ii : paths.keySet()) {
-      for (List<Integer> p : paths.get(ii)) {
+    for (long ii : paths.keySet()) {
+      for (List<Long> p : paths.get(ii)) {
         String types = "";
 //        int typesTotal = 0;
         //logger.info("From " + ii + " p " + p);
@@ -606,10 +608,10 @@ public class MultipleIndexConstructor {
         double totWeight = 0;
 
         for (int j = 0; j < p.size(); j++) {
-          int a = p.get(j);
+          long a = p.get(j);
 
           if (j != 0) {
-            int aDash = p.get(j - 1);
+            long aDash = p.get(j - 1);
             //  Edge edge = graph.getEdge(a, aDash);
             Edge edge = graph.getEdgeFast(a, aDash);
 
@@ -650,7 +652,8 @@ public class MultipleIndexConstructor {
     //outSPD.write(" ");
   }
 
-  private static void writeTopology(Writer outTopology, int d, Map<String, Collection<Integer>> topo) throws IOException {
+  private static void writeTopology(Writer outTopology, int d,
+                                    Map<String, Collection<Long>> topo) throws IOException {
     for (String o : ordering.get(d + 1)) {
       String toWrite;
 
@@ -717,9 +720,9 @@ public class MultipleIndexConstructor {
   }
 
 
-  private static void updateTopo(Map<String, Collection<Integer>> topo, int ii, String types) {
+  private static void updateTopo(Map<String, Collection<Long>> topo, long ii, String types) {
 //    int lastNode = ii;
-    Collection<Integer> l = topo.get(types);
+    Collection<Long> l = topo.get(types);
 
     if (l == null) {
       l = new HashSet<>();
@@ -759,7 +762,7 @@ public class MultipleIndexConstructor {
    * Figure out how many types there are (in the case where we're not loading everything from file)
    */
   public static void computeTotalTypes() {
-    for (int key : node2Type.keySet()) {
+    for (long key : node2Type.keySet()) {
       int type = node2Type.get(key);
       if (type > totalTypes)
         totalTypes = type;
@@ -862,8 +865,8 @@ public class MultipleIndexConstructor {
       //    logger.info("populateSortedEdgeLists edge " + e);
 //      int from = graph.getRawID(e.getSrc());
 //      int to = graph.getRawID(e.getDst());
-      int from = e.getSrc();
-      int to = e.getDst();
+      long from = e.getSrc();
+      long to = e.getDst();
 
       double weight = e.getWeight();
 
@@ -882,9 +885,10 @@ public class MultipleIndexConstructor {
           int tmp = fromType;
           fromType = toType;
           toType = tmp;
-          tmp = from;
+
+          long tmp2 = from;
           from = to;
-          to = tmp;
+          to = tmp2;
         }
         List<Edge> arr = sortedEdgeLists.get(fromType + "#" + toType);
         arr.add(new Edge(from, to, weight));
@@ -937,7 +941,7 @@ public class MultipleIndexConstructor {
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\t");
-      int node = Integer.parseInt(tokens[0]);
+      long node = Long.parseLong(tokens[0]);
       int type = Integer.parseInt(tokens[1]);
       node2Type.put(node, type);
       if (type > totalTypes)
@@ -961,7 +965,7 @@ public class MultipleIndexConstructor {
    * @return
    * @seex TopKTest#beforeComputeIndicesMod
    */
-  public static Collection<Integer> loadTypes(Map<Integer, Integer> node2TypeToUse) {
+  public static Collection<Integer> loadTypes(Map<Long, Integer> node2TypeToUse) {
     node2Type = node2TypeToUse;
     return setTotalTypes();
   }
@@ -1011,7 +1015,7 @@ public class MultipleIndexConstructor {
       }
 
       //Retrieve by column name
-      int guid = rs.getInt(uidColumn);
+      long guid = rs.getInt(uidColumn);
       int type = rs.getInt(typeColumn);
 
       //logger.info("UID: "+guid+"\tTYPE: "+type);
@@ -1067,7 +1071,7 @@ public class MultipleIndexConstructor {
    *
    * @see IngestAndQuery#computeIndices()
    */
-  public static void setNode2Type(HashMap<Integer, Integer> in) {
+   static void setNode2Type(Map<Long, Integer> in) {
     node2Type = in;
   }
 

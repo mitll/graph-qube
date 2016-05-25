@@ -50,22 +50,22 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
   // private final double ppWeight   = 20.0;
  // private boolean useSpectral = false;
 
-  private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
+ // private static final int HOUR_IN_MILLIS = 60 * 60 * 1000;
 
   /**
    * Populate map so we can tell when to skip transactions from users who have done < 25 transactions.
    *
    * @param users
    * @param stot
-   * @param skipped
+   * @paramx skipped
    * @param source
    * @param target
    * @return
    */
-  protected boolean getSkipped(Collection<Integer> users, Map<Integer, Set<Integer>> stot, int source, int target) {
+  private boolean getSkipped(Collection<Long> users, Map<Long, Set<Long>> stot, long source, long target) {
     if (users.contains(source) && users.contains(target)) {
-      Set<Integer> integers = stot.get(source);
-      if (integers == null) stot.put(source, integers = new HashSet<Integer>());
+      Set<Long> integers = stot.get(source);
+      if (integers == null) stot.put(source, integers = new HashSet<>());
       if (!integers.contains(target)) integers.add(target);
       return false;
     } else {
@@ -74,11 +74,11 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
 //    return skipped;
   }
 
-  protected void writePairs(String outfile, Map<Integer, Set<Integer>> stot) throws IOException {
+  private void writePairs(String outfile, Map<Long, Set<Long>> stot) throws IOException {
     BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
     int cc = 0;
-    for (Map.Entry<Integer, Set<Integer>> pair : stot.entrySet()) {
-      for (Integer i : pair.getValue()) {
+    for (Map.Entry<Long, Set<Long>> pair : stot.entrySet()) {
+      for (Long i : pair.getValue()) {
         writer.write(storeTwo(pair.getKey(), i) + "\n");
         cc++;
       }
@@ -129,13 +129,13 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
     // logger.debug("took " +(now-then) + " to read " + transactions);
     logger.debug("reading users from db " + connection);
 
-    Collection<Integer> users = getUsers(connection);
+    Collection<Long> users = getUsers(connection);
 
     String pairsFilename = writeDirectory + "pairs.txt";
 
     writePairs(users, datafile, pairsFilename);
 
-    Map<Integer, UserFeatures> transForUsers = getTransForUsers(datafile, users);
+    Map<Long, UserFeatures> transForUsers = getTransForUsers(datafile, users);
 
     writeFeatures(connection, writeDirectory, then, users, transForUsers);
   }
@@ -220,7 +220,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
    * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#populateInMemoryAdjacency()
    * @see #BitcoinFeatures(mitll.xdata.db.DBConnection, String, String, boolean)
    */
-  private void writePairs(Collection<Integer> users,
+  private void writePairs(Collection<Long> users,
                           String dataFilename, String outfile) throws Exception {
 
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
@@ -233,7 +233,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
     //  Map<Integer,UserFeatures> idToStats = new HashMap<Integer,UserFeatures>();
     //  Set<Long> connectedPairs = new HashSet<Long>(10000000);
     int c = 0;
-    Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
+    Map<Long, Set<Long>> stot = new HashMap<>();
     int skipped = 0;
     while ((line = br.readLine()) != null) {
       count++;
@@ -288,7 +288,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
    * @throws Exception
    * @see #BitcoinFeatures(DBConnection, String, String, boolean)
    */
-  protected Map<Integer, UserFeatures> getTransForUsers(String dataFilename, Collection<Integer> users) throws Exception {
+   Map<Long, UserFeatures> getTransForUsers(String dataFilename, Collection<Long> users) throws Exception {
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dataFilename), "UTF-8"));
     String line;
     int count = 0;
@@ -296,7 +296,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
     int max = Integer.MAX_VALUE;
     int bad = 0;
 
-    Map<Integer, UserFeatures> idToStats = new HashMap<Integer, UserFeatures>();
+    Map<Long, UserFeatures> idToStats = new HashMap<>();
 
     while ((line = br.readLine()) != null) {
       count++;

@@ -11,12 +11,22 @@ import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -49,33 +59,33 @@ public class QueryExecutor {
   //no more statics after this...
   public Graph g;
 
-  private Map<Integer, Integer> node2Type;
+  private Map<Long, Integer> node2Type;
   private int totalTypes;
 
   private final List<Integer> types;
-  private final Map<Integer, Set<Integer>> graphType2IDSet;
+  private final Map<Integer, Set<Long>> graphType2IDSet;
   //private int totalNodes;
   private int totalOrderingSize;
   private final Map<Integer, List<String>> ordering;
   private final Map<String, Integer> orderingType2Index;
 
   //private int[][] graphSign;
-  private Map<Integer, List<Integer>> graphSign;
+  private Map<Long, List<Long>> graphSign;
 
   private final Map<String, List<String>> sortedEdgeLists;
-  private final Map<String, Map<Integer, List<Integer>>> node2EdgeListPointers;
+  private final Map<String, Map<Long, List<Integer>>> node2EdgeListPointers;
 
   //  private double[][] spd;
-  private Map<Integer, List<Float>> spd;
+  private Map<Long, List<Float>> spd;
   private Graph query;
   //  private HashMap<Integer, Integer> queryNodeID2Type;
-  private Map<Integer, Integer> queryNode2Type;
+  private Map<Long, Integer> queryNode2Type;
 //  Set<Integer> queryNodeIds = new HashSet<>();
 
   //private int[][] querySign;
-  private Map<Integer, List<Integer>> querySign;
+  private Map<Long, List<Integer>> querySign;
 
-  private Map<Integer, List<Integer>> candidates;
+  private Map<Long, List<Long>> candidates;
 
   private List<String> actualQueryEdges;
 
@@ -88,7 +98,7 @@ public class QueryExecutor {
   private FibonacciHeap<List<String>> heap;
   private Set<List<String>> heapSet;
 
-  public QueryExecutor(Graph graph, String datasetId, String datasetResourceDir, Map<Integer, Integer> idToType) {
+  public QueryExecutor(Graph graph, String datasetId, String datasetResourceDir, Map<Long, Integer> idToType) {
     this();
     QueryExecutor.datasetId = datasetId;
     QueryExecutor.baseDir = datasetResourceDir; //THIS LINE SHOULD CHANGE FOR JAR-ed VERSION
@@ -169,7 +179,7 @@ public class QueryExecutor {
     heapSet = new HashSet<>();
   }
 
-  public boolean testQuery(List<String> exemplarIDs, Graph graph, Map<Integer, Integer> idToType) {
+  public boolean testQuery(List<String> exemplarIDs, Graph graph, Map<Long, Integer> idToType) {
         /*
      * Get all pairs of query nodes...
 		 * (this is assuming ids are sortable by integer comparison, like in bitcoin)
@@ -243,7 +253,7 @@ public class QueryExecutor {
   private Set<Edge> getQueryEdges(List<String> exemplarIDs, Graph graph) {
     Set<Edge> queryEdges = new HashSet<>();
     Edge edg;
-    int e1, e2;
+    long e1, e2;
     //String pair;
 
     logger.info("getQueryEdges ran on " + exemplarIDs);
@@ -252,11 +262,11 @@ public class QueryExecutor {
       for (int i = 0; i < exemplarIDs.size(); i++) {
         for (int j = i + 1; j < exemplarIDs.size(); j++) {
           String e1ID = exemplarIDs.get(i);
-          e1 = Integer.parseInt(e1ID);
+          e1 = Long.parseLong(e1ID);
           String e2ID = exemplarIDs.get(j);
-          e2 = Integer.parseInt(e2ID);
+          e2 = Long.parseLong(e2ID);
 
-        //  logger.info("\tgetQueryEdges check : " + e1 + " " + e2);
+          //  logger.info("\tgetQueryEdges check : " + e1 + " " + e2);
 
           if (e1 <= e2) {
             //  pair = "(" + e1 + "," + e2 + ")";
@@ -283,8 +293,8 @@ public class QueryExecutor {
   }
 
   /**
-   * @see TopKSubgraphShortlist#getShortlist(List, List, long)
    * @param isClique
+   * @see TopKSubgraphShortlist#getShortlist(List, List, long)
    */
   public void executeQuery(boolean isClique) {
     /**
@@ -526,11 +536,11 @@ public class QueryExecutor {
         // get candidate edge, "candidateEdge", flip around , if necessary, to match
         // edge-type "polarity" of queryEdge
         String candidateEdge = sortedEdgeLists.get(max).get(pointers.get(max));
-        int q1 = queryNode2Type.get(Integer.parseInt(queryEdge.split("#")[0]));
+        int q1 = queryNode2Type.get(Long.parseLong(queryEdge.split("#")[0]));
         String[] edgeSplit = candidateEdge.split("#");
-        int e1 = Integer.parseInt(edgeSplit[0]);
+        long candidateEdgeSource = Long.parseLong(edgeSplit[0]);
 
-        if (!graphType2IDSet.get(q1).contains(e1))
+        if (!graphType2IDSet.get(q1).contains(candidateEdgeSource))
           candidateEdge = edgeSplit[1] + "#" + edgeSplit[0] + "#" + edgeSplit[2];
 
         // place candidate-edge under consideration in it's hypothesized position
@@ -639,17 +649,17 @@ public class QueryExecutor {
             return;
           }
           String nextEdge = nextEdgeCandidates.get(rand);
-          int n1 = Integer.parseInt(nextEdge.split("#")[0]);
-          int n2 = Integer.parseInt(nextEdge.split("#")[1]);
+          long n1 = Long.parseLong(nextEdge.split("#")[0]);
+          long n2 = Long.parseLong(nextEdge.split("#")[1]);
           //find the edge which can tell us about the actual vertex/vertices instantiations
           //first find if only one or both vertices are already in consideredEdges.
-          e1 = -1;
+          int e1 = -1;
           int e2 = -1;
           int pos1 = -1;
           int pos2 = -1;
           for (String s : consideredEdges) {
-            int v1 = Integer.parseInt(s.split("#")[0]);
-            int v2 = Integer.parseInt(s.split("#")[1]);
+            long v1 = Long.parseLong(s.split("#")[0]);
+            long v2 = Long.parseLong(s.split("#")[1]);
             if (v1 == n1 || v2 == n1) {
               e1 = queryEdgetoIndex.get(s);
               if (v1 == n1)
@@ -676,12 +686,14 @@ public class QueryExecutor {
 //					logger.info("currCandidates: "+currCandidates);
           for (List<String> c : currCandidates) {
             //Find matching edges from useful edge list of T_{candidateEdge'} and extend candidate c to candidate c'.
-            int node1 = -1;
-            int node2 = -1;
+            long node1 = -1;
+            long node2 = -1;
+
             if (e1 != -1)
-              node1 = Integer.parseInt(c.get(e1).split("#")[pos1 - 1]);
+              node1 = Long.parseLong(c.get(e1).split("#")[pos1 - 1]);
             if (e2 != -1)
-              node2 = Integer.parseInt(c.get(e2).split("#")[pos2 - 1]);
+              node2 = Long.parseLong(c.get(e2).split("#")[pos2 - 1]);
+
             List<Integer> edgeIDs1 = new ArrayList<>();
             List<Integer> edgeIDs2 = new ArrayList<>();
             if (node1 != -1)
@@ -723,7 +735,7 @@ public class QueryExecutor {
                   ArrayList<String> newCandi = new ArrayList<>();
                   int flag = 0;
                   String ee = sortedEdgeLists.get(nextEdgeType).get(k);
-                  if (Integer.parseInt(ee.split("#")[1]) != node2)
+                  if (Long.parseLong(ee.split("#")[1]) != node2)
                     ee = ee.split("#")[1] + "#" + ee.split("#")[0] + "#" + ee.split("#")[2];
                   String ree = ee.split("#")[1] + "#" + ee.split("#")[0] + "#" + ee.split("#")[2];
                   for (String s : c) {
@@ -745,7 +757,7 @@ public class QueryExecutor {
                   ArrayList<String> newCandi = new ArrayList<>();
                   int flag = 0;
                   String ee = sortedEdgeLists.get(nextEdgeType).get(k);
-                  if (Integer.parseInt(ee.split("#")[0]) != node1)
+                  if (Long.parseLong(ee.split("#")[0]) != node1)
                     ee = ee.split("#")[1] + "#" + ee.split("#")[0] + "#" + ee.split("#")[2];
                   String ree = ee.split("#")[1] + "#" + ee.split("#")[0] + "#" + ee.split("#")[2];
                   for (String s : c) {
@@ -844,12 +856,12 @@ public class QueryExecutor {
       for (int c = pointers.get(max) + 1; c < list.size(); c++) {
         String l = list.get(c);
         String tokens[] = l.split("#");
-        int n1 = Integer.parseInt(tokens[0]);
-        int n2 = Integer.parseInt(tokens[1]);
+        long n1 = Long.parseLong(tokens[0]);
+        long n2 = Long.parseLong(tokens[1]);
         int flag = 0;
         for (String ee : arr1) {
-          int v1 = Integer.parseInt(ee.split("#")[0]);
-          int v2 = Integer.parseInt(ee.split("#")[1]);
+          long v1 = Long.parseLong(ee.split("#")[0]);
+          long v2 = Long.parseLong(ee.split("#")[1]);
           if ((candidates.get(v1).contains(n1) && candidates.get(v2).contains(n2)) || (candidates.get(v1).contains(n2) && candidates.get(v2).contains(n1))) {
             flag = 1;
             break;
@@ -914,8 +926,8 @@ public class QueryExecutor {
       throws NumberFormatException {
     pointers = new HashMap<>();
     for (String edgeType : queryEdgeTypes) {
-      int t1 = Integer.parseInt(edgeType.split("#")[0]);
-      int t2 = Integer.parseInt(edgeType.split("#")[1]);
+      long t1 = Long.parseLong(edgeType.split("#")[0]);
+      long t2 = Long.parseLong(edgeType.split("#")[1]);
       String orderedEdgeType = t1 + "#" + t2;
       if (t1 > t2)
         orderedEdgeType = t2 + "#" + t1;
@@ -924,12 +936,12 @@ public class QueryExecutor {
       for (int c = 0; c < list.size(); c++) {
         String l = list.get(c);
         String tokens[] = l.split("#");
-        int n1 = Integer.parseInt(tokens[0]);
-        int n2 = Integer.parseInt(tokens[1]);
+        long n1 = Long.parseLong(tokens[0]);
+        long n2 = Long.parseLong(tokens[1]);
         int flag = 0;
         for (String ee : arr1) {
-          int v1 = Integer.parseInt(ee.split("#")[0]);
-          int v2 = Integer.parseInt(ee.split("#")[1]);
+          long v1 = Long.parseLong(ee.split("#")[0]);
+          long v2 = Long.parseLong(ee.split("#")[1]);
           if ((candidates.get(v1).contains(n1) && candidates.get(v2).contains(n2)) || (!orderedEdgeType.equals(edgeType) && candidates.get(v1).contains(n2) && candidates.get(v2).contains(n1))) {
             flag = 1;
             break;
@@ -950,17 +962,17 @@ public class QueryExecutor {
    *
    * @return
    * @throws NumberFormatException
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
+   * @seex mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery
    */
-  public Map<String, List<String>> computeQueryEdgeType2Edges()
+  Map<String, List<String>> computeQueryEdgeType2Edges()
       throws NumberFormatException {
     Map<String, List<String>> queryEdgeType2Edges = new HashMap<>();
     //queryEdge2EdgeType = new HashMap<String, String>(); //this has already been initialized twice...
     //for(String s:queryEdgeTypes)
     //	queryEdgeType2Edges.put(s, new ArrayList<String>());
     for (String qe : actualQueryEdges) {
-      int n1 = Integer.parseInt(qe.split("#")[0]);
-      int n2 = Integer.parseInt(qe.split("#")[1]);
+      long n1 = Long.parseLong(qe.split("#")[0]);
+      long n2 = Long.parseLong(qe.split("#")[1]);
       int t1 = queryNode2Type.get(n1);
       int t2 = queryNode2Type.get(n2);
       String type = t1 + "#" + t2;
@@ -980,7 +992,7 @@ public class QueryExecutor {
   /**
    *
    */
-  public void computeQueryEdge2Index() {
+  void computeQueryEdge2Index() {
     queryEdgetoIndex = new HashMap<>();
     for (int i = 0; i < actualQueryEdges.size(); i++)
       queryEdgetoIndex.put(actualQueryEdges.get(i), i);
@@ -990,11 +1002,11 @@ public class QueryExecutor {
    * TODO : I thought that the edge ids were in raw space???
    *
    * @return Edge Types for all edges in query
+   * @seex mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    * @see QueryExecutor#executeQuery(boolean)
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    * @see
    */
-  public Set<String> computeQueryEdgeTypes() {
+  Set<String> computeQueryEdgeTypes() {
     Set<Edge> queryEdgeSet = query.getEdges();
     //actualQueryEdges= new ArrayList<String>();
     Set<String> queryEdgeTypes = new HashSet<>();
@@ -1003,9 +1015,9 @@ public class QueryExecutor {
 //      logger.error("computeQueryEdgeTypes : huh? queryNodeID2Type is empty ");
 //    }
     for (Edge e : queryEdgeSet) {
-      int src = e.getSrc();
+      long src = e.getSrc();
       //int n1 = query.getRawID(src);
-      int dst = e.getDst();
+      long dst = e.getDst();
       //  int n2 = query.getRawID(dst);
       // if (n1 <= n2) {
       if (src <= dst) {
@@ -1025,17 +1037,18 @@ public class QueryExecutor {
 
   /**
    * @return prunedCandidateFiltering:
+   * @seex mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    */
-  public int generateCandidates() {
+  int generateCandidates() {
     int prunedCandidateFiltering = 0;
 
     logger.info("generateCandidates " + query.getRawIDs().size());
 
     //  for (int i = 0; i < query.getNumNodes(); i++) {
-    for (Integer nodeID : query.getRawIDs()) {
+    for (Long nodeID : query.getRawIDs()) {
       //   Integer nodeType = queryNodeID2Type.get(i);
       Integer nodeType = queryNode2Type.get(nodeID);
-      Set<Integer> c1 = graphType2IDSet.get(nodeType);
+      Set<Long> c1 = graphType2IDSet.get(nodeType);
 
       if (c1 == null) {
         logger.error("generateCandidates Graph has no nodes of type " + nodeType);
@@ -1045,8 +1058,8 @@ public class QueryExecutor {
       }
 
       // logger.info("Old Size: "+c1.size());
-      List<Integer> c2 = new ArrayList<>();
-      for (int c : c1) {
+      List<Long> c2 = new ArrayList<>();
+      for (long c : c1) {
         int kstar = NSContained(nodeID, c);
         // logger.info(kstar+" kstar: "+c);
         if (kstar != -1)
@@ -1079,7 +1092,7 @@ public class QueryExecutor {
    * @see IngestAndQuery#executeQuery()
    * @deprecated why are we readying the query graph from a file???
    */
-  public boolean loadQuery() throws Throwable {
+/*  public boolean loadQuery() throws Throwable {
     //initialize (or re-initialize if loading new query)
     query = new MutableGraph(new File(baseDir, queryFile));
     // queryNodeID2Type = new HashMap<>();
@@ -1097,7 +1110,7 @@ public class QueryExecutor {
     }
     in.close();
     return isClique;
-  }
+  }*/
 
   /**
    * @param queryEdges
@@ -1105,7 +1118,7 @@ public class QueryExecutor {
    * @return
    * @see #testQuery(List, Graph, Map)
    */
-  private boolean loadQuery(Set<Edge> queryEdges, Map<Integer, Integer> idToType) {
+  private boolean loadQuery(Set<Edge> queryEdges, Map<Long, Integer> idToType) {
     if (queryEdges.isEmpty()) {
       logger.error("loadQuery huh? no query edges???");
       return false;
@@ -1113,9 +1126,9 @@ public class QueryExecutor {
     loadGraph(queryEdges);
 
 		/*
-		 * Read query types
+     * Read query types
 		 */
-    Collection<Integer> queryNodes = query.getRawIDs();
+    Collection<Long> queryNodes = query.getRawIDs();
 
     if (queryNodes.isEmpty()) {
       logger.error("loadQuery huh? no query nodes in " + query);
@@ -1123,7 +1136,7 @@ public class QueryExecutor {
       logger.debug("loadQuery query nodes " + queryNodes);
     }
 
-    for (int node : queryNodes) {
+    for (long node : queryNodes) {
       Integer type = idToType.get(node);
       if (type == null) {
         logger.error("huh? no type for " + node);
@@ -1155,7 +1168,7 @@ public class QueryExecutor {
 		/*
 		 * Read query types
 		 */
-    Collection<Integer> queryNodes = query.getRawIDs();
+    Collection<Long> queryNodes = query.getRawIDs();
 
     loadQueryTypes(connection, tableName, uidColumn, typeColumn, queryNodes);
 
@@ -1180,8 +1193,8 @@ public class QueryExecutor {
   }
 
   private void loadQueryTypes(Connection connection, String tableName, String uidColumn, String typeColumn,
-                              Collection<Integer> queryNodes) {
-    for (int node : queryNodes) {
+                              Collection<Long> queryNodes) {
+    for (long node : queryNodes) {
       String sqlQuery = "select " + typeColumn + " from " + tableName + " where " + uidColumn + "=" + node + ";";
 
       int type = 0;
@@ -1283,17 +1296,17 @@ public class QueryExecutor {
   }*/
 
   /**
-   * @see #prepareInternals()
    * @throws Throwable
+   * @see #prepareInternals()
    */
-  public void loadSPDIndex() throws Throwable {
+  void loadSPDIndex() throws Throwable {
     //  spd = new double[totalNodes][totalOrderingSize];
     spd = new HashMap<>();
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, spdFile)));
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\s+");
-      int node = Integer.parseInt(tokens[0]);
+      long node = Long.parseLong(tokens[0]);
 
       List<Float> maxWeightForTypeCombo = new ArrayList<>();
       spd.put(node, maxWeightForTypeCombo);
@@ -1314,7 +1327,7 @@ public class QueryExecutor {
    * @throws Throwable
    * @see #prepareInternals()
    */
-  public void loadEdgeLists() throws Throwable {
+  void loadEdgeLists() throws Throwable {
     for (int i = 1; i <= totalTypes; i++) {
       for (int j = i; j <= totalTypes; j++) {
         //BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+"indices/"+graphFileBasename.split("\\.txt")[0]+"_"+i+"#"+j+".list")));
@@ -1333,13 +1346,13 @@ public class QueryExecutor {
     }
     //also create node pointers to lists.
     for (String s : sortedEdgeLists.keySet()) {
-      Map<Integer, List<Integer>> map = new HashMap<>();//vertex to indices
+      Map<Long, List<Integer>> map = new HashMap<>();//vertex to indices
       List<String> list = sortedEdgeLists.get(s);
       for (int i = 0; i < list.size(); i++) {
         String e = list.get(i);
         String[] split = e.split("#");
-        int v1 = Integer.parseInt(split[0]);
-        int v2 = Integer.parseInt(split[1]);
+        long v1 = Long.parseLong(split[0]);
+        long v2 = Long.parseLong(split[1]);
 
         // TODO : rationalize this stuff
 
@@ -1364,7 +1377,7 @@ public class QueryExecutor {
    * @return
    * @see #generateCandidates()
    */
-  private int NSContained(int v, int u) {
+  private int NSContained(long v, long u) {
     int count[] = new int[types.size()];
     int kstar = k0;
     int oc = 0;
@@ -1375,7 +1388,7 @@ public class QueryExecutor {
         int chunk = ordering.get(k1).size() / totalTypes;
         int localType = (k2 - 1) / chunk;
         //count[localType]+=graphSign[u-1][oc];
-        Integer rawID = u;//g.getInternalID(u);
+        //Integer rawID = u;//g.getInternalID(u);
         //  Integer rawID = u;
         //   Integer rawID = g.getRawID(u);
         //if (rawID == null) {
@@ -1383,7 +1396,7 @@ public class QueryExecutor {
         //  }
         //else {
         // count[localType] += graphSign[rawID][oc];
-        count[localType] += graphSign.get(rawID).get(oc);//[oc];
+        count[localType] += graphSign.get(u).get(oc);//[oc];
         //     double v1 = querySign[v][oc];
         double v1 = querySign.get(v).get(oc);
         if (v1 > count[localType])
@@ -1396,7 +1409,7 @@ public class QueryExecutor {
     return kstar;
   }
 
-  public void loadGraphSignatures() throws Throwable {
+  void loadGraphSignatures() throws Throwable {
     //  graphSign = new int[totalNodes][totalOrderingSize];
     graphSign = new HashMap<>();
     File file = new File(baseDir, topologyFile);
@@ -1407,16 +1420,16 @@ public class QueryExecutor {
     String str = "";
     while ((str = in.readLine()) != null) {
       String tokens[] = str.split("\\s+");
-      int node = Integer.parseInt(tokens[0]);
+      long node = Long.parseLong(tokens[0]);
 
-      List<Integer> topologyForNode = new ArrayList<>();
+      List<Long> topologyForNode = new ArrayList<>();
       graphSign.put(node, topologyForNode);
 
       String toks[] = tokens[1].split(";");
       for (String tok : toks) {
 //				graphSign[node-1][t2]=Integer.parseInt(toks[t2]);
         //  graphSign[node][t2] = Integer.parseInt(toks[t2]);
-        topologyForNode.add(Integer.parseInt(tok));
+        topologyForNode.add(Long.parseLong(tok));
       }
     }
     in.close();
@@ -1443,7 +1456,7 @@ public class QueryExecutor {
    * @see #prepareInternals()
    * @see TopKSubgraphShortlist#loadTypesAndIndices()
    */
-  public void loadGraphNodesType() {
+  void loadGraphNodesType() {
     for (int t = 1; t <= totalTypes; t++) {
       types.add(t);
       graphType2IDSet.put(t, new HashSet<>());
@@ -1451,7 +1464,7 @@ public class QueryExecutor {
 
     logger.info("loadGraphNodesType graphType2IDSet " + graphType2IDSet.size());
 
-    for (int n : node2Type.keySet()) {
+    for (long n : node2Type.keySet()) {
       Integer key = node2Type.get(n);
 //      logger.debug("\t " + n + "-> " + key);
       graphType2IDSet.get(key).add(n);
@@ -1493,9 +1506,9 @@ public class QueryExecutor {
     //  querySign = new int[query.getNumNodes()][totalOrderingSize];
     querySign = new HashMap<>();
     //  for (int i = 0; i < query.getNumNodes(); i++) {
-    for (Integer nodeID : query.getRawIDs()) {
+    for (Long nodeID : query.getRawIDs()) {
       Set<Path> set = getPaths(nodeID, new HashSet<>());
-      Map<String, List<Integer>> topo = new HashMap<>();
+      Map<String, List<Long>> topo = new HashMap<>();
       querySign.put(nodeID, new ArrayList<>());
 
       for (Path p : set) {
@@ -1508,10 +1521,10 @@ public class QueryExecutor {
         }
 
         // TODO : rationalize this
-        List<Integer> l = new ArrayList<>();
+        List<Long> l = new ArrayList<>();
         if (topo.containsKey(types))
           l = topo.get(types);
-        int lastNode = p.nodes.get(p.nodes.size() - 1);
+        long lastNode = p.nodes.get(p.nodes.size() - 1);
         if (!l.contains(lastNode))
           l.add(lastNode);
         topo.put(types, l);
@@ -1519,7 +1532,7 @@ public class QueryExecutor {
 //      int c = 0;
       for (int d = 1; d <= k0; d++) {
         for (String o : ordering.get(d)) {
-          List<Integer> topInfo = topo.get(o);
+          List<Long> topInfo = topo.get(o);
 
           List<Integer> integers = querySign.get(nodeID);
           integers.add(topInfo == null ? 0 : topInfo.size());
@@ -1535,24 +1548,24 @@ public class QueryExecutor {
   }
 
   /**
-   * @see #executeQuery(Map, boolean, int)
    * @param consideredEdgeIndices
    * @param pc
    * @return
+   * @see #executeQuery(Map, boolean, int)
    */
   private double getUpperbound(Set<Integer> consideredEdgeIndices, List<String> pc) {
     double score = 0;
     Set<Edge> coveredEdges = new HashSet<>();
-    Map<Integer, Integer> map = new HashMap<>();
-    Set<Integer> instantiatedVertices = new HashSet<>();
+    Map<Long, Long> map = new HashMap<>();
+    Set<Long> instantiatedVertices = new HashSet<>();
     for (int c : consideredEdgeIndices) {
       String e = actualQueryEdges.get(c);
       //int n1 = query.getInternalID(Integer.parseInt(e.split("#")[0]));
       //int n2 = query.getInternalID(Integer.parseInt(e.split("#")[1]));
 
       String[] split = e.split("#");
-      int n1 = Integer.parseInt(split[0]);
-      int n2 = Integer.parseInt(split[1]);
+      long n1 = Long.parseLong(split[0]);
+      long n2 = Long.parseLong(split[1]);
 
       Edge edge = new Edge(n1, n2, 1.0);
       coveredEdges.add(edge);
@@ -1563,18 +1576,18 @@ public class QueryExecutor {
       instantiatedVertices.add(n2);
 
       String[] split1 = pc.get(c).split("#");
-      map.put(n1, Integer.parseInt(split1[0]));
-      map.put(n2, Integer.parseInt(split1[1]));
+      map.put(n1, Long.parseLong(split1[0]));
+      map.put(n2, Long.parseLong(split1[1]));
     }
 
     Set<Path> globalPathSet = new HashSet<>();
-    for (int i : instantiatedVertices)
+    for (long i : instantiatedVertices)
       globalPathSet.addAll(getPaths(i, coveredEdges));
     //divide non-considered edges into paths and other edges.
     //compute all paths of length<k0 from each node in instantiated nodes.
     while (coveredEdges.size() != actualQueryEdges.size() * 2 && globalPathSet.size() != 0) {
       int maxLength = 0;
-      List<Integer> maxPath = new ArrayList<>();
+      List<Long> maxPath = new ArrayList<>();
       for (Path p : globalPathSet) {
         if (p.nodes.size() > maxLength) {
           maxLength = p.nodes.size();
@@ -1623,8 +1636,8 @@ public class QueryExecutor {
       String[] split = edge.split("#");
 //      int n1 = query.getInternalID(Integer.parseInt(split[0]));
 //      int n2 = query.getInternalID(Integer.parseInt(split[1]));
-      int n1 = Integer.parseInt(split[0]);
-      int n2 = Integer.parseInt(split[1]);
+      long n1 = Long.parseLong(split[0]);
+      long n2 = Long.parseLong(split[1]);
       Edge e = new Edge(n1, n2, 1.0);
       if (!coveredEdges.contains(e)) {
         String tmp = queryEdge2EdgeType.get(edge);
@@ -1636,19 +1649,19 @@ public class QueryExecutor {
     return score;
   }
 
-  private Set<Path> getPaths(int i, Set<Edge> coveredEdges) {
+  private Set<Path> getPaths(long i, Set<Edge> coveredEdges) {
     Set<Path> set = new HashSet<>();
     Path sp = new Path();
     sp.nodes.add(i);
     set.add(sp);
-    List<Integer> currList = new ArrayList<>();
-    Map<Integer, Integer> considered = new HashMap<>();
+    List<Long> currList = new ArrayList<>();
+    Map<Long, Integer> considered = new HashMap<>();
     considered.put(i, 1);
     currList.add(i);
     for (int k = 0; k < k0; k++) {
-      List<Integer> newList = new ArrayList<>();
-      Set<Integer> newListCopy = new HashSet<>();
-      for (int n : currList) {
+      List<Long> newList = new ArrayList<>();
+      Set<Long> newListCopy = new HashSet<>();
+      for (long n : currList) {
         //   ArrayList<Edge> nbrs = query.inLinks.get(n);
         Collection<Edge> nbrs = query.getNeighbors(n);
         for (Edge e : nbrs) {
@@ -1752,7 +1765,7 @@ public class QueryExecutor {
       }
 
       //Retrieve by column name
-      int guid = rs.getInt(uidColumn);
+      long guid = rs.getInt(uidColumn);
       int type = rs.getInt(typeColumn);
 
       //logger.info("UID: "+guid+"\tTYPE: "+type);
@@ -1763,7 +1776,7 @@ public class QueryExecutor {
 
     long now = System.currentTimeMillis();
 
-    logger.info("loadTypesFromDatabase got " + node2Type.size() + " from " + sqlQuery + " took " + (now-then) + " millis");
+    logger.info("loadTypesFromDatabase got " + node2Type.size() + " from " + sqlQuery + " took " + (now - then) + " millis");
 
     rs.close();
     queryStatement.close();
@@ -1772,8 +1785,8 @@ public class QueryExecutor {
   /**
    * Figure out how many types there are (in the case where we're not loading everything from file)
    */
-  public void computeTotalTypes() {
-    for (int key : node2Type.keySet()) {
+  void computeTotalTypes() {
+    for (long key : node2Type.keySet()) {
       int type = node2Type.get(key);
       if (type > totalTypes)
         totalTypes = type;
@@ -1785,7 +1798,7 @@ public class QueryExecutor {
    *
    * @see IngestAndQuery#executeQuery()
    */
-  public void setNode2Type(Map<Integer, Integer> in) {
+  void setNode2Type(Map<Long, Integer> in) {
     node2Type = in;
   }
 

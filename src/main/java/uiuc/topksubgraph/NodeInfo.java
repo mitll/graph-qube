@@ -22,10 +22,10 @@ import java.util.Map;
  * Created by go22670 on 1/25/16.
  */
 class NodeInfo {
-  private final int nodeID;
+  private final long nodeID;
   private final Map<String, TypeInfo> typeToInfo = new HashMap<>();
 
-  public NodeInfo(int nodeID) {
+  NodeInfo(long nodeID) {
     this.nodeID = nodeID;
   }
 
@@ -35,7 +35,7 @@ class NodeInfo {
    * @param nodeID
    * @see #computeIndicesFast(Graph)
    */
-  public void addWeight(String type, float weight, int nodeID) {
+  public void addWeight(String type, float weight, long nodeID) {
     TypeInfo info = typeToInfo.get(type);
     if (info == null) {
       info = new TypeInfo(weight, nodeID);
@@ -59,11 +59,11 @@ class NodeInfo {
     return typeToInfo.toString();
   }
 
-  public int getNodeID() {
+  long getNodeID() {
     return nodeID;
   }
 
-  public Map<String, TypeInfo> getTypeToInfo() {
+  Map<String, TypeInfo> getTypeToInfo() {
     return typeToInfo;
   }
 }

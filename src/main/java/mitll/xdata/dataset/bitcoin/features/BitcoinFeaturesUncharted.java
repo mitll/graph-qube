@@ -45,17 +45,17 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
   /**
    * @param h2DatabaseFile
    * @param writeDirectory
+   * @throws Exception
    * @paramx info
    * @paramx limit
-   * @throws Exception
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#doIngest
    */
-  public Set<Integer> writeFeatures(String h2DatabaseFile, String writeDirectory, //MysqlInfo info, long limit,
-                                    Collection<Integer> users,
-                                    Map<Integer, UserFeatures> transForUsers
+  public Set<Long> writeFeatures(String h2DatabaseFile, String writeDirectory, //MysqlInfo info, long limit,
+                                 Collection<Long> users,
+                                 Map<Long, UserFeatures> idToFeatures
   ) throws Exception {
     return writeFeatures(getConnection(h2DatabaseFile), writeDirectory, //info, limit,
-        users,transForUsers);
+        users, idToFeatures);
   }
 
   public H2Connection getConnection(String h2DatabaseFile) {
@@ -84,17 +84,17 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @seex #main(String[])
    * @see #writeFeatures(String, String, MysqlInfo, long, Collection)
    */
-  private Set<Integer> writeFeatures(DBConnection connection, String writeDirectory,
-                                     //MysqlInfo info,
-                                     //long limit,
-                                     Collection<Integer> users,
-                                     Map<Integer, UserFeatures> transForUsers) throws Exception {
+  private Set<Long> writeFeatures(DBConnection connection, String writeDirectory,
+                                  //MysqlInfo info,
+                                  //long limit,
+                                  Collection<Long> users,
+                                  Map<Long, UserFeatures> transForUsers) throws Exception {
     long then = System.currentTimeMillis();
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
     logger.debug("writeFeatures reading users from db " + connection + " users " + users.size());
 
-  //  Map<Integer, UserFeatures> transForUsers = getTransForUsers(info, users, limit);
+    //  Map<Integer, UserFeatures> transForUsers = getTransForUsers(info, users, limit);
 
     return writeFeatures(connection, writeDirectory, then, users, transForUsers);
   }
@@ -110,7 +110,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @throws Exception
    * @see BitcoinFeatures#BitcoinFeatures
    */
-  Collection<Integer> getUsers(DBConnection connection) throws Exception {
+  Collection<Long> getUsers(DBConnection connection) throws Exception {
     long then = System.currentTimeMillis();
 
 	  /*
@@ -126,13 +126,13 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     statement.executeUpdate();
     ResultSet rs = statement.executeQuery();
 
-    Set<Integer> ids = new HashSet<>();
+    Set<Long> ids = new HashSet<>();
     int c = 0;
 
     while (rs.next()) {
       c++;
       if (c % 100000 == 0) logger.debug("read  " + c);
-      ids.add(rs.getInt(1));
+      ids.add(rs.getLong(1));
     }
     long now = System.currentTimeMillis();
     logger.debug("getUsers took " + (now - then) + " millis to read " + ids.size() + " users");
