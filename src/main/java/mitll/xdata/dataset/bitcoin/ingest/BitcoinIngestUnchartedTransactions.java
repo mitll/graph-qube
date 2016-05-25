@@ -545,6 +545,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
 
       } catch (SQLException e) {
         logger.error("insertRowsInTable got error " + e + " on  " + count);
+        System.exit(1);
       }
       if (count % INSERT_MOD == 0) {
         long diff = System.currentTimeMillis() - t0;
@@ -562,12 +563,11 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     } else {
       try {
         String string = resultSet.getString(col);
-        logger.warn("got '" +string + "' for " +col);
+//        logger.warn("got '" +string + "' for " +col);
         transid = Long.parseLong(string);
-
       } catch (Exception e) {
         logger.error("Got " + e + " on col " +(col));
-        System.exit(1);
+//        System.exit(1);
       }
     }
     return transid;
@@ -608,7 +608,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @param usd
    * @return
    * @throws SQLException
-   * @see #insertTransaction(boolean, Map, double, Set, long, long, ResultSet, Set, InsertStats, PreparedStatement)
+   * @seex #insertTransaction(boolean, Map, double, Set, long, long, ResultSet, Set, InsertStats, PreparedStatement)
    */
   private boolean insertRow(boolean useTimestamp,
                             long t0, long count,

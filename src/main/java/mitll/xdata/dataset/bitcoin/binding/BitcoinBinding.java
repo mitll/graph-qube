@@ -204,13 +204,13 @@ public class BitcoinBinding extends Binding {
 
         //			  if (attributeType == "INTEGER") {
         //				  attributes.put(columnName, rs.getInt(columnName));
-        //			  } else if (attributeType == "BIGINT") {
+        //			  } else if (attributeType == "ID_COL_TYPE") {
         //				  attributes.put(columnName, rs.getLong(columnName));
         //			  }
 
 
         //					h2Type2InfluentType.put("INTEGER", FL_PropertyType.LONG);
-        //				h2Type2InfluentType.put("BIGINT", FL_PropertyType.LONG);
+        //				h2Type2InfluentType.put("ID_COL_TYPE", FL_PropertyType.LONG);
         //				h2Type2InfluentType.put("DOUBLE", FL_PropertyType.DOUBLE);
         //				h2Type2InfluentType.put("DECIMAL", FL_PropertyType.DOUBLE);
         //				h2Type2InfluentType.put("VARCHAR", FL_PropertyType.STRING);

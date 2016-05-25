@@ -34,8 +34,9 @@ public class IngestSql {
   private static final Map<String, String> TYPE_TO_DB = new HashMap<>();
   // public static final String SOURCE1 = "SOURCE";
   public static final String SOURCE = "SOURCE";
-  public static final String TARGET = "TARGET";
-  public static final String TIME = "TIME";
+  static final String TARGET = "TARGET";
+  static final String TIME = "TIME";
+  static final String ID_COL_TYPE = "BIGINT";
 
   static {
     TYPE_TO_DB.put("INTEGER", "INT");
@@ -62,7 +63,8 @@ public class IngestSql {
   void createTable(String dbType, String tableName, boolean useTimestamp, DBConnection connection) throws SQLException {
     List<String> cnames = getColumnsForTransactionsTable();
 
-    List<String> types = Arrays.asList("INT", "INT", "INT", useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
+    List<String> types = Arrays.asList(ID_COL_TYPE, ID_COL_TYPE, ID_COL_TYPE,
+        useTimestamp ? "TIMESTAMP" : "LONG", "DECIMAL(20, 8)",
         "DECIMAL(20, 8)", "DECIMAL", "DECIMAL", "DECIMAL", "ARRAY"); // bitcoin seems to allow 8 digits after the decimal
 
     if (dbType.equals("h2")) tableName = tableName.toUpperCase();
@@ -122,7 +124,7 @@ public class IngestSql {
     }
     sql += "\n);";
 
-    //   logger.debug("create " + sql);
+    logger.debug("create " + sql);
     return sql;
   }
 
@@ -135,7 +137,7 @@ public class IngestSql {
     for (int i = 0; i < names.size(); i++) {
       sql += (i > 0 ? ", " : "") + "?";
     }
-    sql += ");";
+    sql += ")";
     return sql;
   }
 
@@ -164,7 +166,7 @@ public class IngestSql {
 
     then = System.currentTimeMillis();
     doSQL(connection, "CREATE INDEX ON " + tableName + " (" + TIME + ")");
-    logger.debug("third (" +TIME+
+    logger.debug("third (" + TIME +
         ") index complete in " + (reportTime(then)) + " on " + tableName);
 
     then = System.currentTimeMillis();
@@ -175,7 +177,7 @@ public class IngestSql {
         "(" +
         SOURCE + ", " +
         TARGET + ")");
-    logger.debug("fourth (" +SOURCE + ", " + TARGET+")" +
+    logger.debug("fourth (" + SOURCE + ", " + TARGET + ")" +
         " index complete in " + reportTime(then) + " on " + tableName);
     logger.debug("overall took " + reportTime(start) + " to do indices");
   }

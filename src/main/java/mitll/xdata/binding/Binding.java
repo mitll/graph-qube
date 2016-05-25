@@ -88,7 +88,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   protected Binding() {
     //set H2 data-types to Influent IDL data-types HashMap
     h2Type2InfluentType.put("INTEGER", FL_PropertyType.LONG);
-    h2Type2InfluentType.put("BIGINT", FL_PropertyType.LONG);
+    h2Type2InfluentType.put("ID_COL_TYPE", FL_PropertyType.LONG);
     h2Type2InfluentType.put("DOUBLE", FL_PropertyType.DOUBLE);
     h2Type2InfluentType.put("DECIMAL", FL_PropertyType.DOUBLE);
     h2Type2InfluentType.put("VARCHAR", FL_PropertyType.STRING);
@@ -139,7 +139,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         row.put(name, rs.getString(name));
       } else if (type.equals("INT") || type.equals("TINYINT") || type.equals("INTEGER")) {
         row.put(name, "" + rs.getInt(name));
-      } else if (type.equals("BIGINT")) {
+      } else if (type.equals("ID_COL_TYPE")) {
         row.put(name, "" + rs.getLong(name));
       } else if (type.equals("DATETIME") || type.equals("TIMESTAMP")) {
         try {
@@ -460,7 +460,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
   protected ResultInfo createDummyEntity(String id) {
     Map<String, String> nameToType = new HashMap<String, String>();
-    nameToType.put("node_id", "BIGINT");
+    nameToType.put("node_id", "ID_COL_TYPE");
     List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
     Map<String, String> row = new HashMap<String, String>();
     row.put("node_id", id);
@@ -686,7 +686,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
           type = FL_PropertyType.LONG;
         } else if (typeForColumn.equals("INTEGER")) {
           type = FL_PropertyType.LONG;
-        } else if (typeForColumn.equals("BIGINT")) {
+        } else if (typeForColumn.equals("ID_COL_TYPE")) {
           type = FL_PropertyType.LONG;
         } else if (typeForColumn.equals("DECIMAL")) {
           type = FL_PropertyType.DOUBLE;

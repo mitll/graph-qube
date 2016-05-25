@@ -44,9 +44,9 @@ public class BitcoinFeaturesBase {
 
   public static final int MIN_TRANSACTIONS = 10;
 
-//  private static final boolean LIMIT = false;
+  //  private static final boolean LIMIT = false;
   private static final int BITCOIN_OUTLIER = 25;
-//  private static final int USER_LIMIT = 10000000;
+  //  private static final int USER_LIMIT = 10000000;
 //  private static final int MIN_DEBITS = 5;
 //  private static final int MIN_CREDITS = 5;
 //  private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
@@ -114,17 +114,17 @@ public class BitcoinFeaturesBase {
   }*/
 
   /**
-   * @see BitcoinFeaturesUncharted#writeFeatures(DBConnection, String, long, Collection, Map)
    * @param connection
    * @param writeDirectory
    * @param then
    * @param users
    * @param transForUsers
    * @throws Exception
+   * @see BitcoinFeaturesUncharted#writeFeatures(DBConnection, String, long, Collection, Map)
    */
   Set<Long> writeFeatures(DBConnection connection, String writeDirectory, long then,
-                                       Collection<Long> users,
-                                       Map<Long, UserFeatures> transForUsers) throws Exception {
+                          Collection<Long> users,
+                          Map<Long, UserFeatures> transForUsers) throws Exception {
     long now = System.currentTimeMillis();
     logger.debug("writeFeatures took " + (now - then) + " to read " + transForUsers.size() + " user features");
 
@@ -185,7 +185,7 @@ public class BitcoinFeaturesBase {
                                       Map<Long, Features> userToFeatures,
                                       Map<Long, Integer> userToIndex) {
     int skipped = 0;
-    int count   = 0;
+    int count = 0;
     logger.info("populateUserToFeatures checking " + transForUsers.size() + " against " + users.size() + " users");
     for (Long user : users) {
       // logger.debug("user " + user);
@@ -287,12 +287,12 @@ public class BitcoinFeaturesBase {
   }
 
   /**
-   * @see BitcoinFeaturesBase#writeFeatures(DBConnection, String, long, Collection, Map)
    * @param dbConnection
    * @param userToFeatures
    * @param userToIndex
    * @param standardizedFeatures
    * @throws Exception
+   * @see BitcoinFeaturesBase#writeFeatures(DBConnection, String, long, Collection, Map)
    */
   private void writeFeaturesToDatabase(DBConnection dbConnection,
                                        Map<Long, Features> userToFeatures,
@@ -320,11 +320,12 @@ public class BitcoinFeaturesBase {
 
       String featValueText = "(" + id + ", ";
       for (int i = 0; i < numFeatures; i++) {
-
+        double d = standardizedFeature[i];
+        if (Double.isNaN(d)) d = 0;
         if (i != numFeatures - 1) {
-          featValueText += Double.toString(standardizedFeature[i]) + ", ";
+          featValueText += Double.toString(d) + ", ";
         } else {
-          featValueText += Double.toString(standardizedFeature[i]) + ")";
+          featValueText += Double.toString(d) + ")";
         }
       }
 
@@ -336,7 +337,7 @@ public class BitcoinFeaturesBase {
       statement.close();
     }
 
- //   logger.info("writeFeaturesToDatabase - alter users table");
+    //   logger.info("writeFeaturesToDatabase - alter users table");
 
     // Insert default type into table (to possibly be overwritten by clustering output)
 /*    String sqlInsertType = "alter table USERS add TYPE int not null default(1);";
@@ -347,10 +348,10 @@ public class BitcoinFeaturesBase {
     connection.close();
   }
 
-  public void pruneUsers(DBConnection dbConnection,Set<Long> toRemove) {
+  public void pruneUsers(DBConnection dbConnection, Set<Long> toRemove) {
     Connection connection = dbConnection.getConnection();
     try {
-      PreparedStatement  statement =
+      PreparedStatement statement =
           connection.prepareStatement("delete from " + FeaturesSql.USERS + " where USER=?");
       for (Long id : toRemove) {
         statement.setLong(1, id);
@@ -601,13 +602,13 @@ public class BitcoinFeaturesBase {
 //    combined += high << 32;
 //    return combined;
 
-   // long l = (high << 32) | (low & 0xffffffffL);
+    // long l = (high << 32) | (low & 0xffffffffL);
 
-    return new MyEdge(low,high);
+    return new MyEdge(low, high);
   }
 
   /**
-    * @param combined
+   * @param combined
    * @return
    */
   public static long getLow(MyEdge combined) {
@@ -623,10 +624,10 @@ public class BitcoinFeaturesBase {
   }
 
   /**
-   * @paramx dataFilename
-   * @paramx users        transactions must be between the subset of non-trivial users (who have more than 10 transactions)
    * @return
    * @throws Exception
+   * @paramx dataFilename
+   * @paramx users        transactions must be between the subset of non-trivial users (who have more than 10 transactions)
    * @seex #BitcoinFeatures(DBConnection, String, String, boolean)
    */
 /*  protected Map<Integer, UserFeatures> getTransForUsers(String dataFilename, Collection<Integer> users) throws Exception {
@@ -798,7 +799,7 @@ public class BitcoinFeaturesBase {
      * Grab only those users having more than MIN_TRANSACTIONS total transactions
 	   * (as either source or target); filter out BITCOIN_OUTLIER
 	   */
-	  /*
+    /*
     String sql =
         "select source, count(*) as cnt from "+BitcoinBinding.TRANSACTIONS+" "+
             "where source <> " +
@@ -870,10 +871,10 @@ public class BitcoinFeaturesBase {
     long l = max / MB;
     long l1 = used / MB;
 
-    float fmax = (float)l;
+    float fmax = (float) l;
     float fused = (float) l1;
 
-    if (fused/fmax > 0.5) {
+    if (fused / fmax > 0.5) {
       logger.debug("heap info free " + free / MB + "M used " + l1 + "M max " + l + "M");
     }
   }

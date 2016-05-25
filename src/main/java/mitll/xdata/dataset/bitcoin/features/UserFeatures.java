@@ -15,7 +15,9 @@
 
 package mitll.xdata.dataset.bitcoin.features;
 
+import mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.log4j.Logger;
 
 import java.util.*;
 
@@ -33,7 +35,7 @@ import java.util.*;
  * outgoing link perplexity
  */
 public class UserFeatures {
-  //private static final Logger logger = Logger.getLogger(UserFeatures.class);
+  private static final Logger logger = Logger.getLogger(UserFeatures.class);
   private static final int MIN_DEBITS = 5;
   private static final int MIN_CREDITS = 5;
   private static final List<Double> EMPTY_DOUBLES = Arrays.asList(0d, 0d);
@@ -95,7 +97,7 @@ public class UserFeatures {
 //      }
   }
 
-  public List<Double> getCreditMeanAndStd() {
+   List<Double> getCreditMeanAndStd() {
     if (credits.isEmpty()) {
       return EMPTY_DOUBLES;
     }
@@ -194,7 +196,11 @@ public class UserFeatures {
     for (Long inter : creditInterarrivalTimes) {
       descriptiveStatistics.addValue(inter);
     }
-    return Arrays.asList(descriptiveStatistics.getMean(), descriptiveStatistics.getStandardDeviation());
+    double mean = descriptiveStatistics.getMean();
+    if (Double.isNaN(mean)) {
+      logger.error("got NAN " + creditInterarrivalTimes);
+    }
+    return Arrays.asList(mean, descriptiveStatistics.getStandardDeviation());
   }
 
   public List<Double> getDebitInterarrMeanAndStd() {

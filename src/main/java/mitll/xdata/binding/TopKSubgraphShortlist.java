@@ -807,7 +807,7 @@ public class TopKSubgraphShortlist extends Shortlist {
           castVal = 0;
         }
         property.setRange(new FL_SingletonRange(castVal, h2Type2InfluentType.get(keyType)));
-      } else if (keyType.equals("BIGINT")) {
+      } else if (keyType.equals("ID_COL_TYPE")) {
         long castVal;
         if (val != null) {
           castVal = Long.parseLong(val, 10); //assuming base10
@@ -836,7 +836,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
       property.setTags(new ArrayList<FL_PropertyTag>());
 
-      //{TOT_OUT=DECIMAL, TOT_IN=DECIMAL, TOT_USD=DECIMAL, NUM_TRANS=BIGINT}
+      //{TOT_OUT=DECIMAL, TOT_IN=DECIMAL, TOT_USD=DECIMAL, NUM_TRANS=ID_COL_TYPE}
       //binding.h2Type2InfluentType.get()
 
       linkProperties.add(property);
