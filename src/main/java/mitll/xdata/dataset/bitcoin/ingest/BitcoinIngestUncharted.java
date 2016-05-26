@@ -21,6 +21,7 @@ import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesUncharted;
 import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import mitll.xdata.dataset.bitcoin.features.UserFeatures;
+import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
 import org.apache.log4j.Logger;
 
@@ -105,7 +106,8 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       return;
     }
     String jdbcURL = new MysqlConnection().getSimpleURL(dbName);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
-    new BitcoinIngestUncharted().doIngest(jdbcURL, transactionsTable, props.getFeatureDatabase(), writeDir,
+    BitcoinIngestUncharted bitcoinIngestUncharted = new BitcoinIngestUncharted();
+    bitcoinIngestUncharted.doIngest(jdbcURL, transactionsTable, props.getFeatureDatabase(), writeDir,
         //skipLoadTransactions,
         limit, props);
 
@@ -154,7 +156,9 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     boolean b = userIds.removeAll(validUsers);
     logger.info("doIngest to remove " + userIds.size());
 
-    bitcoinFeaturesUncharted.pruneUsers(bitcoinFeaturesUncharted.getConnection(destinationDbName), userIds);
+    H2Connection connection = bitcoinFeaturesUncharted.getConnection(destinationDbName);
+    bitcoinFeaturesUncharted.pruneUsers(connection, userIds);
+    connection.contextDestroyed();
   }
 
   /**

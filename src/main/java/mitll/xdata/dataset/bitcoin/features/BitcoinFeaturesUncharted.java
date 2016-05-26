@@ -54,10 +54,18 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
                                  Collection<Long> users,
                                  Map<Long, UserFeatures> idToFeatures
   ) throws Exception {
-    return writeFeatures(getConnection(h2DatabaseFile), writeDirectory, //info, limit,
+    H2Connection connection = getConnection(h2DatabaseFile);
+    Set<Long> longs = writeFeatures(connection, writeDirectory, //info, limit,
         users, idToFeatures);
+    connection.contextDestroyed();
+    return longs;
   }
 
+  /**
+   *
+   * @param h2DatabaseFile
+   * @return
+   */
   public H2Connection getConnection(String h2DatabaseFile) {
     return new H2Connection(h2DatabaseFile, MAX_MEMORY_ROWS);
   }

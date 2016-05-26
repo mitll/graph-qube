@@ -111,8 +111,10 @@ public class H2Connection implements DBConnection {
         "DATABASE_TO_UPPER=false" + ";" +
         "MAX_MEMORY_ROWS=" + maxMemoryRows;
 
-    logger.debug("connect : connecting to " + url);
+    logger.debug("---->>>> connect : connecting to " + url);
     org.h2.Driver.load();
+    logger.debug("---->>>> connect : loaded driver " + url);
+
     try {
       conn = DriverManager.getConnection(url, "", "");
       conn.setAutoCommit(true);
@@ -124,6 +126,8 @@ public class H2Connection implements DBConnection {
   }
 
   public void contextDestroyed() {
+    logger.debug("---->>>> disconnect : from " + conn);
+
     if (conn == null) {
       logger.info("not never successfully created h2 connection ");
     } else {

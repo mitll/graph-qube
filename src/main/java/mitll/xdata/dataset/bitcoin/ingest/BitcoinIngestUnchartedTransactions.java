@@ -90,10 +90,10 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       long limit,
       Collection<Long> users,
       Map<Long, UserFeatures> idToStats) throws Exception {
-    DBConnection h2Connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
     Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
     uncharted.setAutoCommit(false);
 
+    DBConnection h2Connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
     if (h2Connection == null) {
       logger.error("can't handle dbtype " + dbType);
       return null;
