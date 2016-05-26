@@ -57,7 +57,7 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
     H2Connection connection = getConnection(h2DatabaseFile);
     Set<Long> longs = writeFeatures(connection, writeDirectory, //info, limit,
         users, idToFeatures);
-    connection.contextDestroyed();
+//    connection.contextDestroyed();
     return longs;
   }
 

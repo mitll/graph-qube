@@ -12,6 +12,10 @@ public class MyEdge implements Comparable<MyEdge>{
     this.target = target;
   }
 
+  public int hashCode() {
+    return (int)source + 31*(int)target;
+  }
+
   @Override
   public int compareTo(MyEdge o) {
     int  i = Long.valueOf(source).compareTo(source);

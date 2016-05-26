@@ -443,7 +443,7 @@ public class BitcoinIngestSubGraph {
    * @throws Exception
    * @see BitcoinIngestBase#doSubgraphs
    */
-  protected static Map<MyEdge, Integer> extractUndirectedGraphInMemory(String dbType, String h2DatabaseName,
+  static Map<MyEdge, Integer> extractUndirectedGraphInMemory(String dbType, String h2DatabaseName,
                                                                      Collection<Long> entityIds) throws Exception {
     DBConnection connection = new IngestSql().getDbConnection(dbType, h2DatabaseName);
 
@@ -470,9 +470,7 @@ public class BitcoinIngestSubGraph {
    */
   private static Map<MyEdge, Integer> extractUndirectedGraphInMemory(DBConnection connection,
                                                                    Collection<Long> entityIds) throws Exception {
-    // Map<Integer, Map<Integer, Integer>> sourceToDestToValue = new HashMap<>();
-
-    logger.info("extractUndirectedGraphInMemory - " + entityIds.size());
+    logger.info("extractUndirectedGraphInMemory - valid entities " + entityIds.size());
     StatementResult statementResult = doSQLQuery(connection,
         "select " + IngestSql.SOURCE + "," + IngestSql.TARGET + " from " + TABLE_NAME
     );
@@ -489,7 +487,8 @@ public class BitcoinIngestSubGraph {
       long source = rs.getLong(1);
       long target = rs.getLong(2);
 
-      if (check && entityIds.contains(source) && entityIds.contains(target)) {
+      boolean knownSource = entityIds.contains(source);
+      if (check && knownSource && entityIds.contains(target)) {
 //      if (c < 20) logger.info("extractUndirectedGraphInMemory " +source + " -> " + target);
         unique.add(source);
         unique.add(target);
@@ -510,14 +509,24 @@ public class BitcoinIngestSubGraph {
         Integer orDefault = sourceToDest.getOrDefault(key, 0);
         sourceToDest.put(key, orDefault + 1);
       } else {
-        if (source == 253977 || target == 253977)
+        if (false) {//source == 253977 || target == 253977)
           logger.warn("---> extractUndirectedGraphInMemory skipped " + source + " " + target);
+          if (!knownSource) {
+            logger.warn("---> extractUndirectedGraphInMemory source unknown " + source);
+
+          }
+          if (! entityIds.contains(target)) {
+            logger.warn("---> extractUndirectedGraphInMemory target unknown " + target);
+
+          }
+        }
         skipped++;
       }
       c++;
     }
 
-    logger.info("extractUndirectedGraphInMemory map is " + sourceToDest.size() + " skipped " + skipped + " out of " + c + " unique " + unique.size());
+    logger.info("extractUndirectedGraphInMemory source->dest is " + sourceToDest.size() +
+        " skipped " + skipped + " out of " + c + " unique " + unique.size());
     statementResult.close();
 
     Runtime.getRuntime().gc();

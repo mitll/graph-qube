@@ -113,7 +113,7 @@ public class H2Connection implements DBConnection {
 
     logger.debug("---->>>> connect : connecting to " + url);
     org.h2.Driver.load();
-    logger.debug("---->>>> connect : loaded driver " + url);
+ //   logger.debug("---->>>> connect : loaded driver " + url);
 
     try {
       conn = DriverManager.getConnection(url, "", "");
@@ -126,7 +126,6 @@ public class H2Connection implements DBConnection {
   }
 
   public void contextDestroyed() {
-    logger.debug("---->>>> disconnect : from " + conn);
 
     if (conn == null) {
       logger.info("not never successfully created h2 connection ");
@@ -153,6 +152,7 @@ public class H2Connection implements DBConnection {
     try {
       //   logger.info("closing connection " + conn);
       if (conn != null) {
+        logger.debug("---->>>> disconnect : from " + conn);
         conn.close();
       }
     } catch (Exception e) {

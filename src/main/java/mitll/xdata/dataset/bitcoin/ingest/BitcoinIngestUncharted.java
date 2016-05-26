@@ -154,6 +154,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     logger.info("doIngest took " + (System.currentTimeMillis() - start) / 1000 + " secs overall");
 
     boolean b = userIds.removeAll(validUsers);
+    if (!userIds.isEmpty())
     logger.info("doIngest to remove " + userIds.size());
 
     H2Connection connection = bitcoinFeaturesUncharted.getConnection(destinationDbName);
