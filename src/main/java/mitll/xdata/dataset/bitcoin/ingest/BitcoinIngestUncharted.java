@@ -149,7 +149,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
             writeDir, limit, bitcoinFeaturesUncharted, props);
 
     long then2 = System.currentTimeMillis();
-    Set<Long> validUsers = doSubgraphs(destinationDbName, userIds);
+    Set<Long> validUsers = doSubgraphs(destinationDbName, userIds,  props);
     logger.info("doIngest took " + (System.currentTimeMillis() - then2) / 1000 + " secs to do subgraphs");
     logger.info("doIngest took " + (System.currentTimeMillis() - start) / 1000 + " secs overall");
 

@@ -41,14 +41,33 @@ public class ServerProperties {
     return getDefaultFalse("useKiva");
   }
 
-  /**
-   * @see GraphQuBEServer#main(String[])
-   * @deprecated
-   */
-  public ServerProperties() {
-    readProps();
+  private static String getPropsFile(String[] args) {
+    String propsFile = null;
+    for (String arg : args) {
+
+
+      String prefix = "props=";
+      logger.info("got " + arg);
+
+      if (arg.startsWith(prefix)) {
+        propsFile = getValue(arg, prefix);
+      }
+    }
+    return propsFile;
   }
 
+  private static String getValue(String arg, String prefix) {
+    return arg.split(prefix)[1];
+  }
+
+  public ServerProperties(String [] args) {
+    readProps(getPropsFile(args));
+  }
+
+  /**
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#main(String[])
+   * @param props
+   */
   public ServerProperties(String props) {
     readProps(props);
   }
@@ -153,6 +172,14 @@ public class ServerProperties {
 
   public String getUSDAmount() {
     return props.getProperty("transactionsUSD");
+  }
+
+  public String getDatasetID() {
+    return props.getProperty("dataset");
+  }
+
+  public String getDatasetResourceDir() {
+    return props.getProperty("datasetResourceDir");
   }
 
 //  private String getDateFromManifest(ServletContext servletContext) {

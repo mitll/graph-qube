@@ -14,7 +14,7 @@
  */
 package uiuc.topksubgraph;
 
-import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
+import mitll.xdata.ServerProperties;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.BasicConfigurator;
@@ -27,7 +27,6 @@ import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-
 
 /**
  * Collapses SortedEdgeListConstructor and SPDAndTopologyAndSPathIndexConstructor2 classes into one
@@ -42,7 +41,7 @@ public class MultipleIndexConstructor {
   private static final Logger logger = Logger.getLogger(MultipleIndexConstructor.class);
   private static final int NOTICE_MOD = 5000;
 
-  public static String baseDir = "data/bitcoin/graphs";
+  static String baseDir = "data/bitcoin/graphs";
   public static String outDir = "data/bitcoin/indices";
   public static String graphFile = "";
   public static String typesFile = "";
@@ -91,9 +90,10 @@ public class MultipleIndexConstructor {
     // Load and Sort Edges from Graph
     //loadAndSortEdges();
     populateSortedEdgeLists(graph);
+    ServerProperties properties = new ServerProperties(args);
 
     //save the sorted edge lists
-    saveSortedEdgeList(MultipleIndexConstructor.outDir);
+    saveSortedEdgeList(MultipleIndexConstructor.outDir, properties.getDatasetID());
 
     //test method that computes totalTypes
     totalTypes = 0;
@@ -111,7 +111,7 @@ public class MultipleIndexConstructor {
 
     logger.info("Computing SPD, Topology and SPath Indices...");
 
-    computeIndices(graph);
+    computeIndices(graph, properties.getDatasetID());
 
     long time2 = new Date().getTime();
     logger.info("Time:" + (time2 - time1));
@@ -124,7 +124,7 @@ public class MultipleIndexConstructor {
    * @throws IOException
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection, Graph)
    */
-  public static void computeIndicesFast(Graph graph) throws IOException {
+  public static void computeIndicesFast(Graph graph, String datasetID) throws IOException {
     //Make outDir if neccessary
     File directory = new File(outDir);
     if (!directory.exists() && !directory.mkdirs())
@@ -133,7 +133,7 @@ public class MultipleIndexConstructor {
       logger.info("computeIndicesFast made " + directory.getAbsolutePath());// + " exists " + directory.exists());
     }
 
-    String datasetId = BitcoinBinding.DATASET_ID;// + "_Fast";
+    String datasetId = datasetID;// + "_Fast";
     String topologyFilename = datasetId + "." + Integer.toString(D) + ".topology";
     BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
     String spdFilename = datasetId + "." + Integer.toString(D) + ".spd";
@@ -183,7 +183,7 @@ public class MultipleIndexConstructor {
   /**
    * @param graph
    * @param nodeInfos
-   * @see #computeIndicesFast(Graph)
+   * @see #computeIndicesFast(Graph, String)
    */
   private static void makeNodeInfos(Graph graph, Map<Long, NodeInfo> nodeInfos) {
     long then = System.currentTimeMillis();
@@ -255,7 +255,7 @@ public class MultipleIndexConstructor {
    * @param nodeInfos
    * @return
    * @throws IOException
-   * @see #computeIndicesFast(Graph)
+   * @see #computeIndicesFast(Graph, String)
    */
   private static long doD2(Graph graph, BufferedWriter outTopology, BufferedWriter outSPD,
                            Map<Long, NodeInfo> nodeInfos
@@ -390,16 +390,16 @@ public class MultipleIndexConstructor {
    * @throws IOException
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#computeIndices(String, DBConnection, Graph)
    */
-  public static void computeIndices(Graph graph) throws IOException {
+  public static void computeIndices(Graph graph, String datasetID) throws IOException {
 
     //Make outDir if neccessary
     File directory = new File(outDir);
     if (!directory.exists() && !directory.mkdirs())
       throw new IOException("Could not create directory: " + outDir);
 
-    String topologyFilename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".topology";
+    String topologyFilename = datasetID + "." + Integer.toString(D) + ".topology";
     BufferedWriter outTopology = new BufferedWriter(new FileWriter(new File(outDir, topologyFilename)));
-    String spdFilename = BitcoinBinding.DATASET_ID + "." + Integer.toString(D) + ".spd";
+    String spdFilename = datasetID + "." + Integer.toString(D) + ".spd";
     File file = new File(outDir, spdFilename);
     BufferedWriter outSPD = new BufferedWriter(new FileWriter(file));
     BufferedWriter counts = new BufferedWriter(new FileWriter(new File(outDir, "counts_" + spdFilename)));
@@ -588,6 +588,15 @@ public class MultipleIndexConstructor {
   }
 */
 
+  /**
+   *
+   * @param outTopology
+   * @param outSPD
+   * @param graph
+   * @param d
+   * @param paths
+   * @throws IOException
+   */
   private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d,
                                     Map<Long, Set<List<Long>>> paths) throws IOException {
     Map<String, Collection<Long>> topo = new HashMap<>();
@@ -617,6 +626,9 @@ public class MultipleIndexConstructor {
 
             //if (edge != edgeFast) logger.info("err -- not the same " + edge + " vs " +edgeFast);
 
+            if (edge == null) {
+              logger.error("no edge at " + a + "-" + aDash);
+            }
             totWeight += edge.getWeight();
             Integer typeOfDestNode = getNodeType(a);
             // types += typeOfDestNode; // TODO : string concatenation...
@@ -776,7 +788,7 @@ public class MultipleIndexConstructor {
    * @paramx graphFile
    * @seex TopKTest#getGraphBeforeComputeIndices
    */
-  public static void saveSortedEdgeList(String outDir) throws IOException {
+  public static void saveSortedEdgeList(String outDir, String datasetID) throws IOException {
     logger.info("out dir " + outDir);
     //Make outDir if neccessary
     File directory = new File(outDir);
@@ -786,7 +798,7 @@ public class MultipleIndexConstructor {
     //Save out....
     for (String key : sortedEdgeLists.keySet()) {
       //String fileName=graphFile.split("\\.")[0]+"_"+key+".list";
-      String fileName = BitcoinBinding.DATASET_ID + "_" + key + ".list";
+      String fileName = datasetID + "_" + key + ".list";
 
       File file = new File(outDir, fileName);
       logger.info("writing sorted edge lists to " + file.getAbsolutePath());

@@ -18,16 +18,15 @@ package mitll.xdata.dataset.bitcoin.binding;
 import influent.idl.*;
 import mitll.xdata.AvroUtils;
 import mitll.xdata.NodeSimilaritySearch;
+import mitll.xdata.ServerProperties;
 import mitll.xdata.binding.Binding;
 import mitll.xdata.binding.TopKSubgraphShortlist;
-import mitll.xdata.dataset.bitcoin.features.BitcoinFeatures;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.hmm.VectorObservation;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
@@ -44,10 +43,10 @@ import java.util.Map.Entry;
 public class BitcoinBinding extends Binding {
   private static final Logger logger = Logger.getLogger(BitcoinBinding.class);
 
-  public static final String DATASET_ID = "bitcoin_small";
-  public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
+//  public static final String DATASET_ID = "bitcoin_small";
+//  public static final String BITCOIN_FEATS_TSV = "/bitcoin_small_feats_tsv/"; // TODO : make sure ingest writes to this directory.
 
-  private static final String BITCOIN_FEATURES = BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
+  //private static final String BITCOIN_FEATURES = BitcoinFeatures.BITCOIN_FEATURES_STANDARDIZED_TSV;
   public static final String TRANSACTIONS = "transactions";
 
 
@@ -75,25 +74,25 @@ public class BitcoinBinding extends Binding {
 
   /**
    * @param connection
-   * @param resourceDir
+   * @param props
    * @see mitll.xdata.GraphQuBEServer#main(String[])
    */
-  public BitcoinBinding(DBConnection connection, String resourceDir) {
-    this(connection, true, resourceDir);
+  public BitcoinBinding(DBConnection connection, ServerProperties props) {
+    this(connection, true, props);
   }
 
   /**
    * @param connection
    * @param useFastBitcoinConnectedTest
-   * @param resourceDir
+   * @param props
    * @throws Exception
-   * @see #BitcoinBinding(DBConnection, boolean, String)
+   * @see #BitcoinBinding(DBConnection, boolean, ServerProperties)
    */
-  private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest, String resourceDir) {
+  private BitcoinBinding(DBConnection connection, boolean useFastBitcoinConnectedTest, ServerProperties props) {
     super(connection);
 
-    datasetId = DATASET_ID;
-    datasetResourceDir = BITCOIN_FEATS_TSV;
+    datasetId = props.getDatasetID();
+    datasetResourceDir = props.getDatasetResourceDir();
 
 		/* 
      * Setup Shortlist-er
@@ -328,7 +327,7 @@ public class BitcoinBinding extends Binding {
    * @paramx connection
    * @deprecated
    */
-	/*    private void getPairs(DBConnection connection) throws SQLException {
+  /*    private void getPairs(DBConnection connection) throws SQLException {
         PreparedStatement pairConnectedStatement2 = connection.getConnection().prepareStatement(
                 "select source, target from transactions");
 
@@ -1071,13 +1070,33 @@ public class BitcoinBinding extends Binding {
     }
   }
 
+  private static String getPropsFile(String[] args) {
+    String propsFile = null;
+    for (String arg : args) {
+
+
+      String prefix = "props=";
+      logger.info("got " + arg);
+
+      if (arg.startsWith(prefix)) {
+        propsFile = getValue(arg, prefix);
+      }
+    }
+    return propsFile;
+  }
+
+
+  private static String getValue(String arg, String prefix) {
+    return arg.split(prefix)[1];
+  }
+
   public static void main(String[] arg) throws Exception {
     System.getProperties().put("logging.properties", "log4j.properties");
 
     // testCombine();
     BitcoinBinding binding = null;
     try {
-      binding = new BitcoinBinding(new H2Connection("bitcoin"), "");
+      binding = new BitcoinBinding(new H2Connection("bitcoin"), new ServerProperties(getPropsFile(arg)));
       //  binding = new BitcoinBinding(new H2Connection("c:/temp/bitcoin", "bitcoin"), true);
       // binding = new BitcoinBinding(new H2Connection( "bitcoin"), false);
     } catch (Exception e) {

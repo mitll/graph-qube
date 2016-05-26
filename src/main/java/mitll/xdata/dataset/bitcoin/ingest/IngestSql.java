@@ -47,6 +47,8 @@ public class IngestSql {
   }
 
   DBConnection getDbConnection(String dbType, String h2DatabaseName) throws Exception {
+    if (dbType.equals("mysql")) logger.error("not expecting " + dbType + " " + h2DatabaseName);
+
     return dbType.equalsIgnoreCase("h2") ?
         new H2Connection(h2DatabaseName, 10000000, true) : dbType.equalsIgnoreCase("mysql") ?
         new MysqlConnection(h2DatabaseName) : null;
@@ -124,7 +126,7 @@ public class IngestSql {
     }
     sql += "\n);";
 
-    logger.debug("create " + sql);
+//    logger.debug("create " + sql);
     return sql;
   }
 

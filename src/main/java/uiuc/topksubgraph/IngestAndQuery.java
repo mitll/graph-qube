@@ -14,6 +14,7 @@
  */
 package uiuc.topksubgraph;
 
+import mitll.xdata.ServerProperties;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.jgrapht.util.FibonacciHeap;
@@ -40,7 +41,7 @@ public class IngestAndQuery {
     BasicConfigurator.configure();
 
     logger.info("Computing Indices...");
-    computeIndices();
+    computeIndices(new ServerProperties(args));
 
     logger.info("Executing Query...");
     //executeQuery();
@@ -183,7 +184,7 @@ public class IngestAndQuery {
   /**
    * To perform the graph indexing process...
    */
-  private static void computeIndices() throws Throwable {
+  private static void computeIndices(ServerProperties props) throws Throwable {
     MultipleIndexConstructor.baseDir = "data/bitcoin/graphs/";
     MultipleIndexConstructor.outDir = "data/bitcoin/indices/";
     MultipleIndexConstructor.graphFile = "bitcoin_small_transactions.txt";
@@ -220,7 +221,7 @@ public class IngestAndQuery {
 
     //save the sorted edge lists
     try {
-      MultipleIndexConstructor.saveSortedEdgeList(MultipleIndexConstructor.outDir);
+      MultipleIndexConstructor.saveSortedEdgeList(MultipleIndexConstructor.outDir, props.getDatasetID());
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -234,7 +235,7 @@ public class IngestAndQuery {
     logger.info("Computing SPD, Topology and SPath Indices...");
 
     try {
-      MultipleIndexConstructor.computeIndices(g);
+      MultipleIndexConstructor.computeIndices(g, props.getDatasetID());
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

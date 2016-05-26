@@ -15,7 +15,7 @@
 
 package mitll.xdata.dataset.bitcoin.ingest;
 
-import mitll.xdata.binding.Binding;
+import mitll.xdata.ServerProperties;
 import mitll.xdata.dataset.bitcoin.features.BitcoinFeaturesBase;
 import mitll.xdata.dataset.bitcoin.features.MyEdge;
 import org.apache.log4j.Logger;
@@ -32,10 +32,11 @@ public class BitcoinIngestBase {
 
   /**
    * @param dbName
+   * @param props
    * @throws Throwable
    * @see BitcoinIngestUncharted#doIngest
    */
-  Set<Long> doSubgraphs(String dbName, Collection<Long> entityIds) throws Throwable {
+  Set<Long> doSubgraphs(String dbName, Collection<Long> entityIds, ServerProperties props) throws Throwable {
     long then;
     /*
      * Pre-processing the transaction data to prepare it for topk-subgraph search:
@@ -62,7 +63,7 @@ public class BitcoinIngestBase {
 
     BitcoinFeaturesBase.rlogMemory();
 
-    BitcoinIngestSubGraph.computeIndicesFromMemory(h2, dbName, edgeToWeight);
+    BitcoinIngestSubGraph.computeIndicesFromMemory(h2, dbName, edgeToWeight,  props);
 
     BitcoinFeaturesBase.rlogMemory();
 

@@ -20,7 +20,6 @@ import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
 import mitll.xdata.dataset.bitcoin.ingest.StatementResult;
 import mitll.xdata.db.DBConnection;
 import org.apache.log4j.Logger;
-import org.jgrapht.util.ArrayUnenforcedSet;
 import org.jgrapht.util.FibonacciHeap;
 import org.jgrapht.util.FibonacciHeapNode;
 import uiuc.topksubgraph.Edge;
@@ -65,7 +64,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
   /**
    * @param binding
-   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding(DBConnection, boolean, String)
+   * @see mitll.xdata.dataset.bitcoin.binding.BitcoinBinding#BitcoinBinding
    */
   public TopKSubgraphShortlist(Binding binding) {
     super(binding);
@@ -75,7 +74,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     executor = new QueryExecutor();
 
     QueryExecutor.datasetId = binding.datasetId;
-    QueryExecutor.baseDir = "src/main/resources" + binding.datasetResourceDir; //THIS LINE SHOULD CHANGE FOR JAR-ed VERSION
+    QueryExecutor.baseDir = /*"src/main/resources" +*/ binding.datasetResourceDir; //THIS LINE SHOULD CHANGE FOR JAR-ed VERSION
     //QueryExecutor.k0 = D;
     //QueryExecutor.topK= K;
 
@@ -84,6 +83,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     MutableGraph g = null;
     try {
       //  g.loadGraph(binding.connection, "MARGINAL_GRAPH", "NUM_TRANS");
+      logger.info("connection " + binding.connection);
       g = new MutableGraph(binding.connection, MARGINAL_GRAPH);
     } catch (Exception e) {
       logger.info("Got: " + e);

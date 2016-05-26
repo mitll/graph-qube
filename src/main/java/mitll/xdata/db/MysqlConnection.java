@@ -50,9 +50,9 @@ public class MysqlConnection implements DBConnection {
 
   /**
    */
-  public Connection connect(String database, String user, String password) throws Exception {
+  private Connection connect(String database, String user, String password) throws Exception {
     String url = getSimpleURL(database);// + "?autoReconnect=true";
-
+      logger.info("connect to " + database + " with " + user);
     return connectWithURL(url, user, password);
   }
 

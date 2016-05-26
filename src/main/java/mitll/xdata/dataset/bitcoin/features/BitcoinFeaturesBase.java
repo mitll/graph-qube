@@ -603,7 +603,6 @@ public class BitcoinFeaturesBase {
 //    return combined;
 
     // long l = (high << 32) | (low & 0xffffffffL);
-
     return new MyEdge(low, high);
   }
 
@@ -881,7 +880,10 @@ public class BitcoinFeaturesBase {
 
   public static void rlogMemory() {
     String message = getMemoryStatus();
-    logger.debug(message);
+    Runtime rt = Runtime.getRuntime();
+    if (rt.freeMemory() > rt.maxMemory()/2) {
+      logger.debug(message);
+    }
   }
 
   public static String getMemoryStatus() {

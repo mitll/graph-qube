@@ -44,6 +44,7 @@ import java.util.*;
  */
 @RunWith(JUnit4.class)
 public class TopKTest {
+  private static final String DATA_FAST = "data/bitcoin/fast/";
   private static Logger logger = Logger.getLogger(TopKTest.class);
 
   @Test
@@ -51,7 +52,7 @@ public class TopKTest {
     int n = 10;
 
     Map<MyEdge, Integer> edgeToWeight = getGraph(n, 5);
-    String outdir = "data/bitcoin/fast/";
+    String outdir = DATA_FAST;
 
     Graph graph = ingestFast(edgeToWeight, outdir);
 
@@ -70,7 +71,7 @@ public class TopKTest {
   public void testSimpleSearchFast2() {
     int n = 10;
     Map<MyEdge, Integer> edgeToWeight = getGraph(n, 5);
-    String outdir = "data/bitcoin/fast/";
+    String outdir = DATA_FAST;
 
     Graph graph = ingestFastMod(edgeToWeight, outdir, 2);
 
@@ -87,7 +88,7 @@ public class TopKTest {
   public void testSimpleSearchFast4() {
     int n = 20;
     Map<MyEdge, Integer> edgeToWeight = getGraph(n, 3);
-    String outdir = "data/bitcoin/fast/";
+    String outdir = DATA_FAST;
 
     int mod = 4;
     Graph graph = ingestFastMod(edgeToWeight, outdir, mod);
@@ -180,7 +181,7 @@ public class TopKTest {
 
     Map<MyEdge, Integer> edgeToWeight = getGraph(n, 5);
 
-    String outdir = "data/bitcoin/fast/";
+    String outdir = DATA_FAST;
 
     Graph graph = ingestFastMod(edgeToWeight, outdir, 2);
 
@@ -256,23 +257,26 @@ public class TopKTest {
   @Test
   public void testSearch() {
     logger.debug("ENTER testSearch()");
-    ServerProperties props = new ServerProperties();
+    ServerProperties props = new ServerProperties("vermont.properties");
 
     String bitcoinDirectory = ".";
-    String bitcoinFeatureDirectory = GraphQuBEServer.DEFAULT_BITCOIN_FEATURE_DIR;
+   // String bitcoinFeatureDirectory = GraphQuBEServer.DEFAULT_BITCOIN_FEATURE_DIR;
 
     try {
-      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlBitcoinJDBC()) : new H2Connection(bitcoinDirectory, "bitcoin");
+      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.getSourceDatabase()) :
+          new H2Connection(bitcoinDirectory, props.getFeatureDatabase());
       final SimplePatternSearch patternSearch;
       patternSearch = new SimplePatternSearch();
 
-      BitcoinBinding bitcoinBinding = new BitcoinBinding(dbConnection, bitcoinFeatureDirectory);
+      BitcoinBinding bitcoinBinding = new BitcoinBinding(dbConnection, props);
       patternSearch.setBitcoinBinding(bitcoinBinding);
       Shortlist shortlist = bitcoinBinding.getShortlist();
       int max = 20;
 
       long then = System.currentTimeMillis();
-      List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, Arrays.asList("555261", "400046", "689982", "251593"), max);
+      // 397635298	533869146
+      List<String> exemplarIDs = Arrays.asList("248750138","397635298", "533869146");
+      List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, exemplarIDs, max);
       long now = System.currentTimeMillis();
       logger.info("to get " + shortlist1.size() +
            " took to do a search " + (now - then) + " millis ");
@@ -308,7 +312,7 @@ public class TopKTest {
   @Test
   public void testGraph1() {
     logger.debug("ENTER testGraph1()");
-    ServerProperties props = new ServerProperties();
+    ServerProperties props = new ServerProperties("vermont.properties");
     int n = 100000;
     int neighbors = 10;
     BitcoinFeaturesBase.rlogMemory();
@@ -373,7 +377,7 @@ public class TopKTest {
     Map<MyEdge, Integer> edgeToWeight = getGraph(n, 2);
     ingestMod(n, edgeToWeight, outdir, 2);
 
-    String outdirFast = "data/bitcoin/fast/";
+    String outdirFast = DATA_FAST;
 
     ingestFastMod(edgeToWeight, outdirFast, 2);
 
@@ -389,7 +393,7 @@ public class TopKTest {
     //int neighbors = 100;
 
     Map<MyEdge, Integer> edgeToWeight = getGraph(n, 1);
-    String outdir = "data/bitcoin/fast/";
+    String outdir = DATA_FAST;
     ingestFast(edgeToWeight, outdir);
 
     //sleep();
@@ -525,7 +529,7 @@ public class TopKTest {
   private void computeIndices(long time1, Graph graph) throws IOException {
     long then = System.currentTimeMillis();
     BitcoinFeaturesBase.rlogMemory();
-    MultipleIndexConstructor.computeIndices(graph);
+    MultipleIndexConstructor.computeIndices(graph, "test");
     BitcoinFeaturesBase.rlogMemory();
 
     long time2 = new Date().getTime();
@@ -572,7 +576,7 @@ public class TopKTest {
     long then = System.currentTimeMillis();
     BitcoinFeaturesBase.rlogMemory();
     MultipleIndexConstructor.outDir = MultipleIndexConstructor.outDir.replaceAll("indices", "fast");
-    MultipleIndexConstructor.computeIndicesFast(graph);
+    MultipleIndexConstructor.computeIndicesFast(graph, "test");
     BitcoinFeaturesBase.rlogMemory();
 
     long time2 = new Date().getTime();
@@ -630,7 +634,7 @@ public class TopKTest {
 
     //save the sorted edge lists
     //String outDir = MultipleIndexConstructor.outDir;
-    MultipleIndexConstructor.saveSortedEdgeList(outDir);
+    MultipleIndexConstructor.saveSortedEdgeList(outDir, "test");
     BitcoinFeaturesBase.logMemory();
 
     //test method that computes totalTypes
@@ -680,7 +684,7 @@ public class TopKTest {
         if (high != to) logger.error("huh?");
     */
         int w = 1 + random.nextInt(9);
-        logger.info(rawFrom + "->" + rawTo + " : " + w);
+//        logger.info(rawFrom + "->" + rawTo + " : " + w);
         edgeToWeight.put(l, w);
       }
     }

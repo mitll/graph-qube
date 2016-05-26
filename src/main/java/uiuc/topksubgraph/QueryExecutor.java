@@ -1331,7 +1331,7 @@ public class QueryExecutor {
     for (int i = 1; i <= totalTypes; i++) {
       for (int j = i; j <= totalTypes; j++) {
         //BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+"indices/"+graphFileBasename.split("\\.txt")[0]+"_"+i+"#"+j+".list")));
-        File edgeListFile = new File(baseDir + datasetId + "_" + i + "#" + j + ".list");
+        File edgeListFile = new File(baseDir + File.separator +datasetId + "_" + i + "#" + j + ".list");
 
 //        logger.info("reading " + edgeListFile.getAbsolutePath() + " exists " + edgeListFile.exists() + " baseDir " + baseDir);
 
@@ -1414,7 +1414,7 @@ public class QueryExecutor {
     graphSign = new HashMap<>();
     File file = new File(baseDir, topologyFile);
 
-    logger.info("reading topology from " + file.getAbsolutePath() + " base " + baseDir + " top " + topologyFile);
+    logger.info("reading topology from : " + file.getAbsolutePath() + "\nbase " + baseDir + "\ntop " + topologyFile);
 
     BufferedReader in = new BufferedReader(new FileReader(file));
     String str = "";

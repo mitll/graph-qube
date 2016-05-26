@@ -53,15 +53,36 @@ public class GraphQuBEServer {
 
   //private static final String MYSQL_H2_DATABASE = "";
   //private static final String MYSQL_BITCOIN_DATABASE = "";
- // private static final boolean USE_MYSQL = false;
+  // private static final boolean USE_MYSQL = false;
 
- // private ServerProperties props = new ServerProperties();
+  // private ServerProperties props = new ServerProperties();
+
+  private static String getPropsFile(String[] args) {
+    String propsFile = null;
+    for (String arg : args) {
+
+
+      String prefix = "props=";
+      logger.info("got " + arg);
+
+      if (arg.startsWith(prefix)) {
+        propsFile = getValue(arg, prefix);
+      }
+    }
+    return propsFile;
+  }
+
+
+  private static String getValue(String arg, String prefix) {
+    return arg.split(prefix)[1];
+  }
 
   /**
    * arg 0 - port to run the server on
    * arg 1 - kiva directory - "" is OK
    * arg 2 - bitcoin h2 directory (so you can place it anywhere)
    * arg 3 - bitcoin feature directory (e.g. bitcoin_small_feats_tsv)
+   *
    * @param args
    * @throws Exception
    */
@@ -100,20 +121,22 @@ public class GraphQuBEServer {
     logger.debug("using port = " + port);
     logger.debug("using kivaDirectory = " + kivaDirectory);
     logger.debug("using bitcoinDirectory = " + bitcoinDirectory);
-    
+
     spark.Spark.setPort(port);
     // patternSearch = SimplePatternSearch.getDemoPatternSearch(kivaDirectory, bitcoinDirectory,
     //        useFastBitcoinConnectedTest);
     patternSearch = new SimplePatternSearch();
 
-    ServerProperties props = new ServerProperties();
+    ServerProperties props = new ServerProperties(getPropsFile(args));
 
     if (props.useKiva()) {
-      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlKivaJDBC()) : new H2Connection(kivaDirectory,"kiva");
+      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlKivaJDBC()) : new H2Connection(kivaDirectory, "kiva");
       patternSearch.setKivaBinding(new KivaBinding(dbConnection));
     }
-    DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlBitcoinJDBC()) : new H2Connection(bitcoinDirectory,"bitcoin");
-    patternSearch.setBitcoinBinding(new BitcoinBinding(dbConnection, bitcoinFeatureDirectory));
+    String dbName = props.getFeatureDatabase();
+    DBConnection dbConnection =
+        props.useMysql() ? new MysqlConnection(props.getSourceDatabase()) : new H2Connection(bitcoinDirectory, dbName);
+    patternSearch.setBitcoinBinding(new BitcoinBinding(dbConnection, props));
 
     // RPC calls from PatternSearch_v1.4.avdl
 
@@ -243,7 +266,7 @@ public class GraphQuBEServer {
             example = (FL_PatternDescriptor) AvroUtils.decodeJSON(
                 FL_PatternDescriptor.getClassSchema(), exampleParameter);
           } catch (Exception e) {
-            logger.error("got " +e,e);
+            logger.error("got " + e, e);
             response.status(400);
             return getBadParamResponse(exampleParameter, e);
           }
@@ -305,24 +328,24 @@ public class GraphQuBEServer {
                 //List<Binding.ResultInfo> entities = binding.getEntities(example);
                 List<FL_EntityMatchDescriptor> entities = example.getEntities();
                 response.type("text/html");
-                
+
                 logger.info("some unnecessary logging...");
-                logger.info("results: "+results);
-                logger.info("binding: "+binding);
-                logger.info("example: "+example);
-                logger.info("entities: "+entities);
+                logger.info("results: " + results);
+                logger.info("binding: " + binding);
+                logger.info("example: " + example);
+                logger.info("entities: " + entities);
                 return new SVGGraph().toSVG(entities, results, binding);
               } else {
                 json = AvroUtils.encodeJSON((FL_PatternSearchResults) result);
               }
             } catch (Exception e) {
-              logger.error("got " +e,e);
+              logger.error("got " + e, e);
             }
           } else if (result instanceof FL_Future) {
             try {
               json = AvroUtils.encodeJSON((FL_Future) result);
             } catch (Exception e) {
-              logger.error("got " +e,e);
+              logger.error("got " + e, e);
             }
           }
           // Note: can install JSONView firefox add-on to handle this content type
@@ -330,7 +353,7 @@ public class GraphQuBEServer {
           // response.type("text/html");
           return json;
         } catch (AvroRemoteException e) {
-          logger.error("got " +e,e);
+          logger.error("got " + e, e);
         }
 
         return "searchByExample";
@@ -375,7 +398,7 @@ public class GraphQuBEServer {
 
         try {
           FL_PatternDescriptor example = AvroUtils.createExemplarQuery(Arrays.asList(id));
-          Object result = patternSearch.searchByExample(example, "", 0, max, null,false);
+          Object result = patternSearch.searchByExample(example, "", 0, max, null, false);
           if (result instanceof FL_PatternSearchResults) {
             String table = AvroUtils.entityListAsTable((FL_PatternSearchResults) result);
             String html = "";

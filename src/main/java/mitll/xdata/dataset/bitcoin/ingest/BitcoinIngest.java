@@ -69,10 +69,10 @@ public class BitcoinIngest extends BitcoinIngestBase {
 			logger.debug("got output dir " + writeDir);
 		}
 
-  	new BitcoinIngest().doIngest(dataFilename, dbName, writeDir);
+  	new BitcoinIngest().doIngest(dataFilename, dbName, writeDir, "/bitcoin_small_feats_tsv/");
 	}
 
-	private void doIngest(String dataFilename, String dbName, String writeDir) throws Throwable {
+	private void doIngest(String dataFilename, String dbName, String writeDir, String featuresDir) throws Throwable {
 		//
 		// Raw Ingest (csv to database table + basic features)
 		//
@@ -80,7 +80,7 @@ public class BitcoinIngest extends BitcoinIngestBase {
 
 		// btc to Dollar Conversion
 		String btcToDollarFile = "src/main/resources" +
-				BitcoinBinding.BITCOIN_FEATS_TSV +
+				featuresDir +
 				BTC_TO_DOLLAR_CONVERSION_TXT;
 
 		File file = new File(btcToDollarFile);
@@ -99,7 +99,7 @@ public class BitcoinIngest extends BitcoinIngestBase {
 
 		long now = System.currentTimeMillis();
 		logger.debug("Raw Ingest (loading transactions and extracting features) complete. Elapsed time: " +(now-then)/1000 + " seconds");
-		doSubgraphs(dbName, Collections.emptySet());
+		doSubgraphs(dbName, Collections.emptySet(), null);
 	}
 }
 
