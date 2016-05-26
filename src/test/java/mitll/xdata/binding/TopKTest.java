@@ -275,7 +275,9 @@ public class TopKTest {
 
       long then = System.currentTimeMillis();
       // 397635298	533869146
-      List<String> exemplarIDs = Arrays.asList("248750138","397635298", "533869146");
+      // 163694973
+     // List<String> exemplarIDs = Arrays.asList("248750138","397635298", "533869146");
+      List<String> exemplarIDs = Arrays.asList("163694973","248750138","397635298", "533869146");
       List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, exemplarIDs, max);
       long now = System.currentTimeMillis();
       logger.info("to get " + shortlist1.size() +
@@ -297,7 +299,7 @@ public class TopKTest {
         }
         logger.info("got  match " + matches);
       }
-      logger.info("got " + hashtotal + " match " + shortlist1.size());
+      logger.info("got hash code total " + hashtotal + " match " + shortlist1.size());
 
     } catch (Exception e) {
       logger.error("got " + e, e);

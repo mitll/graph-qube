@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,7 +63,7 @@ public class KivaTestBinding {
     System.out.println(AvroUtils.encodeJSON(query));
 
     // http://localhost:4567/pattern/search/example?example={"uid":"PD1","name":"Pattern Descriptor 1","description":null,"entities":[{"uid":"L1","role":{"string":"Unlucky Lender"},"sameAs":null,"entities":null,"tags":null,"properties":null,"examplars":{"array":["l0376099"]},"weight":1.0},{"uid":"P1","role":{"string":"Risky Partner"},"sameAs":null,"entities":null,"tags":null,"properties":null,"examplars":{"array":["p137"]},"weight":1.0}],"links":[]}&max=20
-    Object result = kivaBinding.searchByExample(query, "", 0, 4, true);
+    Object result = kivaBinding.searchByExample(query, "", 0, 4, true, Collections.EMPTY_LIST);
     AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
     System.out.println("result = " + AvroUtils.encodeJSON((FL_PatternSearchResults) result));
 
@@ -73,7 +74,7 @@ public class KivaTestBinding {
     System.out.println("just lender query:");
     System.out.println(AvroUtils.encodeJSON(query));
 
-    result = kivaBinding.searchByExample(query, "", 0, 4, true);
+    result = kivaBinding.searchByExample(query, "", 0, 4, true, Collections.EMPTY_LIST);
     System.out.println("result = " + result);
 
     entityMatchDescriptors.clear();
@@ -82,7 +83,7 @@ public class KivaTestBinding {
     query.setEntities(entityMatchDescriptors);
     System.out.println("just partner query:");
     System.out.println(AvroUtils.encodeJSON(query));
-    result = kivaBinding.searchByExample(query, "", 0, 4, true);
+    result = kivaBinding.searchByExample(query, "", 0, 4, true, Collections.EMPTY_LIST);
 
     System.out.println("result = " + result);
 
@@ -93,7 +94,7 @@ public class KivaTestBinding {
     FL_PatternDescriptor descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "lmarie8422",
         "lmike1401", "lgooddogg1", "ltrolltech4460", "p137", "p65" }));
     logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-    result = kivaBinding.searchByExample(descriptor, null, 0, 10, true);
+    result = kivaBinding.searchByExample(descriptor, null, 0, 10, true, Collections.EMPTY_LIST);
     AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
     // System.out.println("result = " + result);
     // System.out.println("result = " + AvroUtils.encodeJSON((FL_PatternSearchResults) result));

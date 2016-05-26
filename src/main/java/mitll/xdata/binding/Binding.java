@@ -31,7 +31,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Created with IntelliJ IDEA. User: go22670 Date: 6/25/13 Time: 7:28 PM To change this template use File | Settings |
@@ -96,7 +95,6 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   }
 
   /**
-   *
    * @param connection
    */
   protected Binding(DBConnection connection) {
@@ -436,7 +434,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    *
    * @param descriptor
    * @return
-   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
+   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean, List)
    */
   private ResultInfo getEntitiesByID(FL_EntityMatchDescriptor descriptor) {
     List<String> entityIDs = descriptor.getEntities();
@@ -522,7 +520,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param properties
    * @param max
    * @return
-   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
+   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean, List)
    * @see #simpleSearch(java.util.List, long, long)
    */
   @Override
@@ -909,7 +907,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   }
 
   private static List<String> getEntityIDs(List<FL_EntityMatchResult> entities) {
-    List<String> ids = new ArrayList<String>();
+    List<String> ids = new ArrayList<>();
     for (FL_EntityMatchResult entity : entities) {
       ids.add(entity.getEntity().getUid());
     }
@@ -922,22 +920,23 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param start
    * @param max
    * @param rescoreWithHMM
+   * @param ids
    * @return
    * @see mitll.xdata.SimplePatternSearch#searchByExample
    */
   public Object searchByExample(FL_PatternDescriptor example,
-                                String ignoredService, long start, long max, boolean rescoreWithHMM) {
+                                String ignoredService, long start, long max, boolean rescoreWithHMM, List<String> ids) {
     // original service
-    long endTime = THIRTY_YEARS+ System.currentTimeMillis();
+    long endTime = THIRTY_YEARS + System.currentTimeMillis();
     logger.debug("searchByExample : end is  " + endTime + " or " + new Date(endTime));
-    return searchByExample(example, start, max, rescoreWithHMM, 0, endTime);
+    return searchByExample(example, start, max, rescoreWithHMM, 0, endTime, ids, Collections.emptyList());
   }
 
   private static final int MAX_TEXT_LENGTH = 15;
 
   /**
    * Return json with nodes and links, suitable for a sankey display
-   * @see mitll.xdata.GraphQuBEServer#getSankeyRoute(SimplePatternSearch)
+   *
    * @param ids
    * @param start
    * @param max
@@ -945,9 +944,12 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param endTime
    * @param rescoreWithHMM
    * @return
+   * @see mitll.xdata.GraphQuBEServer#getSankeyRoute(SimplePatternSearch)
    */
-  public String searchByExampleJson(List<String> ids, long start, long max, long startTime, long endTime, boolean rescoreWithHMM) {
-    FL_PatternSearchResults fl_patternSearchResults = searchByExample(ids, start, FULL_SEARCH_LIST_SIZE, startTime, endTime, rescoreWithHMM);
+  public String searchByExampleJson(List<String> ids, long start, long max, long startTime, long endTime,
+                                    boolean rescoreWithHMM) {
+    FL_PatternSearchResults fl_patternSearchResults =
+        searchByExample(ids, start, FULL_SEARCH_LIST_SIZE, startTime, endTime, rescoreWithHMM, ids);
     List<FL_PatternSearchResult> results1 = fl_patternSearchResults.getResults();
     logger.debug("searchByExampleJson : max " + max + "  got " + results1.size() + " results");
     Set<String> querySet = new HashSet<String>(ids);
@@ -1001,7 +1003,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     json += "]}";
 
 
-    logger.info("Returning json:\n" +json);
+    logger.info("Returning json:\n" + json);
 
     return json;
   }
@@ -1121,7 +1123,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
         for (FL_Property property : link1.getProperties()) {
           logger.debug("\tkeys " + property.getKey());
         }
-      };
+      }
+      ;
 
       boolean b = value.startsWith("-");// && REVERSE_DIRECTION;
       String key = source + "-" + target;
@@ -1151,13 +1154,13 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   }
 
   /**
-   * @see #dumpLinks(StringBuilder, List, List, Map)
    * @param builder
    * @param sindex
    * @param tindex
    * @param value
    * @param b
    * @param idToUse
+   * @see #dumpLinks(StringBuilder, List, List, Map)
    */
   private void writeOneLink(StringBuilder builder, int sindex, int tindex, String value, boolean b, int idToUse) {
     builder.append("  {\"id\":" +
@@ -1172,17 +1175,21 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   }
 
   /**
+   * @param lids
    * @param ids
    * @param start
    * @param max
    * @param startTime
    * @param endTime
    * @param rescoreWithHMM
+   * @param uids
    * @return
    * @see #searchByExampleJson(List, long, long, long, long, boolean)
    */
-  private FL_PatternSearchResults searchByExample(List<String> ids, long start, long max, long startTime, long endTime, boolean rescoreWithHMM) {
-    return searchByExample(AvroUtils.createExemplarQuery(ids), start, max, rescoreWithHMM, startTime, endTime);
+  private FL_PatternSearchResults searchByExample(List<String> ids, long start,
+                                                  long max, long startTime, long endTime, boolean rescoreWithHMM,
+                                                  List<String> uids) {
+    return searchByExample(AvroUtils.createExemplarQuery(ids), start, max, rescoreWithHMM, startTime, endTime, ids, uids);
   }
 
   /**
@@ -1190,14 +1197,18 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param start          ignored for now
    * @param max            items to return
    * @param rescoreWithHMM
+   * @param ids
+   * @param uids
    * @return
-   * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean)
-   * @see #searchByExample(List, long, long, long, long, boolean)
+   * @see SimplePatternSearch#searchByExample(FL_PatternDescriptor, String, long, long, boolean, List, List)
+   * @see #searchByExample(List, long, long, long, long, boolean, List)
    */
   public FL_PatternSearchResults searchByExample(FL_PatternDescriptor example, long start, long max,
-                                                 boolean rescoreWithHMM, long startTime, long endTime) {
+                                                 boolean rescoreWithHMM, long startTime, long endTime,
+                                                 List<String> ids,
+                                                 List<String> uids) {
     long then = System.currentTimeMillis();
-    logger.debug("ENTER searchByExample()  rescore " + rescoreWithHMM);
+    logger.debug("ENTER searchByExample() rescore " + rescoreWithHMM);
     logger.debug("ENTER searchByExample() got " + example + " rescore " + rescoreWithHMM);
     logger.debug("ENTER searchByExample " + new Date(startTime) + " to " + new Date(endTime));
 
@@ -1234,10 +1245,10 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     // (2) shortlist (find promising connected subgraphs)
     // (3) score based on transactions
 
-    logger.debug("found " + example);
+    logger.debug("found exampple " + example);
     //    logger.debug("found "+example.getEntities().size());
     logger.info("running from Binding.java");
-    List<FL_PatternSearchResult> results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE);
+    List<FL_PatternSearchResult> results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE, ids);
     if (results == null) {
       logger.error("huh? couldn't get results for " + example);
       return null;
@@ -1247,7 +1258,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     // get edges (to use in a couple places)
     List<String> exemplarIDs = null;
     try {
-      exemplarIDs = getExemplarIDs(example);
+      exemplarIDs = example == null ? ids : getExemplarIDs(example);
     } catch (Exception e) {
       e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
     }
@@ -1257,7 +1268,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     // re-score results
     if (rescoreWithHMM) {
       List<List<Edge>> resultEdges = new ArrayList<List<Edge>>();
-      List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges);
+      List<List<String>> resultIDs = getResultIDsWithEdges(example, results, exemplarIDs, resultEdges, uids);
 
       logger.info("========get here=============");
       logger.info(example);
@@ -1519,6 +1530,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     logger.debug(results.size() + " results, took " + (System.currentTimeMillis() - then) + " millis");
     logMemory();
 
+    logger.info("return " +patternSearchResults);
     return patternSearchResults;
   }
 
@@ -1527,13 +1539,15 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param results
    * @param exemplarIDs
    * @param resultEdges
+   * @param uids
    * @return
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+   * @see #searchByExample(FL_PatternDescriptor, long, long, boolean, long, long, List, List)
    */
   private List<List<String>> getResultIDsWithEdges(FL_PatternDescriptor example,
                                                    List<FL_PatternSearchResult> results,
                                                    List<String> exemplarIDs,
-                                                   List<List<Edge>> resultEdges) {
+                                                   List<List<Edge>> resultEdges,
+                                                   List<String> uids) {
     // need to get nodes ids for each result in same order as associated query nodes
     List<List<String>> resultIDs = new ArrayList<List<String>>();
 
@@ -1541,7 +1555,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     for (FL_PatternSearchResult result : results) {
       try {
         resultEdges.add(getEdgesForResult(result));
-        List<String> ids = getOrderedIDsForResult(result, example, exemplarIDs);
+        List<String> ids = getOrderedIDsForResult(result, example, exemplarIDs, uids);
         //  logger.debug("result ids = " + ids + " for " + result);
         resultIDs.add(ids);
       } catch (Exception e) {
@@ -1560,7 +1574,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param startTime
    * @param endTime
    * @return
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+   * @see #searchByExample(FL_PatternDescriptor, long, long, boolean, long, long, List, List)
    */
   private List<FL_PatternSearchResult> rescoreWithHMM1(FL_PatternDescriptor example,
                                                        List<FL_PatternSearchResult> results,
@@ -1570,7 +1584,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     List<Edge> queryEdges = getAllLinks(exemplarIDs, startTime, endTime);
     if (logger.isDebugEnabled()) {
       logger.debug("queryEdges = " + queryEdges.size());
-			/*  for (Edge edge : queryEdges) {
+      /*  for (Edge edge : queryEdges) {
         logger.debug(edge);
       }*/
     }
@@ -1645,7 +1659,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    *
    * @param result
    * @return
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+   * @see #searchByExample(FL_PatternDescriptor, long, long, boolean, long, long, List, List)
    */
   public List<Edge> getEdgesForResult(FL_PatternSearchResult result) {
     List<FL_EntityMatchResult> entities = result.getEntities();
@@ -1663,7 +1677,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @return Result node IDs in same order as associated exemplar (query) node IDs.
    */
   private List<String> getOrderedIDsForResult(FL_PatternSearchResult result, FL_PatternDescriptor example,
-                                              List<String> exemplarIDs) {
+                                              List<String> exemplarIDs, List<String> uids) {
     // Note: just put exemplarIDs in there to get it to be correct size
     List<String> ids = new ArrayList<String>(exemplarIDs);
 
@@ -1674,11 +1688,15 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
       exemplarToIndex.put(exemplarIDs.get(i), i);
     }
 
-    for (FL_EntityMatchDescriptor entity : example.getEntities()) {
-      String uid = entity.getUid();
-      String id = entity.getExamplars().get(0);
-      int index = exemplarToIndex.get(id);
-      uidToIndex.put(uid, index);
+    if (example == null) {
+      for (int i = 0; i < uids.size(); i++) uidToIndex.put(uids.get(i), i);
+    } else {
+      for (FL_EntityMatchDescriptor entity : example.getEntities()) {
+        String uid = entity.getUid();
+        String id = entity.getExamplars().get(0);
+        int index = exemplarToIndex.get(id);
+        uidToIndex.put(uid, index);
+      }
     }
 
     for (FL_EntityMatchResult entityMatchResult : result.getEntities()) {
@@ -1700,17 +1718,17 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
   /**
    * Retrieves promising (somewhat) connected subgraphs based on node similarity.
    *
-   * @see #searchByExample(influent.idl.FL_PatternDescriptor, long, long, boolean, long, long)
+   * @see #searchByExample(FL_PatternDescriptor, long, long, boolean, long, long, List, List)
    */
-  private List<FL_PatternSearchResult> getShortlist(FL_PatternDescriptor example, long max) {
+  private List<FL_PatternSearchResult> getShortlist(FL_PatternDescriptor example, long max, List<String> ids) {
     // (2a) retrieve list of nodes for each query node ranked by similarity
     // (2b) form groups across lists from prioritized Cartesian product
     // (2c) filter by activity (i.e., subgraph must be connected)
 
-    List<String> exemplarIDs = getExemplarIDs(example);  // these exemplarIDs are in the same order as in the pattern descriptor
+    List<String> exemplarIDs = example == null ? ids : getExemplarIDs(example);  // these exemplarIDs are in the same order as in the pattern descriptor
     List<FL_EntityMatchDescriptor> objects = Collections.emptyList();
     List<FL_EntityMatchDescriptor> entities1 = example != null ? example.getEntities() : objects;
-    logger.debug("found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
+    logger.debug("getShortlist found " + exemplarIDs.size() + " exemplar IDs for example, " + entities1.size() + " entities from example.");
 
 
     // return getShortlist(entities1, exemplarIDs, max);
@@ -1719,7 +1737,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     //return new TopKSubgraphShortlist(this).getShortlist(entities1, exemplarIDs, max);
     getShortlist().numQueries += 1;
     logger.info("-------------------ALERT--------------------------------");
-    logger.info("This is pattern query number " + getShortlist().numQueries + " of this session.");
+    logger.info("getShortlist This is pattern query number " + getShortlist().numQueries + " of this session.");
     return getShortlist().getShortlist(entities1, exemplarIDs, max);
   }
 
@@ -1990,7 +2008,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
    * @param exemplarIDs
    * @return
    * @see #rescoreWithHMM(java.util.List, java.util.List, java.util.List, java.util.List, java.util.List)
-   * @see #searchByExample(FL_PatternDescriptor, long, long, boolean, long, long)
+   * @see #searchByExample(FL_PatternDescriptor, long, long, boolean, long, long, List, List)
    */
   private List<List<VectorObservation>> getResultObservations(List<List<Edge>> resultEdges, List<List<String>> resultIDs, List<String> exemplarIDs) {
     logger.info("result ids: " + resultIDs);
@@ -2033,7 +2051,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     patternSearchResults.setResults(results);
     patternSearchResults.setTotal((long) results.size());
 
-    //	logger.debug("EXIT makePatternSearchResults()");
+    logger.debug("EXIT makePatternSearchResults() "+results.size());
     return patternSearchResults;
   }
 

@@ -21,6 +21,7 @@ import org.apache.avro.AvroRemoteException;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SimplePatternSearch implements FL_PatternSearch {
@@ -91,12 +92,12 @@ public class SimplePatternSearch implements FL_PatternSearch {
   public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
                                 FL_BoundedRange dateRange, boolean useAptima) throws AvroRemoteException {
     // TODO : support dateRange
-    return searchByExample(example, service, start, max, USE_HMM);
+    return searchByExample(example, service, start, max, USE_HMM, Collections.EMPTY_LIST,Collections.EMPTY_LIST);
   }
 
   public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-                                boolean hmm) throws AvroRemoteException {
-    return searchByExample(example, service, start, max, hmm, Long.MIN_VALUE, Long.MAX_VALUE);
+                                boolean hmm, List<String> lids, List<String> uids) throws AvroRemoteException {
+    return searchByExample(example, service, start, max, hmm, Long.MIN_VALUE, Long.MAX_VALUE, lids, uids);
   }
 
   /**
@@ -107,17 +108,24 @@ public class SimplePatternSearch implements FL_PatternSearch {
    * @param hmm
    * @param startTime
    * @param endTime
+   * @param ids
+   * @param uids
    * @return
    * @throws AvroRemoteException
    * @see mitll.xdata.GraphQuBEServer#getRoute(SimplePatternSearch)
-   * @see mitll.xdata.SimplePatternSearch#searchByExample(influent.idl.FL_PatternDescriptor, String, long, long, boolean, long, long)
+   * @see SimplePatternSearch#searchByExample(FL_PatternDescriptor, String, long, long, boolean, long, long, List, List)
    */
-  public Object searchByExample(FL_PatternDescriptor example, String service, long start, long max,
-                                boolean hmm, long startTime, long endTime) throws AvroRemoteException {
+  public Object searchByExample(FL_PatternDescriptor example,
+                                String service,
+                                long start, long max,
+                                boolean hmm, long startTime, long endTime,
+                                List<String> ids,
+                                List<String> uids) throws AvroRemoteException {
     // TODO : support dateRange
 
     if (example == null) {
-      new Exception("illegal arg exception").printStackTrace();
+      logger.warn("no example specified -");
+      //new Exception("illegal arg exception").printStackTrace();
     }
 
     // returns FL_Future or FL_PatternSearchResults
@@ -127,7 +135,7 @@ public class SimplePatternSearch implements FL_PatternSearch {
 
     if (binding != null) {
       logger.debug("searchByExample : example '" + example + "' hmm " + hmm + " binding " + binding);
-      return binding.searchByExample(example, start, max, hmm, startTime, endTime);
+      return binding.searchByExample(example, start, max, hmm, startTime, endTime, ids, uids);
     } else {
       logger.error("no binding");
     }

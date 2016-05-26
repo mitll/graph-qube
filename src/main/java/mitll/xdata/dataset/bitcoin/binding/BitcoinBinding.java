@@ -375,7 +375,7 @@ public class BitcoinBinding extends Binding {
    * @param k
    * @param skipSelf
    * @return
-   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
+   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean, List)
    */
   @Override
   protected List<String> getNearestNeighbors(String id, int k, boolean skipSelf) {
@@ -390,7 +390,7 @@ public class BitcoinBinding extends Binding {
    * @param id1
    * @param id2
    * @return
-   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean)
+   * @see Binding#searchByExample(FL_PatternDescriptor, String, long, long, boolean, List)
    */
   @Override
   protected double getSimilarity(String id1, String id2) {
@@ -1134,7 +1134,8 @@ public class BitcoinBinding extends Binding {
     boolean hmmScoring = true;
     // use aptima precomputed results
     logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-    result = binding.searchByExample(descriptor, 0, 100, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE);
+    result = binding.searchByExample(descriptor, 0, 100, hmmScoring, Long.MIN_VALUE, Long.MAX_VALUE,
+        Collections.emptyList(), Collections.emptyList());
     // use LL shortlisting
     // result = binding.searchByExample(descriptor, null, 0, 10, -1, hmmScoring);
     logger.debug("result " + result);
@@ -1153,13 +1154,14 @@ public class BitcoinBinding extends Binding {
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "4547" }));
 
     // wikileaks, lulzsec
-    descriptor = AvroUtils.createExemplarQuery(Arrays.asList("4547", "5104"));
+    List<String> ids = Arrays.asList("4547", "5104");
+    descriptor = AvroUtils.createExemplarQuery(ids);
 
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "1", "12" }));
     // descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "12", "616759" }));
 
     logger.debug("descriptor = " + AvroUtils.encodeJSON(descriptor));
-    result = binding.searchByExample(descriptor, null, 0, 10, true);
+    result = binding.searchByExample(descriptor, null, 0, 10, true, ids);
     AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
     System.out.println("result = " + AvroUtils.encodeJSON((FL_PatternSearchResults) result));
 

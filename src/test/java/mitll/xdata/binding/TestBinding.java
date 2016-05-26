@@ -4,7 +4,6 @@ import influent.idl.FL_EntityMatchDescriptor;
 import influent.idl.FL_EntityMatchResult;
 import influent.idl.FL_Link;
 import influent.idl.FL_LinkMatchResult;
-import influent.idl.FL_LinkTag;
 import influent.idl.FL_PatternDescriptor;
 import influent.idl.FL_PatternSearchResult;
 import influent.idl.FL_PatternSearchResults;
@@ -26,7 +25,6 @@ import java.util.Set;
 
 import mitll.xdata.AvroUtils;
 import mitll.xdata.hmm.VectorObservation;
-import mitll.xdata.scoring.Transaction;
 
 import org.apache.log4j.Logger;
 
@@ -455,8 +453,9 @@ public class TestBinding extends Binding {
 		startTime = Long.MIN_VALUE;
 		endTime = Long.MAX_VALUE;
 		hmmScoring = false;
-		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "a" }));
-		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime);
+		List<String> ids = Arrays.asList("a");
+		descriptor = AvroUtils.createExemplarQuery(ids);
+		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime, ids, ids);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 
@@ -467,7 +466,7 @@ public class TestBinding extends Binding {
 		endTime = Long.MAX_VALUE;
 		hmmScoring = false;
 		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "a", "b" }));
-		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime);
+		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime, ids, ids);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 
@@ -480,7 +479,7 @@ public class TestBinding extends Binding {
 		endTime = sdf.parse("2013-11-01 00:00").getTime();
 		hmmScoring = false;
 		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "b", "a" }));
-		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime);
+		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime, ids, ids);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 
@@ -493,7 +492,7 @@ public class TestBinding extends Binding {
 		endTime = sdf.parse("2013-11-01 00:00").getTime();
 		hmmScoring = true;
 		descriptor = AvroUtils.createExemplarQuery(Arrays.asList(new String[] { "b", "a", "c", "d" }));
-		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime);
+		result = binding.searchByExample(descriptor, 0, 100, hmmScoring, startTime, endTime, ids, ids);
 		logger.debug("result = " + result);
 		AvroUtils.displaySubgraphsAsTable((FL_PatternSearchResults) result);
 		

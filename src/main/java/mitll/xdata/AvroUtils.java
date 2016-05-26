@@ -22,11 +22,14 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.avro.specific.SpecificRecordBase;
+import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 public class AvroUtils {
+    private static Logger logger = Logger.getLogger(AvroUtils.class);
+
     /**
      * Encodes an Avro object as JSON string.
      * 
@@ -50,6 +53,7 @@ public class AvroUtils {
     public static SpecificRecord decodeJSON(Schema schema, String json) throws Exception {
         DatumReader<SpecificRecord> datumReader = new SpecificDatumReader<SpecificRecord>(schema);
         JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, json);
+        logger.info("Got " +json);
       return datumReader.read(null, decoder);
     }
 
@@ -65,7 +69,7 @@ public class AvroUtils {
 
         patternDescriptor.setUid("PD0");
         patternDescriptor.setName("Pattern Descriptor 0");
-        patternDescriptor.setLinks(new ArrayList<FL_LinkMatchDescriptor>());
+        patternDescriptor.setLinks(new ArrayList<>());
 
         List<FL_EntityMatchDescriptor> entityMatchDescriptors = new ArrayList<FL_EntityMatchDescriptor>();
         List<String> exemplars;

@@ -73,6 +73,11 @@ public class H2Connection implements DBConnection {
   }
 */
 
+  /**
+   * @see mitll.xdata.GraphQuBEServer#main(String[])
+   * @param configDir
+   * @param dbName
+   */
   public H2Connection(String configDir, String dbName) {
     this(configDir, dbName, 50000, 8, 5000000, false);
   }

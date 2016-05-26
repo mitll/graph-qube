@@ -102,7 +102,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * Method to set algorithm parameters once they've been set externally
    */
   public void refreshQueryExecutorParameters() {
-    QueryExecutor.k0   = D;
+    QueryExecutor.k0 = D;
     QueryExecutor.topK = K;
   }
 
@@ -145,13 +145,13 @@ public class TopKSubgraphShortlist extends Shortlist {
   /**
    * @param entityMatchDescriptorsIgnored
    * @param exemplarIDs
-   * @param ignoredMax
+   * @param max
    * @return
-   * @see Binding#getShortlist(FL_PatternDescriptor, long)
+   * @see Binding#getShortlist(
    */
   @Override
   public List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entityMatchDescriptorsIgnored,
-                                                   List<String> exemplarIDs, long ignoredMax) {
+                                                   List<String> exemplarIDs, long max) {
     // which binding are we bound to?
     logger.info(this.binding.toString());
     logger.info(this.binding.connection);
@@ -176,7 +176,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     boolean isClique = executor.loadQuery(queryEdges, binding.connection, usersTable, userIdColumn, typeColumn);
     if (isClique) logger.info("getShortlist isClique!");
     long now = System.currentTimeMillis();
-    logger.info("took " +(now-then ) + " millis to load query");
+    logger.info("took " + (now - then) + " millis to load query");
 
     //set system out to out-file...
     QueryExecutor.queryFile = "queries/queryGraph.FanOutService.txt";
@@ -194,11 +194,11 @@ public class TopKSubgraphShortlist extends Shortlist {
       then = System.currentTimeMillis();
       executor.executeQuery(isClique);
       now = System.currentTimeMillis();
-      logger.info("getShortlist took " +(now-then ) + " millis to execute query");
+      logger.info("getShortlist took " + (now - then) + " millis to execute query");
     }
 
     logger.info("getShortlist : original entity ordering from Influent query: " + exemplarIDs);
-    return getPatternSearchResults(queryEdges, exemplarIDs);
+    return getPatternSearchResults(queryEdges, exemplarIDs, (int)max);
   }
 
   /**
@@ -326,7 +326,7 @@ public class TopKSubgraphShortlist extends Shortlist {
    * @return
    * @see #getShortlist(List, List, long)
    */
-  private List<FL_PatternSearchResult> getPatternSearchResults(Collection<Edge> queryEdges, List<String> exemplarIDs) {
+  private List<FL_PatternSearchResult> getPatternSearchResults(Collection<Edge> queryEdges, List<String> exemplarIDs, int max) {
 
     // Heap of results from uiuc.topksubgraph
     FibonacciHeap<List<String>> heap = executor.getHeap();
@@ -364,7 +364,7 @@ public class TopKSubgraphShortlist extends Shortlist {
         computeQueryEdgeList2InfluentEntityIndMap(/*exemplarIDs,*/ queryNode2InfluentEntityInd, uiucQueryEdgetoIndex);
 
     logger.info("getPatternSearchResults queryEdgeList2InfluentEntityInd " + queryEdgeList2InfluentEntityInd.size());
-		/*
+    /*
      * Convert query to FL_PatternSearchResult and add to results...
 		 */
     // FL_PatternSearchResult queryAsResult = makeQueryIntoResult(exemplarIDs, uiucQueryEdgetoIndex);
@@ -393,6 +393,8 @@ public class TopKSubgraphShortlist extends Shortlist {
       // make subgraph guid
       String subgraphGuid = getSubgraphGuid(nodes);
 
+//      logger.debug("got match " + nodes);
+
       // Proceed only if we've not seen this graph previously...
       if (!uniqueSubgraphGuids.contains(subgraphGuid)) {
         // add this subgraph
@@ -404,18 +406,18 @@ public class TopKSubgraphShortlist extends Shortlist {
          *  Loop through all edges
 				 */
         // List of type FL_LinkMatchResult to store all edge information from subgraph
-        List<FL_LinkMatchResult> links = new ArrayList<FL_LinkMatchResult>();
+        List<FL_LinkMatchResult> links = new ArrayList<>();
 //        for (i = 0; i < list.size(); i++)
 //          links.add(new FL_LinkMatchResult());
 
         for (String edgeInfo : list) {
           addLinkMatchResultForEdge(nodes, links, edgeInfo);
         }
-        //logger.info("links: "+links);
+  //      logger.info("links: "+links);
         //logger.info(queryEdges);
         //logger.info(executor.getActualQueryEdges());
-        //logger.info("list: "+list);
-        //logger.info("final nodes: "+nodes);
+    //    logger.info("list: "+list);
+        logger.info("final nodes: "+nodes);
 				
 				
 				/*
@@ -442,12 +444,14 @@ public class TopKSubgraphShortlist extends Shortlist {
         //logger.info(result);
 
         results.add(result);
+
+        if (results.size() == max) break;
       }
     }
 
     logger.info("getPatternSearchResults Ending with: " + uniqueSubgraphGuids.size() + " unique matching sub-graphs...");
 
-//    logger.info("first   " +results.get(0));
+    logger.info("# results :    " +results.size());
 //    logger.info("second  " +results.get(1));
 
     return results;
@@ -491,18 +495,20 @@ public class TopKSubgraphShortlist extends Shortlist {
     FL_Link link = new FL_Link();
     link.setSource(src);
     link.setTarget(dest);
+    link.setUid("something");
     //link.setTags(new ArrayList<FL_LinkTag>()); //Deprecated in Influent IDL 2.0
 
     link.setProperties(makeLinkProperties(src, dest));
     return link;
   }
 
-  Map<String,Map<String,List<FL_Property>>> srcToDestToProps = new HashMap<>();
+  Map<String, Map<String, List<FL_Property>>> srcToDestToProps = new HashMap<>();
 
   int num = 0;
 
   /**
    * TODO : Super slow???
+   *
    * @param src
    * @param dest
    * @return
@@ -521,7 +527,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     } else {
       linkProperties = getLinkProperties(src, dest);
     }
-    orDefault.put(dest,linkProperties);
+    orDefault.put(dest, linkProperties);
 
     if (++num % 100 == 0) logger.info("makeLinkProperties did " + num);
     return linkProperties;
@@ -577,6 +583,7 @@ public class TopKSubgraphShortlist extends Shortlist {
   /**
    * Convert query graphs into pattern search "result".
    *
+   * @see #getPatternSearchResults(Collection, List)
    * @param exemplarIDs
    * @return
    */
@@ -602,7 +609,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
       // Actual FL_Link
       FL_Link link = new FL_Link();
-
+      link.setUid(edgStr);
       // Get parts of link
       String[] edgeSplit = edgStr.split("#");
       String src = edgeSplit[0];

@@ -182,6 +182,14 @@ public class ServerProperties {
     return props.getProperty("datasetResourceDir");
   }
 
+  public int getPort() {
+    try {
+      return Integer.parseInt(props.getProperty("port","8085"));
+    } catch (NumberFormatException e) {
+      return 8085;
+    }
+  }
+
 //  private String getDateFromManifest(ServletContext servletContext) {
 //    try {
 //      InputStream inputStream = servletContext.getResourceAsStream("/META-INF/MANIFEST.MF");

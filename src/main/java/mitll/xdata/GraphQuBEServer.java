@@ -21,21 +21,24 @@ import influent.idl.FL_PatternDescriptor;
 import influent.idl.FL_PatternSearchResults;
 import mitll.xdata.binding.Binding;
 import mitll.xdata.dataset.bitcoin.binding.BitcoinBinding;
-import mitll.xdata.dataset.kiva.binding.KivaBinding;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import mitll.xdata.db.MysqlConnection;
 import mitll.xdata.viz.SVGGraph;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.apache.avro.AvroRemoteException;
 import org.apache.log4j.Logger;
 import spark.Request;
 import spark.Response;
 import spark.Route;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -60,15 +63,12 @@ public class GraphQuBEServer {
   private static String getPropsFile(String[] args) {
     String propsFile = null;
     for (String arg : args) {
-
-
       String prefix = "props=";
-      logger.info("got " + arg);
-
       if (arg.startsWith(prefix)) {
         propsFile = getValue(arg, prefix);
       }
     }
+    if (propsFile == null) logger.error("expecting props file at props=...");
     return propsFile;
   }
 
@@ -87,55 +87,61 @@ public class GraphQuBEServer {
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
-    final SimplePatternSearch patternSearch;
-    int port = PORT;
+    int port;
+/*
     if (args.length >= 1) {
       try {
         port = Integer.parseInt(args[0]);
       } catch (NumberFormatException e) {
-        System.err.println("Usage : port kivaDirectory bitcoinH2Directory bitcoinFeatureDirectory");
+        System.err.println("Usage : props=propsFile.properties, e.g. vermont.properties");
         return;
       }
     }
 
-    String kivaDirectory = ".";
-    String bitcoinDirectory = ".";
-    String bitcoinFeatureDirectory = DEFAULT_BITCOIN_FEATURE_DIR;
+*/
+//    String kivaDirectory = ".";
+//    String bitcoinDirectory = ".";
+    // String bitcoinFeatureDirectory = DEFAULT_BITCOIN_FEATURE_DIR;
 
-    if (args.length >= 2) {
+/*    if (args.length >= 2) {
       kivaDirectory = args[1];
     }
 
     if (args.length >= 3) {
       bitcoinDirectory = args[2];
-    }
-    if (args.length >= 4) {
-      bitcoinFeatureDirectory = args[3];
-    }
+    }*/
+//    if (args.length >= 4) {
+//      bitcoinFeatureDirectory = args[3];
+//    }
 
 /*    boolean useFastBitcoinConnectedTest = USE_IN_MEMORY_ADJACENCY_DEFAULT;
     if (args.length >= 4) {
       useFastBitcoinConnectedTest = "true".equalsIgnoreCase(args[3]);
     }*/
 
+    ServerProperties props = new ServerProperties(getPropsFile(args));
+    port = props.getPort();
     logger.debug("using port = " + port);
-    logger.debug("using kivaDirectory = " + kivaDirectory);
-    logger.debug("using bitcoinDirectory = " + bitcoinDirectory);
+    // logger.debug("using kivaDirectory = " + kivaDirectory);
+    //   logger.debug("using bitcoinDirectory = " + bitcoinDirectory);
 
     spark.Spark.setPort(port);
     // patternSearch = SimplePatternSearch.getDemoPatternSearch(kivaDirectory, bitcoinDirectory,
     //        useFastBitcoinConnectedTest);
-    patternSearch = new SimplePatternSearch();
+    final SimplePatternSearch patternSearch = new SimplePatternSearch();
 
-    ServerProperties props = new ServerProperties(getPropsFile(args));
-
-    if (props.useKiva()) {
-      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlKivaJDBC()) : new H2Connection(kivaDirectory, "kiva");
-      patternSearch.setKivaBinding(new KivaBinding(dbConnection));
-    }
+//
+//    if (props.useKiva()) {
+//      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlKivaJDBC()) : new H2Connection(kivaDirectory, "kiva");
+//      patternSearch.setKivaBinding(new KivaBinding(dbConnection));
+//    }
     String dbName = props.getFeatureDatabase();
+    // String absolutePath = new File(props.getDatasetResourceDir()).getAbsolutePath();
+    String absolutePath = new File(".").getAbsolutePath();
     DBConnection dbConnection =
-        props.useMysql() ? new MysqlConnection(props.getSourceDatabase()) : new H2Connection(bitcoinDirectory, dbName);
+        props.useMysql() ?
+            new MysqlConnection(props.getSourceDatabase()) :
+            new H2Connection(absolutePath, dbName);
     patternSearch.setBitcoinBinding(new BitcoinBinding(dbConnection, props));
 
     // RPC calls from PatternSearch_v1.4.avdl
@@ -259,16 +265,41 @@ public class GraphQuBEServer {
         String startTimeParameter = request.queryParams("startTime");
         String endTimeParameter = request.queryParams("endTime");
 
-        FL_PatternDescriptor example;
+        FL_PatternDescriptor example = null;
 
+        List<Long> lids = new ArrayList<>();
+        List<String> idsFound = new ArrayList<>();
+
+        logger.info("got " + exampleParameter);
+        List<String> uids = new ArrayList<>();
         if (exampleParameter != null && exampleParameter.trim().length() > 0) {
+          JSONObject parsed = JSONObject.fromObject(exampleParameter);
+          JSONArray entities = parsed.getJSONArray("entities");
+          for (int i = 0; i < entities.size(); i++) {
+            JSONObject entity = entities.getJSONObject(i);
+            JSONObject examplars = entity.getJSONObject("examplars");
+            String uid = entity.getString("uid");
+            uids.add(uid);
+            JSONArray ids = examplars.getJSONArray("array");
+            for (int j = 0; j < ids.size(); j++) {
+              String id = ids.getString(j);
+              idsFound.add(id);
+              try {
+                lids.add(Long.parseLong(id));
+              } catch (NumberFormatException e) {
+                logger.error("couldn't parse " + id);
+              }
+            }
+          }
+          logger.info("found " + idsFound);
+
           try {
             example = (FL_PatternDescriptor) AvroUtils.decodeJSON(
                 FL_PatternDescriptor.getClassSchema(), exampleParameter);
           } catch (Exception e) {
             logger.error("got " + e, e);
-            response.status(400);
-            return getBadParamResponse(exampleParameter, e);
+//            response.status(400);
+//            return getBadParamResponse(exampleParameter, e);
           }
         } else {
           response.status(400);
@@ -317,26 +348,19 @@ public class GraphQuBEServer {
         }
 
         try {
+          boolean useHMM = hmm == null || (!hmm.equalsIgnoreCase("false"));
+          useHMM = false;
           Object result = patternSearch.searchByExample(example, service, start, max,
-              hmm == null || (!hmm.equalsIgnoreCase("false")), startTime, endTime);
+              useHMM, startTime, endTime, idsFound, uids);
           String json = null;
           if (result instanceof FL_PatternSearchResults) {
             try {
               FL_PatternSearchResults results = (FL_PatternSearchResults) result;
               if (svg != null) {
-                Binding binding = patternSearch.getBinding(example);
-                //List<Binding.ResultInfo> entities = binding.getEntities(example);
-                List<FL_EntityMatchDescriptor> entities = example.getEntities();
-                response.type("text/html");
-
-                logger.info("some unnecessary logging...");
-                logger.info("results: " + results);
-                logger.info("binding: " + binding);
-                logger.info("example: " + example);
-                logger.info("entities: " + entities);
-                return new SVGGraph().toSVG(entities, results, binding);
+                return doSVG(response, example, results, patternSearch);
               } else {
                 json = AvroUtils.encodeJSON((FL_PatternSearchResults) result);
+                json = json.replaceAll("score","matchScore");
               }
             } catch (Exception e) {
               logger.error("got " + e, e);
@@ -359,6 +383,20 @@ public class GraphQuBEServer {
         return "searchByExample";
       }
     };
+  }
+
+  private static Object doSVG(Response response, FL_PatternDescriptor example, FL_PatternSearchResults results, SimplePatternSearch patternSearch) {
+    Binding binding = patternSearch.getBinding(example);
+    //List<Binding.ResultInfo> entities = binding.getEntities(example);
+    List<FL_EntityMatchDescriptor> entities = example.getEntities();
+    response.type("text/html");
+
+    logger.info("some unnecessary logging...");
+    logger.info("results: " + results);
+    logger.info("binding: " + binding);
+    logger.info("example: " + example);
+    logger.info("entities: " + entities);
+    return new SVGGraph().toSVG(entities, results, binding);
   }
 
   public static String getBadParamResponse(String exampleParameter, Exception e) {

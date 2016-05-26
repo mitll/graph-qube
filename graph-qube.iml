@@ -113,5 +113,9 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="json-lib-2.4-jdk15" level="project" />
+    <orderEntry type="library" name="ezmorph-1.0.6" level="project" />
+    <orderEntry type="library" name="commons-logging-1.1.1" level="project" />
+    <orderEntry type="library" name="commons-beanutils-1.8.0" level="project" />
   </component>
 </module>
