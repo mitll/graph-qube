@@ -445,7 +445,7 @@ public class TopKSubgraphShortlist extends Shortlist {
 
         results.add(result);
 
-        if (results.size() == max) break;
+        if (results.size() == 10) break;
       }
     }
 
