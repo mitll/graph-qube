@@ -104,6 +104,8 @@ public class H2Connection implements DBConnection {
         "LOG=0;CACHE_SIZE=" +
         CACHE_SIZE +
         ";LOCK_MODE=0;" +
+        "MVCC=FALSE;"+
+        "MV_STORE=FALSE;"+
         "QUERY_CACHE_SIZE=" + queryCacheSize + ";" +
         //    "CACHE_SIZE="       + cacheSizeKB + ";" +
         "DATABASE_TO_UPPER=false" + ";" +
