@@ -50,10 +50,9 @@ public class AvroUtils {
      * Note: This method will fail on strings created by calling record.toString() since that doesn't encode union types
      * losslessly.
      */
-    public static SpecificRecord decodeJSON(Schema schema, String json) throws Exception {
+    static SpecificRecord decodeJSON(Schema schema, String json) throws Exception {
         DatumReader<SpecificRecord> datumReader = new SpecificDatumReader<SpecificRecord>(schema);
         JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, json);
-        logger.info("Got " +json);
       return datumReader.read(null, decoder);
     }
 

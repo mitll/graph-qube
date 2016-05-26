@@ -291,13 +291,12 @@ public class GraphQuBEServer {
               }
             }
           }
-          logger.info("found " + idsFound);
 
           try {
             example = (FL_PatternDescriptor) AvroUtils.decodeJSON(
                 FL_PatternDescriptor.getClassSchema(), exampleParameter);
           } catch (Exception e) {
-            logger.error("got " + e, e);
+            logger.error("couldn't parse json with avro :  " + e);
 //            response.status(400);
 //            return getBadParamResponse(exampleParameter, e);
           }
