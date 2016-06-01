@@ -1530,7 +1530,7 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     logger.debug(results.size() + " results, took " + (System.currentTimeMillis() - then) + " millis");
     logMemory();
 
-    logger.info("return " +patternSearchResults);
+//    logger.info("return " +patternSearchResults);
     return patternSearchResults;
   }
 
