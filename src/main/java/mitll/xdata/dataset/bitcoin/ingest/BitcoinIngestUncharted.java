@@ -42,7 +42,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
   private static final Logger logger = Logger.getLogger(BitcoinIngestUncharted.class);
 
   private static final boolean USE_TIMESTAMP = false;
-//  private static final String BITCOIN = "bitcoin";
+  //  private static final String BITCOIN = "bitcoin";
   //private static final String USERTRANSACTIONS_2013_LARGERTHANDOLLAR = "usertransactions2013largerthandollar";
   private static final String SKIP_TRUE = "skip=true";
 
@@ -88,7 +88,9 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       logger.info("got " + arg);
 
       if (arg.startsWith(prefix)) {
-        propsFile = getValue(arg,prefix);
+        propsFile = getValue(arg, prefix);
+      } else if (arg.startsWith("-" + prefix)) {
+        propsFile = getValue(arg, "-" + prefix);
       }
     }
 
@@ -149,13 +151,13 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
             writeDir, limit, bitcoinFeaturesUncharted, props);
 
     long then2 = System.currentTimeMillis();
-    Set<Long> validUsers = doSubgraphs(destinationDbName, userIds,  props);
+    Set<Long> validUsers = doSubgraphs(destinationDbName, userIds, props);
     logger.info("doIngest took " + (System.currentTimeMillis() - then2) / 1000 + " secs to do subgraphs");
     logger.info("doIngest took " + (System.currentTimeMillis() - start) / 1000 + " secs overall");
 
     boolean b = userIds.removeAll(validUsers);
     if (!userIds.isEmpty())
-    logger.info("doIngest to remove " + userIds.size());
+      logger.info("doIngest to remove " + userIds.size());
 
     H2Connection connection = bitcoinFeaturesUncharted.getConnection(destinationDbName);
     bitcoinFeaturesUncharted.pruneUsers(connection, userIds);
@@ -163,7 +165,6 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
   }
 
   /**
-   * @see #doIngest(String, String, String, String, long, ServerProperties)
    * @param dataSourceJDBC
    * @param transactionsTable
    * @param destinationDbName
@@ -173,14 +174,15 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
    * @param props
    * @return
    * @throws Exception
+   * @see #doIngest(String, String, String, String, long, ServerProperties)
    */
   private Set<Long> loadTransactionsAndWriteFeatures(String dataSourceJDBC,
-                                                        String transactionsTable,
-                                                        String destinationDbName,
-                                                        String writeDir,
-                                                        long limit,
-                                                        BitcoinFeaturesUncharted bitcoinFeaturesUncharted,
-                                                        ServerProperties props) throws Exception {
+                                                     String transactionsTable,
+                                                     String destinationDbName,
+                                                     String writeDir,
+                                                     long limit,
+                                                     BitcoinFeaturesUncharted bitcoinFeaturesUncharted,
+                                                     ServerProperties props) throws Exception {
     long then = System.currentTimeMillis();
     // populate the transactions table
     MysqlInfo info = new MysqlInfo(props);
@@ -192,7 +194,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     Map<Long, UserFeatures> idToStats = new HashMap<>();
 
 //    if (!skipLoadTransactions) {
-    logger.info("doIngest userIds size " + users.size() + " and " +idToStats.size());
+    logger.info("doIngest userIds size " + users.size() + " and " + idToStats.size());
 
     users = bitcoinIngestUnchartedTransactions.loadTransactionTable(info,
         "h2", destinationDbName, BitcoinBinding.TRANSACTIONS, USE_TIMESTAMP, limit, users, idToStats);
@@ -205,7 +207,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-    Set<Long> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir,  users, idToStats);
+    Set<Long> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir, users, idToStats);
 
     logger.info("doIngest userIds size " + userIds.size());
 

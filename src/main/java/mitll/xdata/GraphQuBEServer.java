@@ -67,6 +67,9 @@ public class GraphQuBEServer {
       if (arg.startsWith(prefix)) {
         propsFile = getValue(arg, prefix);
       }
+      else if (arg.startsWith("-"+prefix)) {
+        propsFile = getValue(arg, "-"+prefix);
+      }
     }
     if (propsFile == null) logger.error("expecting props file at props=...");
     return propsFile;
@@ -87,41 +90,14 @@ public class GraphQuBEServer {
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
-    int port;
-/*
-    if (args.length >= 1) {
-      try {
-        port = Integer.parseInt(args[0]);
-      } catch (NumberFormatException e) {
-        System.err.println("Usage : props=propsFile.properties, e.g. vermont.properties");
-        return;
-      }
+    String propsFile = getPropsFile(args);
+    if (propsFile == null) {
+      logger.error("can't find props file with " + Arrays.asList(args));
+      return;
     }
-
-*/
-//    String kivaDirectory = ".";
-//    String bitcoinDirectory = ".";
-    // String bitcoinFeatureDirectory = DEFAULT_BITCOIN_FEATURE_DIR;
-
-/*    if (args.length >= 2) {
-      kivaDirectory = args[1];
-    }
-
-    if (args.length >= 3) {
-      bitcoinDirectory = args[2];
-    }*/
-//    if (args.length >= 4) {
-//      bitcoinFeatureDirectory = args[3];
-//    }
-
-/*    boolean useFastBitcoinConnectedTest = USE_IN_MEMORY_ADJACENCY_DEFAULT;
-    if (args.length >= 4) {
-      useFastBitcoinConnectedTest = "true".equalsIgnoreCase(args[3]);
-    }*/
-
-    ServerProperties props = new ServerProperties(getPropsFile(args));
-    port = props.getPort();
-    logger.debug("using port = " + port);
+    ServerProperties props = new ServerProperties(propsFile);
+    int port = props.getPort();
+    logger.debug("listening on port = " + port);
     // logger.debug("using kivaDirectory = " + kivaDirectory);
     //   logger.debug("using bitcoinDirectory = " + bitcoinDirectory);
 
@@ -129,7 +105,6 @@ public class GraphQuBEServer {
     // patternSearch = SimplePatternSearch.getDemoPatternSearch(kivaDirectory, bitcoinDirectory,
     //        useFastBitcoinConnectedTest);
     final SimplePatternSearch patternSearch = new SimplePatternSearch();
-
 //
 //    if (props.useKiva()) {
 //      DBConnection dbConnection = props.useMysql() ? new MysqlConnection(props.mysqlKivaJDBC()) : new H2Connection(kivaDirectory, "kiva");
@@ -183,7 +158,7 @@ public class GraphQuBEServer {
         long endTime = 0;
         try {
           startTime = sdf.parse("2013-10-01 00:00").getTime();
-          endTime = sdf.parse("2013-11-01 00:00").getTime();
+          endTime   = sdf.parse("2013-11-01 00:00").getTime();
         } catch (ParseException e) {
           e.printStackTrace();
         }
