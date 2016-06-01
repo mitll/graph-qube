@@ -18,8 +18,10 @@ package mitll.xdata.db;
 import org.apache.log4j.Logger;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Enumeration;
 
 /**
  * Created with IntelliJ IDEA.
@@ -98,6 +100,20 @@ public class MysqlConnection implements DBConnection {
       }
     } catch (Exception e) {
       e.printStackTrace();
+    }
+  }
+
+  public void unregister() {
+    Enumeration<java.sql.Driver> drivers = DriverManager.getDrivers();
+    while (drivers.hasMoreElements()) {
+      Driver driver = drivers.nextElement();
+      try {
+        DriverManager.deregisterDriver(driver);
+        logger.info( "deregistering jdbc driver: "+driver);
+      } catch (SQLException e) {
+        logger.error("Error deregistering driver  "+ driver, e);
+      }
+
     }
   }
 

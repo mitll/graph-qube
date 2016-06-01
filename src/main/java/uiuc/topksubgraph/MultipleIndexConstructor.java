@@ -597,7 +597,10 @@ public class MultipleIndexConstructor {
    * @param paths
    * @throws IOException
    */
-  private static void processPathsq(Writer outTopology, Writer outSPD, Graph graph, int d,
+  private static void processPathsq(Writer outTopology,
+                                    Writer outSPD,
+                                    Graph graph,
+                                    int d,
                                     Map<Long, Set<List<Long>>> paths) throws IOException {
     Map<String, Collection<Long>> topo = new HashMap<>();
     //  Map<Integer, List<Integer>> topo2 = new HashMap<>();
@@ -628,6 +631,7 @@ public class MultipleIndexConstructor {
 
             if (edge == null) {
               logger.error("no edge at " + a + "-" + aDash);
+              logger.error("paths at " + ii+ " is " + p);
             }
             totWeight += edge.getWeight();
             Integer typeOfDestNode = getNodeType(a);

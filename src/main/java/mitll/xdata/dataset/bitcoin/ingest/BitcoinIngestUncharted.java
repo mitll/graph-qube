@@ -100,6 +100,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     }
     BitcoinFeaturesBase.logMemory();
 
+    long then = System.currentTimeMillis();
     ServerProperties props = new ServerProperties(propsFile);
     String transactionsTable = props.getTransactionsTable();
     if (dbName == null) dbName = props.getSourceDatabase();
@@ -107,7 +108,8 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       logger.error("please specify a source database via database=...");
       return;
     }
-    String jdbcURL = new MysqlConnection().getSimpleURL(dbName);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
+    MysqlConnection mysqlConnection = new MysqlConnection();
+    String jdbcURL = mysqlConnection.getSimpleURL(dbName);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
     BitcoinIngestUncharted bitcoinIngestUncharted = new BitcoinIngestUncharted();
     bitcoinIngestUncharted.doIngest(jdbcURL, transactionsTable, props.getFeatureDatabase(), writeDir,
         //skipLoadTransactions,
@@ -119,8 +121,8 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
 
     BitcoinFeaturesBase.logMemory();
 
-    logger.info("ingest complete --------> ");
-    //  Thread.sleep(10000000);
+    mysqlConnection.unregister();
+    logger.info("ingest complete in " +(System.currentTimeMillis()-then)/1000 + " seconds");
   }
 
   private static String getValue(String arg, String prefix) {
