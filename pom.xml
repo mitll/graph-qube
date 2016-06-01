@@ -57,6 +57,32 @@
         </pluginManagement>
 
         <plugins>
+<!--
+    <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+                <executions>
+                    <execution>
+                        <id>install-external</id>
+                        <phase>clean</phase>
+                        <configuration>
+                            <file>${basedir}/lib/mylib-core-0.0.1.jar</file>
+                            <repositoryLayout>default</repositoryLayout>
+                            <groupId>com.mylib</groupId>
+                            <artifactId>mylib-core</artifactId>
+                            <version>0.0.1</version>
+                            <packaging>jar</packaging>
+                            <generatePom>true</generatePom>
+                        </configuration>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            -->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -294,8 +320,30 @@
             <groupId>net.sf.json-lib</groupId>
             <artifactId>json-lib</artifactId>
             <version>2.4</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/json-lib-2.4-jdk15.jar</systemPath>
+<!--            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/json-lib-2.4-jdk15.jar</systemPath>-->
+        </dependency>
+
+        <dependency>
+            <groupId>beans</groupId>
+            <artifactId>beans</artifactId>
+            <version>1.8.0</version>
+<!--            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/commons-beanutils-1.8.0.jar</systemPath>-->
+        </dependency>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.1.1</version>
+ <!--           <scope>system</scope>
+            <systemPath>${project.basedir}/lib/commons-logging-1.1.1.jar</systemPath>-->
+        </dependency>
+        <dependency>
+            <groupId>ez</groupId>
+            <artifactId>ez</artifactId>
+            <version>1.0.6</version>
+     <!--       <scope>system</scope>
+            <systemPath>${project.basedir}/lib/ezmorph-1.0.6.jar</systemPath>-->
         </dependency>
     </dependencies>
 
