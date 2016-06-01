@@ -55,7 +55,7 @@ public class BitcoinFeaturesBase {
   //public static final String BITCOIN_IDS_TSV = "bitcoin_ids.tsv";
   private static final String BITCOIN_RAW_FEATURES_TSV = "bitcoin_raw_features.tsv";
   private static final String BITCOIN_FEATURES_STANDARDIZED_TSV = "bitcoin_features_standardized.tsv";
-  public static final String USERS = "users";
+  private static final String USERS = "users";
   // private static final boolean USE_SPECTRAL_FEATURES = true;
   // double specWeight = 1.0;
   // private final double statWeight = 15.0;
@@ -120,11 +120,13 @@ public class BitcoinFeaturesBase {
    * @param users
    * @param transForUsers
    * @throws Exception
-   * @see BitcoinFeaturesUncharted#writeFeatures(DBConnection, String, long, Collection, Map)
+   * @see BitcoinFeaturesUncharted#writeFeatures
    */
-  Set<Long> writeFeatures(DBConnection connection, String writeDirectory, long then,
+  Set<Long> writeFeatures(DBConnection connection,
+                          String writeDirectory, long then,
                           Collection<Long> users,
-                          Map<Long, UserFeatures> transForUsers) throws Exception {
+                          Map<Long, UserFeatures> transForUsers,
+                          Map<Long, String> userToType) throws Exception {
     long now = System.currentTimeMillis();
     logger.debug("writeFeatures took " + (now - then) + " to read " + transForUsers.size() + " user features");
 
@@ -157,11 +159,9 @@ public class BitcoinFeaturesBase {
 
     writeFeaturesToFiles(rawWriter, standardFeatureWriter, userToFeatures, userToIndex, standardizedFeatures);
 
-    writeFeaturesToDatabase(connection, userToFeatures, userToIndex, standardizedFeatures);
+    writeFeaturesToDatabase(connection, userToFeatures, userToIndex, userToType, standardizedFeatures);
 
-    //writer.close();
     rawWriter.close();
-    // idsWriter.close();
     standardFeatureWriter.close();
 
     connection.closeConnection();
@@ -177,6 +177,7 @@ public class BitcoinFeaturesBase {
    * @param features
    * @param userToFeatures
    * @param userToIndex
+   * @param userToType
    * @see #writeFeatures(DBConnection, String, long, Collection, Map)
    */
   private void populateUserToFeatures(Collection<Long> users,
@@ -290,15 +291,17 @@ public class BitcoinFeaturesBase {
    * @param dbConnection
    * @param userToFeatures
    * @param userToIndex
+   * @param userToType
    * @param standardizedFeatures
    * @throws Exception
-   * @see BitcoinFeaturesBase#writeFeatures(DBConnection, String, long, Collection, Map)
+   * @see BitcoinFeaturesBase#writeFeatures
    */
   private void writeFeaturesToDatabase(DBConnection dbConnection,
                                        Map<Long, Features> userToFeatures,
                                        Map<Long, Integer> userToIndex,
+                                       Map<Long, String> userToType,
                                        double[][] standardizedFeatures) throws Exception {
-    logger.info("writeFeaturesToDatabase " + userToFeatures.size() + " users.");
+    logger.info("writeFeaturesToDatabase " + userToFeatures.size() + " users, standardized feats " + standardizedFeatures.length);
 
     Connection connection = dbConnection.getConnection();
     new FeaturesSql().createUsersTable(connection);
@@ -308,10 +311,13 @@ public class BitcoinFeaturesBase {
         "CREDIT_INTERARR_MEAN", "CREDIT_INTERARR_STD",
         "DEBIT_MEAN", "DEBIT_STD",
         "DEBIT_INTERARR_MEAN", "DEBIT_INTERARR_STD",
-        "PERP_IN", "PERP_OUT"};
+        "PERP_IN", "PERP_OUT",
+        "TYPE"};
     String columnLabelText = "(" + StringUtils.join(columnLabels, ", ") + ")";
 
-    int numFeatures = columnLabels.length - 1;
+    int numFeatures = columnLabels.length - 2;  // remove type - we'll add it via the map
+    int currentType = 1;
+    Map<String, Integer> typeToInt = new HashMap<>();
 
     for (Map.Entry<Long, Features> userFeatPair : userToFeatures.entrySet()) {
       long id = userFeatPair.getKey();
@@ -325,9 +331,18 @@ public class BitcoinFeaturesBase {
         if (i != numFeatures - 1) {
           featValueText += Double.toString(d) + ", ";
         } else {
-          featValueText += Double.toString(d) + ")";
+          String rawType = userToType.get(id);
+          Integer type = typeToInt.get(rawType);
+          if (type == null) {
+            type = currentType;
+            typeToInt.put(rawType, currentType++);
+            logger.info("writeFeaturesToDatabase now " + rawType + " = " + type);
+          }
+          featValueText += Double.toString(d) + ", ";
+          featValueText += type +  ")";
         }
       }
+
 
       String sqlInsertVector = "insert into " +
           USERS +
@@ -336,14 +351,6 @@ public class BitcoinFeaturesBase {
       statement.executeUpdate();
       statement.close();
     }
-
-    //   logger.info("writeFeaturesToDatabase - alter users table");
-
-    // Insert default type into table (to possibly be overwritten by clustering output)
-/*    String sqlInsertType = "alter table USERS add TYPE int not null default(1);";
-    statement = connection.prepareStatement(sqlInsertType);
-    statement.executeUpdate();
-    statement.close();*/
 
     connection.close();
   }
@@ -443,7 +450,7 @@ public class BitcoinFeaturesBase {
    *
    * @param transForUsers
    * @param user
-   * @see #populateUserToFeatures(Collection, Map, List, Map, Map)
+   * @see #populateUserToFeatures(Collection, Map, List, Map, Map, Map)
    */
   private Features getFeaturesForUser(Map<Long, UserFeatures> transForUsers, Long user) {
     UserFeatures stats = transForUsers.get(user);
@@ -810,7 +817,7 @@ public class BitcoinFeaturesBase {
 	   */
 
 	  /*
-	   * Execute updates to figure out
+     * Execute updates to figure out
 	   */
     String dropTables = "drop table temp if exists;" +
 
@@ -838,7 +845,7 @@ public class BitcoinFeaturesBase {
     statement.executeUpdate();
 
 	  /*
-	   * Execute query to load in active-enough users...
+     * Execute query to load in active-enough users...
 	   */
     String sqlQuery = "select * from temp2;";
     statement = connection.getConnection().prepareStatement(sqlQuery);
@@ -881,7 +888,7 @@ public class BitcoinFeaturesBase {
   public static void rlogMemory() {
     String message = getMemoryStatus();
     Runtime rt = Runtime.getRuntime();
-    if (rt.freeMemory() > rt.maxMemory()/2) {
+    if (rt.freeMemory() > rt.maxMemory() / 2) {
       logger.debug(message);
     }
   }

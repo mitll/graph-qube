@@ -245,7 +245,7 @@ public class GraphQuBEServer {
         List<Long> lids = new ArrayList<>();
         List<String> idsFound = new ArrayList<>();
 
-        logger.info("got " + exampleParameter);
+    //    logger.info("got " + exampleParameter);
         List<String> uids = new ArrayList<>();
         if (exampleParameter != null && exampleParameter.trim().length() > 0) {
           JSONObject parsed = JSONObject.fromObject(exampleParameter);

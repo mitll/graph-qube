@@ -1208,9 +1208,8 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
                                                  List<String> ids,
                                                  List<String> uids) {
     long then = System.currentTimeMillis();
-    logger.debug("ENTER searchByExample() rescore " + rescoreWithHMM);
     logger.debug("ENTER searchByExample() got " + example + " rescore " + rescoreWithHMM);
-    logger.debug("ENTER searchByExample " + new Date(startTime) + " to " + new Date(endTime));
+//    logger.debug("ENTER searchByExample " + new Date(startTime) + " to " + new Date(endTime));
 
 //    logger.info("Got ",new Exception("where"));
     long future = THIRTY_YEARS + System.currentTimeMillis();
@@ -1222,11 +1221,9 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
 
     //if (startTime > System.currentTimeMillis()) {
     startTime = 0;
-    logger.debug("searchByExample startTime is  " + startTime + " or " + new Date(startTime));
-
+    //logger.debug("searchByExample startTime is  " + startTime + " or " + new Date(startTime));
     //}
-    logger.debug("end is  " + endTime + " or " + new Date(endTime));
-
+    //logger.debug("end is  " + endTime + " or " + new Date(endTime));
 
     if (max == 0) {
       logger.warn("max given as 0, using 10 instead...");
@@ -1245,15 +1242,15 @@ public abstract class Binding extends SqlUtilities implements AVDLQuery {
     // (2) shortlist (find promising connected subgraphs)
     // (3) score based on transactions
 
-    logger.debug("found exampple " + example);
+    logger.debug("searchByExample found exampple " + example);
     //    logger.debug("found "+example.getEntities().size());
-    logger.info("running from Binding.java");
+    //logger.info("searchByExample running from Binding.java");
     List<FL_PatternSearchResult> results = getShortlist(example, DEFAULT_SHORT_LIST_SIZE, ids);
     if (results == null) {
       logger.error("huh? couldn't get results for " + example);
       return null;
     }
-    logger.debug("shortlist size = " + results.size());
+    logger.debug("searchByExample shortlist size = " + results.size());
 
     // get edges (to use in a couple places)
     List<String> exemplarIDs = null;

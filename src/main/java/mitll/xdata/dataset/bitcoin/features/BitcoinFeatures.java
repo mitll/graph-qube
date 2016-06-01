@@ -137,7 +137,7 @@ public class BitcoinFeatures extends BitcoinFeaturesBase {
 
     Map<Long, UserFeatures> transForUsers = getTransForUsers(datafile, users);
 
-    writeFeatures(connection, writeDirectory, then, users, transForUsers);
+    writeFeatures(connection, writeDirectory, then, users, transForUsers, null);
   }
 
   /**

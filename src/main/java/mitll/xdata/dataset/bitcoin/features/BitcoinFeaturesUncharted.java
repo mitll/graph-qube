@@ -50,19 +50,13 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @paramx limit
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#doIngest
    */
-  public Set<Long> writeFeatures(String h2DatabaseFile, String writeDirectory, //MysqlInfo info, long limit,
-                                 Collection<Long> users,
-                                 Map<Long, UserFeatures> idToFeatures
+  public Set<Long> writeFeatures(String h2DatabaseFile, String writeDirectory, Collection<Long> users,
+                                 Map<Long, UserFeatures> idToFeatures, Map<Long, String> userToType
   ) throws Exception {
-    H2Connection connection = getConnection(h2DatabaseFile);
-    Set<Long> longs = writeFeatures(connection, writeDirectory, //info, limit,
-        users, idToFeatures);
-//    connection.contextDestroyed();
-    return longs;
+    return writeFeatures(getConnection(h2DatabaseFile), writeDirectory, System.currentTimeMillis(), users, idToFeatures, userToType);
   }
 
   /**
-   *
    * @param h2DatabaseFile
    * @return
    */
@@ -92,20 +86,17 @@ public class BitcoinFeaturesUncharted extends BitcoinFeaturesBase {
    * @seex #main(String[])
    * @see #writeFeatures(String, String, MysqlInfo, long, Collection)
    */
-  private Set<Long> writeFeatures(DBConnection connection, String writeDirectory,
-                                  //MysqlInfo info,
-                                  //long limit,
+/*  private Set<Long> writeFeatures(DBConnection connection, String writeDirectory,
                                   Collection<Long> users,
-                                  Map<Long, UserFeatures> transForUsers) throws Exception {
+                                  Map<Long, UserFeatures> transForUsers
+      ,
+                                  Map<Long, String> userToType) throws Exception {
     long then = System.currentTimeMillis();
     // long now = System.currentTimeMillis();
     // logger.debug("took " +(now-then) + " to read " + transactions);
     logger.debug("writeFeatures reading users from db " + connection + " users " + users.size());
-
-    //  Map<Integer, UserFeatures> transForUsers = getTransForUsers(info, users, limit);
-
-    return writeFeatures(connection, writeDirectory, then, users, transForUsers);
-  }
+    return writeFeatures(connection, writeDirectory, then, users, transForUsers, userToType);
+  }*/
 
   /**
    * Read from uncharted bitcoin database table : {@link #FINENTITY}

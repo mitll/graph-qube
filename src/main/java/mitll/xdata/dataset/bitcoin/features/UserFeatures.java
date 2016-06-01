@@ -15,7 +15,6 @@
 
 package mitll.xdata.dataset.bitcoin.features;
 
-import mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
@@ -52,6 +51,7 @@ public class UserFeatures {
   private final List<Transaction> credits = new ArrayList<>();
   private final Map<Long, Integer> targetToCount = new HashMap<>();
   private final Map<Long, Integer> sourceToCount = new HashMap<>();
+  private String type;
 
   private final boolean useSpectral = false;
   private float[] expandedDebits;
@@ -61,6 +61,10 @@ public class UserFeatures {
   private float[] cspectrum;
   private float[] mspectrum;
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions#addTransaction(Map, long, long, long, double)
+   * @param id
+   */
   public UserFeatures(long id) {
     this.id = id;
   }

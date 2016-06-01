@@ -37,7 +37,7 @@ class CandidateGraph implements Comparable<CandidateGraph> {
    * @param binding
    * @param toCopy
    */
-  CandidateGraph(Binding binding, CandidateGraph toCopy) {
+  private CandidateGraph(Binding binding, CandidateGraph toCopy) {
     this.binding = binding;
     exemplars = toCopy.exemplars;
     nodes = new ArrayList<String>(toCopy.getNodes());
@@ -59,7 +59,8 @@ class CandidateGraph implements Comparable<CandidateGraph> {
     addNode(initial);
     this.k = k;
   }
-  public CandidateGraph makeDefault() {
+
+  CandidateGraph makeDefault() {
     for (String exemplar : exemplars){
       if (!nodes.contains(exemplar)) nodes.add(exemplar);
     }
@@ -96,7 +97,7 @@ class CandidateGraph implements Comparable<CandidateGraph> {
    * @param candidates
    * @param maxSize
    */
-  public void makeNextGraphs2(SortedSet<CandidateGraph> candidates, int maxSize) {
+  void makeNextGraphs2(SortedSet<CandidateGraph> candidates, int maxSize) {
     final String lastNodeInGraph = nodes.get(nodes.size() - 1);
     Set<String> oneHopNeighbors = binding.stot.get(lastNodeInGraph);
     if (oneHopNeighbors == null) {

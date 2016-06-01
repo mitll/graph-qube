@@ -15,6 +15,7 @@
 
 package mitll.xdata;
 
+import mitll.xdata.dataset.bitcoin.features.MysqlInfo;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -27,9 +28,6 @@ import java.util.Properties;
  */
 public class ServerProperties {
   private static final Logger logger = Logger.getLogger(ServerProperties.class);
-
-//  private static final String ENTITYID = "entityid";
-  //private static final String FINENTITY = "FinEntity";
 
   private Properties props = new Properties();
 
@@ -80,16 +78,6 @@ public class ServerProperties {
     return props.getProperty("featuresDatabase");
   }
 
-  /**
-   * @paramx configDir
-   * @paramx configFile
-   * @paramx dateFromManifest
-   */
-  private void readProps() {
-    String configFileFullPath = "server.properties";
-    readProps(configFileFullPath);
-  }
-
   private void readProps(String configFileFullPath) {
     if (!new File(configFileFullPath).exists()) {
       logger.error("couldn't find config file " + new File(configFileFullPath).getAbsolutePath());
@@ -118,6 +106,7 @@ public class ServerProperties {
     return props.getProperty(param, "true").equals("true");
   }
 
+/*
   public String mysqlKivaJDBC() {
     return props.getProperty("mysqlKivaJDBC", "");
   }
@@ -133,9 +122,18 @@ public class ServerProperties {
   public String h2BitcoinJDBC() {
     return props.getProperty("h2BitcoinJDBC", "");
   }
+*/
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions#getUsers(MysqlInfo)
+   * @return
+   */
   public String getEntityID() {
     return props.getProperty("entityID");
+  }
+
+  public String getEntityType() {
+    return props.getProperty("entityType",null);
   }
 
   public String getNumTransactions() {
@@ -146,6 +144,10 @@ public class ServerProperties {
     return props.getProperty("transactionsTable", "usertransactions2013largerthandollar");
   }
 
+  /**
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions#BitcoinIngestUnchartedTransactions(ServerProperties)
+   * @return
+   */
   public String getFinEntity() {
     return props.getProperty("finEntity");
   }
@@ -182,7 +184,7 @@ public class ServerProperties {
     return props.getProperty("datasetResourceDir");
   }
 
-  public int getPort() {
+  int getPort() {
     try {
       return Integer.parseInt(props.getProperty("port","8085"));
     } catch (NumberFormatException e) {

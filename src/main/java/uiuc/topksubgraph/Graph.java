@@ -14,8 +14,8 @@ public class Graph {
   private static final Logger logger = Logger.getLogger(Graph.class);
 
   protected Set<Edge> edges = new HashSet<>();
-  protected Map<Long, List<Edge>> inLinks = new HashMap<>();
-  protected final Map<Long, Map<Long, Edge>> inLinks2 = new HashMap<>();
+  Map<Long, List<Edge>> inLinks = new HashMap<>();
+  final Map<Long, Map<Long, Edge>> inLinks2 = new HashMap<>();
   boolean populateInLinks2 = false;
 
   private final Map<Long, Integer> node2Type = new HashMap<>();

@@ -906,9 +906,11 @@ public class MultipleIndexConstructor {
           from = to;
           to = tmp2;
         }
-        List<Edge> arr = sortedEdgeLists.get(fromType + "#" + toType);
+        String key = fromType + "#" + toType;
+        List<Edge> arr = sortedEdgeLists.get(key);
+        if (arr == null) logger.error("no edge with key " + key);
         arr.add(new Edge(from, to, weight));
-        sortedEdgeLists.put(fromType + "#" + toType, arr);
+        sortedEdgeLists.put(key, arr);
       } else {
         skipped++;
         if (skipped < 20) {
@@ -1003,14 +1005,13 @@ public class MultipleIndexConstructor {
   public static void loadTypesFromDatabase(DBConnection dbConnection, String tableName, String uidColumn, String typeColumn)
       throws Exception {
 
-//    logger.info("loadTypesFromDatabase " + tableName + " " + uidColumn + " " + typeColumn);
+    logger.info("loadTypesFromDatabase " + tableName + " " + uidColumn + " " + typeColumn);
 
 		/*
      * Do query
 		 */
     Connection connection = dbConnection.getConnection();
-
-    String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName + ";";
+    String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName;
 
     //  logger.info("loadTypesFromDatabase sql " + sqlQuery + " on " + connection);
 

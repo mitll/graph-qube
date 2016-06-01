@@ -23,7 +23,6 @@ import mitll.xdata.dataset.bitcoin.features.MyEdge;
 import mitll.xdata.db.DBConnection;
 import mitll.xdata.db.H2Connection;
 import org.apache.log4j.Logger;
-
 import uiuc.topksubgraph.Graph;
 import uiuc.topksubgraph.MultipleIndexConstructor;
 import uiuc.topksubgraph.MutableGraph;
@@ -31,7 +30,10 @@ import uiuc.topksubgraph.QueryExecutor;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -239,7 +241,6 @@ public class BitcoinIngestSubGraph {
    * @param dbType
    * @param h2DatabaseName
    * @param edgeToWeight
-   * @param featuresDir
    * @param props
    * @throws Throwable
    * @see BitcoinIngestBase#doSubgraphs
@@ -250,8 +251,8 @@ public class BitcoinIngestSubGraph {
 
     long then = System.currentTimeMillis();
     //logger.info("computeIndices start " + bitcoinDirectory);
-    String featuresDir = props.getDatasetResourceDir();
-    computeIndicesFromMemory(featuresDir, connection, edgeToWeight, props);
+    //String featuresDir = props.getDatasetResourceDir();
+    computeIndicesFromMemory(connection, edgeToWeight, props);
     long now = System.currentTimeMillis();
 
     logger.info("computeIndices end took " + (now - then) + " millis");
@@ -331,50 +332,49 @@ public class BitcoinIngestSubGraph {
   }
 
   /**
-   * @param bitcoinDirectory
    * @param dbConnection
    * @param edgeToWeight
    * @param props
    * @throws Throwable
+   * @paramx bitcoinDirectory
    * @see #computeIndicesFromMemory
    */
-  private static void computeIndicesFromMemory(String bitcoinDirectory,
-                                               DBConnection dbConnection,
+  private static void computeIndicesFromMemory(DBConnection dbConnection,
                                                Map<MyEdge, Integer> edgeToWeight, ServerProperties props) throws Throwable {
     // Load graph into topk-subgraph Graph object
-    Graph g = new MutableGraph(edgeToWeight);
-    computeIndices(bitcoinDirectory, dbConnection, g, props);
+    computeIndices(dbConnection, new MutableGraph(edgeToWeight), props);
   }
 
   /**
    * Compute all indices needed for UIUC Top-K subgraph search algorithm
    *
-   * @param bitcoinDirectory
    * @param dbConnection
    * @param props
    * @throws Throwable
    * @throws Exception
    * @throws IOException
+   * @paramx bitcoinDirectory
    * @see #main(String[])
    * @see #computeIndices
    */
-  private static void computeIndices(String bitcoinDirectory,
+  private static void computeIndices(//String bitcoinDirectory,
                                      DBConnection dbConnection, ServerProperties props) throws Throwable {
     // Load graph into topk-subgraph Graph object
     Graph g = new MutableGraph(dbConnection, MARGINAL_GRAPH, NUM_TRANS);
-    computeIndices(bitcoinDirectory, dbConnection, g, props);
+    computeIndices(dbConnection, g, props);
   }
 
   /**
-   * @param bitcoinDirectory
    * @param dbConnection
    * @param graph
    * @param props
    * @throws Exception
+   * @paramx bitcoinDirectory
    * @see #computeIndicesFromMemory(String, DBConnection, Map, ServerProperties)
    */
-  private static void computeIndices(String bitcoinDirectory, DBConnection dbConnection, Graph graph,
+  private static void computeIndices(DBConnection dbConnection, Graph graph,
                                      ServerProperties props) throws Exception {
+    String bitcoinDirectory = props.getDatasetResourceDir();
   /*
    * This is stuff is doing the actual topk-subgraph indexing
    */
@@ -705,7 +705,7 @@ public class BitcoinIngestSubGraph {
     //  String sqlRemoveSelfTrans = "delete from " + TABLE_NAME + " where (source = target);";
 
 		/*
-		 * Do some initial clean-up
+     * Do some initial clean-up
 		 */
 //    logger.info("do remove account start from " + TABLE_NAME);
     doSQLUpdate(connection, sqlRemoveAccount);
@@ -844,7 +844,6 @@ public class BitcoinIngestSubGraph {
     }
   }
 
-
   /**
    * @param args
    */
@@ -853,12 +852,7 @@ public class BitcoinIngestSubGraph {
 		/*
 		 * Pre-processing the graph to prepare it for topk-subgraph ingest/indexing 
 		 */
-    String bitcoinDirectory = props.getDatasetResourceDir();
-
-
-    //  "src/main/resources" + BitcoinBinding.BITCOIN_FEATS_TSV;
-
-    DBConnection dbConnection = new H2Connection(bitcoinDirectory, "bitcoin");
+    DBConnection dbConnection = new H2Connection(props.getDatasetResourceDir(), "bitcoin");
 
     // Filter-out non-active nodes, self-transitions, heavy-hitters
     filterForActivity(dbConnection);
@@ -867,10 +861,9 @@ public class BitcoinIngestSubGraph {
     extractUndirectedGraph(dbConnection);
 
     //Do the indexing for the topk-subgraph algorithm
-    computeIndices(bitcoinDirectory, dbConnection, props);
+    computeIndices(dbConnection, props);
 
     // Do some querying (from example query files) based on some input graph
     //executeQuery(bitcoinDirectory,dbConnection);
   }
-
 }

@@ -44,7 +44,7 @@ public class QueryExecutor {
   public static String datasetId;
   public static String baseDir;
   public static String graphFile;
-  public static String graphFileBasename;
+  private static String graphFileBasename;
   public static String typesFile;
   public static String queryFile;
   public static String queryTypesFile;
@@ -449,7 +449,7 @@ public class QueryExecutor {
    * @see #executeQuery(boolean)
    * @see mitll.xdata.binding.TopKSubgraphShortlist#getShortlist(List, List, long)
    */
-  public void executeQuery(Map<String, List<String>> queryEdgeType2Edges, boolean isClique, int prunedCandidateFiltering) {
+  private void executeQuery(Map<String, List<String>> queryEdgeType2Edges, boolean isClique, int prunedCandidateFiltering) {
     int prunedEdgeListsPartialCandidate = 0;
     int prunedMPWPartialCandidate = 0;
     int prunedEdgeListsSize1 = 0;
@@ -491,6 +491,7 @@ public class QueryExecutor {
           max = s;
         }
       }
+
 //			logger.info("Edge-type with the largest score: "+max);
 //			logger.info("Edge at the current index max is pointing to: "+sortedEdgeLists.get(max).get(pointers.get(max)));
 //			logger.info("queryEdgetoIndex: "+ queryEdgetoIndex);
@@ -511,7 +512,6 @@ public class QueryExecutor {
       }
 //			logger.info("edgesOfMaxType:"+edgesOfMaxType);
 
-			
 			/*
        * Loop-through query edges of edge-type "max"
 			 */
@@ -562,16 +562,7 @@ public class QueryExecutor {
         }
 
         //compute possible upper bound score of all non-considered query edges.
-        double ubScoreOfNonConsideredEdges1 = 0.;
-        for (String edge : queryEdgetoIndex.keySet()) {
-          if (!consideredEdgeIndices.contains(queryEdgetoIndex.get(edge))) {
-            String tmp = queryEdge2EdgeType.get(edge); //get edge-type
-            if (!pointers.containsKey(tmp)) //order edge-type if necessary
-              tmp = tmp.split("#")[1] + "#" + tmp.split("#")[0];
-            // use highest score of that edge-type as upper-bound ("dumb" or "naive" upper bound)
-            ubScoreOfNonConsideredEdges1 += Double.parseDouble(sortedEdgeLists.get(tmp).get(pointers.get(tmp)).split("#")[2]);
-          }
-        }
+        double ubScoreOfNonConsideredEdges1 = getUbScoreOfNonConsideredEdges(consideredEdgeIndices);
 //				logger.info("pcCurr: "+pcCurr);
 
 				/*
@@ -775,15 +766,17 @@ public class QueryExecutor {
               }
             }
             //compute possible upper bound score of all non-considered edges.
-            ubScoreOfNonConsideredEdges1 = 0.;
-            for (String edge : queryEdgetoIndex.keySet()) {
-              if (!consideredEdgeIndices.contains(queryEdgetoIndex.get(edge))) {
-                String tmp = queryEdge2EdgeType.get(edge);
-                if (!pointers.containsKey(tmp))
-                  tmp = tmp.split("#")[1] + "#" + tmp.split("#")[0];
-                ubScoreOfNonConsideredEdges1 += Double.parseDouble(sortedEdgeLists.get(tmp).get(pointers.get(tmp)).split("#")[2]);
-              }
-            }
+//            ubScoreOfNonConsideredEdges1 = 0.;
+//            for (String edge : queryEdgetoIndex.keySet()) {
+//              if (!consideredEdgeIndices.contains(queryEdgetoIndex.get(edge))) {
+//                String tmp = queryEdge2EdgeType.get(edge);
+//                if (!pointers.containsKey(tmp))
+//                  tmp = tmp.split("#")[1] + "#" + tmp.split("#")[0];
+//                ubScoreOfNonConsideredEdges1 += Double.parseDouble(sortedEdgeLists.get(tmp).get(pointers.get(tmp)).split("#")[2]);
+//              }
+//            }
+            ubScoreOfNonConsideredEdges1 = getUbScoreOfNonConsideredEdges(consideredEdgeIndices);
+
             for (ArrayList<String> pc : potentialCandidates) {
               //compute actualScore of candidate
               double actualScore = 0.;
@@ -915,14 +908,28 @@ public class QueryExecutor {
 
   }
 
+  private double getUbScoreOfNonConsideredEdges(Set<Integer> consideredEdgeIndices) {
+    double ubScoreOfNonConsideredEdges1 = 0.;
+    for (String edge : queryEdgetoIndex.keySet()) {
+      if (!consideredEdgeIndices.contains(queryEdgetoIndex.get(edge))) {
+        String tmp = queryEdge2EdgeType.get(edge); //get edge-type
+        if (!pointers.containsKey(tmp)) //order edge-type if necessary
+          tmp = tmp.split("#")[1] + "#" + tmp.split("#")[0];
+        // use highest score of that edge-type as upper-bound ("dumb" or "naive" upper bound)
+        ubScoreOfNonConsideredEdges1 += Double.parseDouble(sortedEdgeLists.get(tmp).get(pointers.get(tmp)).split("#")[2]);
+      }
+    }
+    return ubScoreOfNonConsideredEdges1;
+  }
+
   /**
    * @param queryEdgeTypes
    * @param queryEdgeType2Edges
    * @throws NumberFormatException
    * @see #executeQuery(boolean)
    */
-  public void computePointers(Collection<String> queryEdgeTypes,
-                              Map<String, List<String>> queryEdgeType2Edges)
+  private void computePointers(Collection<String> queryEdgeTypes,
+                               Map<String, List<String>> queryEdgeType2Edges)
       throws NumberFormatException {
     pointers = new HashMap<>();
     for (String edgeType : queryEdgeTypes) {
@@ -964,7 +971,7 @@ public class QueryExecutor {
    * @throws NumberFormatException
    * @seex mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery
    */
-  Map<String, List<String>> computeQueryEdgeType2Edges()
+  private Map<String, List<String>> computeQueryEdgeType2Edges()
       throws NumberFormatException {
     Map<String, List<String>> queryEdgeType2Edges = new HashMap<>();
     //queryEdge2EdgeType = new HashMap<String, String>(); //this has already been initialized twice...
@@ -992,7 +999,7 @@ public class QueryExecutor {
   /**
    *
    */
-  void computeQueryEdge2Index() {
+  private void computeQueryEdge2Index() {
     queryEdgetoIndex = new HashMap<>();
     for (int i = 0; i < actualQueryEdges.size(); i++)
       queryEdgetoIndex.put(actualQueryEdges.get(i), i);
@@ -1006,7 +1013,7 @@ public class QueryExecutor {
    * @see QueryExecutor#executeQuery(boolean)
    * @see
    */
-  Set<String> computeQueryEdgeTypes() {
+  private Set<String> computeQueryEdgeTypes() {
     Set<Edge> queryEdgeSet = query.getEdges();
     //actualQueryEdges= new ArrayList<String>();
     Set<String> queryEdgeTypes = new HashSet<>();
@@ -1039,7 +1046,7 @@ public class QueryExecutor {
    * @return prunedCandidateFiltering:
    * @seex mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestSubGraph#executeQuery(String, DBConnection)
    */
-  int generateCandidates() {
+  private int generateCandidates() {
     int prunedCandidateFiltering = 0;
 
     logger.info("generateCandidates " + query.getRawIDs().size());
@@ -1299,7 +1306,7 @@ public class QueryExecutor {
    * @throws Throwable
    * @see #prepareInternals()
    */
-  void loadSPDIndex() throws Throwable {
+  private void loadSPDIndex() throws Throwable {
     //  spd = new double[totalNodes][totalOrderingSize];
     spd = new HashMap<>();
     BufferedReader in = new BufferedReader(new FileReader(new File(baseDir, spdFile)));
@@ -1327,7 +1334,7 @@ public class QueryExecutor {
    * @throws Throwable
    * @see #prepareInternals()
    */
-  void loadEdgeLists() throws Throwable {
+  private void loadEdgeLists() throws Throwable {
     for (int i = 1; i <= totalTypes; i++) {
       for (int j = i; j <= totalTypes; j++) {
         //BufferedReader in = new BufferedReader(new FileReader(new File(baseDir+"indices/"+graphFileBasename.split("\\.txt")[0]+"_"+i+"#"+j+".list")));
@@ -1409,7 +1416,7 @@ public class QueryExecutor {
     return kstar;
   }
 
-  void loadGraphSignatures() throws Throwable {
+  private void loadGraphSignatures() throws Throwable {
     //  graphSign = new int[totalNodes][totalOrderingSize];
     graphSign = new HashMap<>();
     File file = new File(baseDir, topologyFile);
@@ -1456,7 +1463,7 @@ public class QueryExecutor {
    * @see #prepareInternals()
    * @see TopKSubgraphShortlist#loadTypesAndIndices()
    */
-  void loadGraphNodesType() {
+  private void loadGraphNodesType() {
     for (int t = 1; t <= totalTypes; t++) {
       types.add(t);
       graphType2IDSet.put(t, new HashSet<>());
@@ -1502,7 +1509,7 @@ public class QueryExecutor {
   /**
    * @see #executeQuery(boolean)
    */
-  public void getQuerySignatures() {
+  private void getQuerySignatures() {
     //  querySign = new int[query.getNumNodes()][totalOrderingSize];
     querySign = new HashMap<>();
     //  for (int i = 0; i < query.getNumNodes(); i++) {
@@ -1742,14 +1749,17 @@ public class QueryExecutor {
    * @param uidColumn
    * @param typeColumn
    * @throws Exception
+   * @see #loadTypesFromDatabase(DBConnection, String, String, String)
+   * @see TopKSubgraphShortlist#loadTypesAndIndices()
    */
   public void loadTypesFromDatabase(Connection connection, String tableName, String uidColumn, String typeColumn)
       throws Exception {
 		/*
 		 * Do query
 		 */
-    String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName + ";";
+    String sqlQuery = "select " + uidColumn + ", " + typeColumn + " from " + tableName;
 
+    logger.info("Sql " + sqlQuery);
     long then = System.currentTimeMillis();
     PreparedStatement queryStatement = connection.prepareStatement(sqlQuery);
     ResultSet rs = queryStatement.executeQuery();
@@ -1785,7 +1795,7 @@ public class QueryExecutor {
   /**
    * Figure out how many types there are (in the case where we're not loading everything from file)
    */
-  void computeTotalTypes() {
+  private void computeTotalTypes() {
     for (long key : node2Type.keySet()) {
       int type = node2Type.get(key);
       if (type > totalTypes)
@@ -1798,7 +1808,7 @@ public class QueryExecutor {
    *
    * @see IngestAndQuery#executeQuery()
    */
-  void setNode2Type(Map<Long, Integer> in) {
+  private void setNode2Type(Map<Long, Integer> in) {
     node2Type = in;
   }
 

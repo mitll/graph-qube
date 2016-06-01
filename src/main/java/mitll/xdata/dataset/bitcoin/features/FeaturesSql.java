@@ -28,16 +28,15 @@ import java.util.Map;
  */
 public class FeaturesSql {
   private static final Logger logger = Logger.getLogger(FeaturesSql.class);
-  public static final String USERS = "USERS";
+  static final String USERS = "USERS";
 
   /**
    * @see BitcoinFeaturesBase#writeFeaturesToDatabase(DBConnection, Map, Map, double[][])
    * @param connection
    * @throws SQLException
    */
-  public void createUsersTable(Connection connection) throws SQLException {
+  void createUsersTable(Connection connection) throws SQLException {
  //   logger.info("FeaturesSql create users table");
-
   /*
    * Make USERS table
    */

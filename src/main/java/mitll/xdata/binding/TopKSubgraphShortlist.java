@@ -153,8 +153,8 @@ public class TopKSubgraphShortlist extends Shortlist {
   public List<FL_PatternSearchResult> getShortlist(List<FL_EntityMatchDescriptor> entityMatchDescriptorsIgnored,
                                                    List<String> exemplarIDs, long max) {
     // which binding are we bound to?
-    logger.info(this.binding.toString());
-    logger.info(this.binding.connection);
+//    logger.info(this.binding.toString());
+//    logger.info(this.binding.connection);
 
     //check to see if we can connect to anything....
     if (existsTable(graphTable)) {
@@ -176,7 +176,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     boolean isClique = executor.loadQuery(queryEdges, binding.connection, usersTable, userIdColumn, typeColumn);
     if (isClique) logger.info("getShortlist isClique!");
     long now = System.currentTimeMillis();
-    logger.info("took " + (now - then) + " millis to load query");
+//    logger.info("took " + (now - then) + " millis to load query");
 
     //set system out to out-file...
     QueryExecutor.queryFile = "queries/queryGraph.FanOutService.txt";
@@ -198,7 +198,7 @@ public class TopKSubgraphShortlist extends Shortlist {
     }
 
     logger.info("getShortlist : original entity ordering from Influent query: " + exemplarIDs);
-    return getPatternSearchResults(queryEdges, exemplarIDs, (int)max);
+    return getPatternSearchResults(queryEdges, exemplarIDs, (int) max);
   }
 
   /**
@@ -390,6 +390,8 @@ public class TopKSubgraphShortlist extends Shortlist {
       // HashSet for entities involved in this sub-graph
       Set<String> nodes = getSubgraphNodes(list);
 
+      logger.debug("score\t" + subgraphScore + "\tnodes\t" + nodes);
+    //  areConnected(nodes);
       // make subgraph guid
       String subgraphGuid = getSubgraphGuid(nodes);
 
@@ -407,21 +409,17 @@ public class TopKSubgraphShortlist extends Shortlist {
 				 */
         // List of type FL_LinkMatchResult to store all edge information from subgraph
         List<FL_LinkMatchResult> links = new ArrayList<>();
-//        for (i = 0; i < list.size(); i++)
-//          links.add(new FL_LinkMatchResult());
-
         for (String edgeInfo : list) {
           addLinkMatchResultForEdge(nodes, links, edgeInfo);
         }
-  //      logger.info("links: "+links);
+        //      logger.info("links: "+links);
         //logger.info(queryEdges);
         //logger.info(executor.getActualQueryEdges());
-    //    logger.info("list: "+list);
-        logger.info("final nodes: "+nodes);
-				
-				
+        //    logger.info("list: "+list);
+        //logger.info("final nodes: "+nodes);
+
 				/*
-				 * Get mapping between nodes and all edges they are involved in (for node correspondence mapping b/w query and result)
+         * Get mapping between nodes and all edges they are involved in (for node correspondence mapping b/w query and result)
 				 */
         Map<String, SortedSet<String>> resultNode2EdgeList = computeResultNode2EdgeListMap(list/*, nodes.size()*/);
 
@@ -445,16 +443,34 @@ public class TopKSubgraphShortlist extends Shortlist {
 
         results.add(result);
 
-        if (results.size() == 10) break;
+        if (results.size() == max) break;
       }
     }
 
     logger.info("getPatternSearchResults Ending with: " + uniqueSubgraphGuids.size() + " unique matching sub-graphs...");
 
-    logger.info("# results :    " +results.size());
+    logger.info("# results :    " + results.size());
 //    logger.info("second  " +results.get(1));
 
     return results;
+  }
+
+  private void areConnected(Set<String> nodes) {
+    boolean all = true;
+    for (String node : nodes) {
+      boolean any =false;
+      for (String neighbor : nodes) {
+        if (!node.equals(neighbor)) {
+          boolean c = executor.g.areConnected(Integer.parseInt(node), Integer.parseInt(neighbor));
+          if (c) logger.info("node " + node + " - " + neighbor);
+          any = true;
+        }
+      }
+      all = any && all;
+    }
+    if (!all) {
+      logger.warn("nodes " + nodes + " are not connected");
+    }
   }
 
   /*
@@ -583,9 +599,9 @@ public class TopKSubgraphShortlist extends Shortlist {
   /**
    * Convert query graphs into pattern search "result".
    *
-   * @see #getPatternSearchResults(Collection, List)
    * @param exemplarIDs
    * @return
+   * @see #getPatternSearchResults(Collection, List)
    */
   private FL_PatternSearchResult makeQueryIntoResult(List<String> exemplarIDs, Map<String, Integer> uiucQueryEdgetoIndex) {
 		/*

@@ -122,7 +122,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     BitcoinFeaturesBase.logMemory();
 
     mysqlConnection.unregister();
-    logger.info("ingest complete in " +(System.currentTimeMillis()-then)/1000 + " seconds");
+    logger.info("ingest complete in " + (System.currentTimeMillis() - then) / 1000 + " seconds");
   }
 
   private static String getValue(String arg, String prefix) {
@@ -141,6 +141,16 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     return limit;
   }
 
+  /**
+   * @param dataSourceJDBC
+   * @param transactionsTable
+   * @param destinationDbName
+   * @param writeDir
+   * @param limit
+   * @param props
+   * @throws Throwable
+   * @see #main(String[])
+   */
   private void doIngest(String dataSourceJDBC, String transactionsTable,
                         String destinationDbName, String writeDir,
                         long limit,
@@ -191,8 +201,9 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     info.setJdbc(dataSourceJDBC);
     info.setTable(transactionsTable);
 
+    Map<Long, String> idToType = new HashMap<>();
     BitcoinIngestUnchartedTransactions bitcoinIngestUnchartedTransactions = new BitcoinIngestUnchartedTransactions(props);
-    Collection<Long> users = bitcoinIngestUnchartedTransactions.getUsers(info);
+    Collection<Long> users = bitcoinIngestUnchartedTransactions.getUsers(info, idToType);
     Map<Long, UserFeatures> idToStats = new HashMap<>();
 
 //    if (!skipLoadTransactions) {
@@ -209,7 +220,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
     // Extract features for each account
     new File(writeDir).mkdirs();
 
-    Set<Long> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir, users, idToStats);
+    Set<Long> userIds = bitcoinFeaturesUncharted.writeFeatures(destinationDbName, writeDir, users, idToStats, idToType);
 
     logger.info("doIngest userIds size " + userIds.size());
 

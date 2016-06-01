@@ -271,13 +271,14 @@ public class TopKTest {
       BitcoinBinding bitcoinBinding = new BitcoinBinding(dbConnection, props);
       patternSearch.setBitcoinBinding(bitcoinBinding);
       Shortlist shortlist = bitcoinBinding.getShortlist();
-      int max = 20;
+      int max = 5;
 
       long then = System.currentTimeMillis();
       // 397635298	533869146
       // 163694973
      // List<String> exemplarIDs = Arrays.asList("248750138","397635298", "533869146");
-      List<String> exemplarIDs = Arrays.asList("163694973","248750138","397635298", "533869146");
+     // List<String> exemplarIDs = Arrays.asList("163694973","248750138","397635298", "533869146");
+      List<String> exemplarIDs = Arrays.asList("397635298", "778284061", "531218330");
       List<FL_PatternSearchResult> shortlist1 = shortlist.getShortlist(null, exemplarIDs, max);
       long now = System.currentTimeMillis();
       logger.info("to get " + shortlist1.size() +
@@ -297,7 +298,7 @@ public class TopKTest {
           hashtotal += entity1.getUid().hashCode();
           //logger.info("got " + entity1.getUid()+ " " + entity.getScore());
         }
-        logger.info("got  match " + matches);
+       // logger.info("got  match " + matches);
       }
       logger.info("got hash code total " + hashtotal + " match " + shortlist1.size());
 
