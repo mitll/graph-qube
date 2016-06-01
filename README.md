@@ -24,9 +24,9 @@ The following link outlines how to build, launch and use Graph QuBE (with an exa
 
 This manual references a provided example class that llustrates how the data ingest process can be done from the sample Bitcoin data set distributed with the source: [BitcoinIngest.java] (src/main/java/mitll/xdata/dataset/bitcoin/ingest/BitcoinIngest.java)
 
-## Ingest
+## Vermont Example
 
-### Vermont Example
+### Ingest
 
 ```
 515918-mitll:graph-qube go22670$ ./mvnSetup.sh
