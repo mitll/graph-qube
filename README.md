@@ -26,6 +26,12 @@ This manual references a provided example class that llustrates how the data ing
 
 ## Vermont Example
 
+### Requirements
+
+* Java 1.8
+* Maven
+* MySQL server running
+
 ### Ingest
 
 ```
