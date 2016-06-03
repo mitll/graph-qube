@@ -34,6 +34,17 @@ This manual references a provided example class that llustrates how the data ing
 
 ### Ingest
 
+See the vermont.properties file for config settings - for instance (with defaults):
+
+* database - the source data database in mysql, for the AML example it's AML_CSV
+* databaseUser ("root")
+* databasePassword ("")
+* mysqlServer ("localhost")
+* mysqlPort ("3306")
+* finEntity - table name for financial entity ("entities")
+* transactionsTable - ("transactions")
+* the other properties are column names for the tables above
+
 ```
 515918-mitll:graph-qube go22670$ ./mvnSetup.sh
 515918-mitll:graph-qube go22670$ mvn clean compile
