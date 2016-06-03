@@ -31,8 +31,6 @@ public class MysqlInfo {
   public static final String TX_TIME = "TxTime";
   public static final String BTC = "BTC";
   public static final String USD = "USD";
-  // public static final String BITCOIN = "bitcoin";
-  // public static final String USERTRANSACTIONS_2013_LARGERTHANDOLLAR = "usertransactions2013largerthandollar";
 
   private String jdbc;
   private String table;
@@ -42,7 +40,7 @@ public class MysqlInfo {
    * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#doIngest
    */
   public MysqlInfo(ServerProperties props) {
-    this(new MysqlConnection().getSimpleURL(props.getSourceDatabase()), props.getTransactionsTable());
+    this(new MysqlConnection().getSimpleURL(props.getSourceDatabase(), props.getMysqlHost(), props.getMysqlPort()), props.getTransactionsTable());
     slotToCol = new HashMap<>();
 
     slotToCol.put(TRANSACTION_ID, props.getTransactionsID());

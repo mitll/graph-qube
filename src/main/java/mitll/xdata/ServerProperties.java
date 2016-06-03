@@ -58,13 +58,13 @@ public class ServerProperties {
     return arg.split(prefix)[1];
   }
 
-  public ServerProperties(String [] args) {
+  public ServerProperties(String[] args) {
     readProps(getPropsFile(args));
   }
 
   /**
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#main(String[])
    * @param props
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUncharted#main(String[])
    */
   public ServerProperties(String props) {
     readProps(props);
@@ -125,15 +125,15 @@ public class ServerProperties {
 */
 
   /**
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions#getUsers(MysqlInfo)
    * @return
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions#getUsers(MysqlInfo)
    */
   public String getEntityID() {
     return props.getProperty("entityID");
   }
 
   public String getEntityType() {
-    return props.getProperty("entityType",null);
+    return props.getProperty("entityType", null);
   }
 
   public String getNumTransactions() {
@@ -145,8 +145,8 @@ public class ServerProperties {
   }
 
   /**
-   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions#BitcoinIngestUnchartedTransactions(ServerProperties)
    * @return
+   * @see mitll.xdata.dataset.bitcoin.ingest.BitcoinIngestUnchartedTransactions#BitcoinIngestUnchartedTransactions(ServerProperties)
    */
   public String getFinEntity() {
     return props.getProperty("finEntity");
@@ -186,9 +186,29 @@ public class ServerProperties {
 
   int getPort() {
     try {
-      return Integer.parseInt(props.getProperty("port","8085"));
+      return Integer.parseInt(props.getProperty("port", "8085"));
     } catch (NumberFormatException e) {
       return 8085;
+    }
+  }
+
+  public String getDatabaseUser() {
+    return props.getProperty("databaseUser", "root");
+  }
+
+  public String getDatabasePassword() {
+    return props.getProperty("databasePassword", "");
+  }
+
+  public String getMysqlHost() {
+    return props.getProperty("mysqlServer", "localhost");
+  }
+
+  public int getMysqlPort() {
+    try {
+      return Integer.parseInt(props.getProperty("mysqlPort", "3306"));
+    } catch (NumberFormatException e) {
+      return 3306;
     }
   }
 

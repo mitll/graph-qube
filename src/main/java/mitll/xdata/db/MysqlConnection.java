@@ -53,20 +53,24 @@ public class MysqlConnection implements DBConnection {
   /**
    */
   private Connection connect(String database, String user, String password) throws Exception {
-    String url = getSimpleURL(database);// + "?autoReconnect=true";
+    String url = getSimpleURL(database, "localhost", 3306);// + "?autoReconnect=true";
       logger.info("connect to " + database + " with " + user);
     return connectWithURL(url, user, password);
   }
 
-  public String getSimpleURL(String database) {
-    return "jdbc:mysql://localhost:3306/" + database;
+  public String getSimpleURL(String database, String mysqlHost, int mysqlPort) {
+    return "jdbc:mysql://" +
+        mysqlHost +
+        ":" +
+        mysqlPort +
+        "/" + database;
   }
 
-  public Connection connectWithURL(String url) {
-    return connectWithURL(url, USER, PASSWORD);
-  }
+/*
+  public Connection connectWithURL(String url) { return connectWithURL(url, USER, PASSWORD); }
+*/
 
-  private Connection connectWithURL(String url, String user, String password) {
+  public Connection connectWithURL(String url, String user, String password) {
     try {
       Class.forName("com.mysql.jdbc.Driver");
     } catch (ClassNotFoundException e) {
@@ -76,7 +80,6 @@ public class MysqlConnection implements DBConnection {
     logger.debug("connecting to " + url);
     try {
       conn = DriverManager.getConnection(url, user, password);
-
       conn.setAutoCommit(true);
 
     } catch (SQLException e) {

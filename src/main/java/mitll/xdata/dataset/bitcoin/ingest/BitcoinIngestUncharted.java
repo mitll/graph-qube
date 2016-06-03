@@ -109,7 +109,7 @@ public class BitcoinIngestUncharted extends BitcoinIngestBase {
       return;
     }
     MysqlConnection mysqlConnection = new MysqlConnection();
-    String jdbcURL = mysqlConnection.getSimpleURL(dbName);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
+    String jdbcURL = mysqlConnection.getSimpleURL(dbName, "localhost", 3306);//jdbc:mysql://localhost:3306/" + "test" + "?autoReconnect=true";
     BitcoinIngestUncharted bitcoinIngestUncharted = new BitcoinIngestUncharted();
     bitcoinIngestUncharted.doIngest(jdbcURL, transactionsTable, props.getFeatureDatabase(), writeDir,
         //skipLoadTransactions,

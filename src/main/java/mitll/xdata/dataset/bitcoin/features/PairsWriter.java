@@ -54,7 +54,7 @@ public class PairsWriter {
     Map<Integer, Set<Integer>> stot = new HashMap<Integer, Set<Integer>>();
     int skipped = 0;
 
-    Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
+    Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc(), "root","");
 
     BitcoinFeaturesBase.logMemory();
 

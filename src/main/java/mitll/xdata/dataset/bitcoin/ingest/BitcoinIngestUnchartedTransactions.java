@@ -79,7 +79,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
       long limit,
       Collection<Long> users,
       Map<Long, UserFeatures> idToStats) throws Exception {
-    Connection sourceData = new MysqlConnection().connectWithURL(info.getJdbc());
+    Connection sourceData = getSourceConnection(info);
     sourceData.setAutoCommit(false);
 
     DBConnection h2Connection = ingestSql.getDbConnection(dbType, h2DatabaseName);
@@ -278,7 +278,7 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
    * @see BitcoinIngestUncharted#doIngest
    */
   Collection<Long> getUsers(MysqlInfo info, Map<Long, String> idToType) throws Exception {
-    Connection uncharted = new MysqlConnection().connectWithURL(info.getJdbc());
+    Connection uncharted = getSourceConnection(info);
 
     long then = System.currentTimeMillis();
 
@@ -336,6 +336,10 @@ public class BitcoinIngestUnchartedTransactions extends BitcoinIngestTransaction
     statement.close();
     uncharted.close();
     return ids;
+  }
+
+  private Connection getSourceConnection(MysqlInfo info) {
+    return new MysqlConnection().connectWithURL(info.getJdbc(),props.getDatabaseUser(),props.getDatabasePassword());
   }
 
   private void logMemory() {
