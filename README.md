@@ -24,14 +24,15 @@ The following link outlines how to build, launch and use Graph QuBE (with an exa
 
 This manual references a provided example class that llustrates how the data ingest process can be done from the sample Bitcoin data set distributed with the source: [BitcoinIngest.java] (src/main/java/mitll/xdata/dataset/bitcoin/ingest/BitcoinIngest.java)
 
-## License
+## Disclaimer
 
-Copyright 2013-2016 MIT Lincoln Laboratory, Massachusetts Institute of Technology 
+DISTRIBUTION STATEMENT A. Approved for public release: distribution unlimited.
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use these files except in compliance with the License.
+© 2013-2016 MASSACHUSETTS INSTITUTE OF TECHNOLOGY
 
-You may obtain a copy of the License at
+    Subject to FAR 52.227-11 – Patent Rights – Ownership by the Contractor (May 2014)
+    SPDX-License-Identifier: MIT
 
-     http://www.apache.org/licenses/LICENSE-2.0
+This material is based upon work supported by the US Air Force under Air Force Contract No. FA8721-05-C-0002 and/or FA8702-15-D-0001. Any opinions, findings, conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the US Air Force.
 
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+The software/firmware is provided to you on an As-Is basis
